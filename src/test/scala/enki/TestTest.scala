@@ -1,34 +1,32 @@
 package enki
 
 import cats._
+import cats.data._
 import cats.implicits._
-import enki.builder.ExecutionPlanBuilder
 import enki.implicits._
 import org.scalatest.{Matchers, WordSpec}
 
+case class Enki()
+
 class TestTest extends WordSpec with Matchers {
-  "testtest" in {
-    val spark = LocalSparkSession.session
+  type EnkiReader[T] = Reader[Enki, T]
 
-    val a = Applicative[ExecutionPlanBuilder].pure(1)
-    val b = Applicative[ExecutionPlanBuilder].pure(2)
-    val c = Applicative[ExecutionPlanBuilder].pure(2)
-    val f = (k: Int) => (l: Int) => (m: Int) => k + l + m
+  "aaa" in {
+    import enki.configuration.default._
 
-    val x = a.fmap(f) <*> b <*> c
+    val a = source[(Int, Int)]('sourceA)
+    val b = source[(Int, Int)](name = 'sourceB)
 
-    val g = (k: Int, m: Int, n: Int) => k + m + n
+    val c = (a, b, session) mapN { (dsa, dsb, s) =>
+      import s.implicits._
+      dsa.as("a").join(dsb.as("b"), $"a._2" === $"b._1")
+    }
 
-    val y = (a, b, c) mapN g
+    implicit val s = LocalSparkSession.session
 
-    val z = syntaxTest
-  }
+    createEmptySources(c)
 
-  "todo" in {
-    val s1 = source('someShit1)
-    val s2 = source('someShit2)
-    val s3 = Applicative[ExecutionPlanBuilder].pure("not even a result")
-
-    
+    val res = eval(c)
+    res.show()
   }
 }
