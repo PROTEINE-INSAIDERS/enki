@@ -15,3 +15,5 @@ case class Source[T: TypeTag](table: Symbol, config: SourceConfiguration) extend
 
   private[enki] val qualifiedTableName = config.resolveTableName(table)
 }
+
+case class Stage[T](name: Symbol, plan: Plan[Dataset[T]]) extends PlanOp[Dataset[T]]
