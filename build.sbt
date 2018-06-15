@@ -1,7 +1,5 @@
 name := "enki"
 
-version := "2.0"
-
 scalaVersion := "2.11.12"
 val sparkVersion = "2.2.1"
 val scalaTestVersion = "3.0.5"

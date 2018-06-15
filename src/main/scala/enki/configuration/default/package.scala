@@ -2,9 +2,11 @@ package enki
 package configuration
 
 package object default {
-  private val defaultKeySuffix = "default"
+  private[enki] def resolveTableName(schema: Option[String], table: Symbol): String = {
+    schema.map(schemaName => s"$schemaName.${table.name}").getOrElse(table.name)
+  }
 
-  private def defaultKey(key: String): String = s"${configuration.enkiKey}.$key.${defaultKeySuffix}"
-
-  implicit val Right(sourceConfiguration) = pureconfig.loadConfig[SourceConfiguration](defaultKey("sources"))
+  implicit val sourceConfigurator: SourceConfigurator = new SourceConfigurator {
+    override protected[enki] def resolveTableName(table: Symbol): String = default.resolveTableName(None, table)
+  }
 }

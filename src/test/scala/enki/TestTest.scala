@@ -3,7 +3,7 @@ package enki
 import cats.data._
 import cats.implicits._
 import enki.implicits._
-import enki.plan._
+import enki.sources.default._
 import org.apache.spark.sql.DataFrame
 import org.scalatest.{Matchers, WordSpec}
 
@@ -17,11 +17,9 @@ class TestTest extends WordSpec with Matchers {
   type EnkiReader[T] = Reader[Enki, T]
 
   "aaa" in {
-    import enki.configuration.default._
-
 
     val a = source[(Int, Int)]('sourceA)
-    val b = source[(Int, Int)](name = 'sourceB)
+    val b = source[(Int, Int)]('sourceB)
 
     val c: Plan[DataFrame] = (a, b, session) mapN { (dsa, dsb, s) =>
       import s.implicits._
@@ -31,7 +29,6 @@ class TestTest extends WordSpec with Matchers {
     val d = stage('state1, c)
 
     // val d = (c).ap  { (d : DataFrame) => stage('testState, d) }
-
 
     Set("a") |+| Set("b")
     Map("a" -> 1) |+| Map("a" -> 2)
