@@ -1,43 +1,42 @@
 package enki
 
-import cats.data._
+import cats._
 import cats.implicits._
 import enki.implicits._
+import enki.plan.SourceOp
+import enki.sources.EmptySource
 import enki.sources.default._
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql._
+import org.apache.spark.sql.types.StructType
 import org.scalatest.{Matchers, WordSpec}
 
-case class Enki()
-
-case class Source1(a: Int, b: Int)
-
-case class Source2(a: Int, b: String)
-
 class TestTest extends WordSpec with Matchers {
-  type EnkiReader[T] = Reader[Enki, T]
-
   "aaa" in {
 
-    val a = source[(Int, Int)]('sourceA)
+    val a = source[Row]('testTable1)
     val b = source[(Int, Int)]('sourceB)
 
     val c: Plan[DataFrame] = (a, b, session) mapN { (dsa, dsb, s) =>
       import s.implicits._
-      dsa.as("a").join(dsb.as("b"), $"a._2" === $"b._1")
+      dsa.as("a").join(dsb.as("b"), $"a.c" === $"b._1")
     }
 
-    val d = stage('state1, c)
-
-    // val d = (c).ap  { (d : DataFrame) => stage('testState, d) }
-
-    Set("a") |+| Set("b")
-    Map("a" -> 1) |+| Map("a" -> 2)
-
     implicit val s = LocalSparkSession.session
+    val emptySource = new EmptySource {
+      private val fromSource = schemaFromResource('schemas)
 
-    createEmptySources(c)
+      override protected def getSchema(name: Symbol): Option[StructType] = fromSource(name)
+    }
 
-    val res = eval(c)
+    val e = evaluator(s)
+
+    val m = sourceMapper(λ[SourceOp ~> SourceOp] {
+      case op: SourceOp[t] => SourceOp[t](op.name, emptySource)(op.typeTag)
+    })
+
+    val ee = e compose m
+
+    val res = c foldMap ee
     res.show()
   }
 }

@@ -13,8 +13,6 @@ trait PlanSyntax {
 
   def session: Plan[SparkSession] = lift(SessionOp)
 
-  // это приводит к необходимости использования свободной монады.
-  // def stage0[T](name: Symbol, dataset: Dataset[T]): Plan[Dataset[T]] = liftF[PlanOp, Dataset[T]](Stage(name, dataset))
-
+  //TODO: попробовать Plan[Dataset[T] => Dataset[T]]
   def stage[T](name: Symbol, plan: Plan[Dataset[T]]): Plan[Dataset[T]] = lift[PlanOp, Dataset[T]](StageOp(name, plan))
 }
