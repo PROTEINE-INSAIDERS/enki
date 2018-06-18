@@ -1,6 +1,6 @@
 package enki
 package syntax
 
-import enki.plan.PlanSyntax
+import enki.program.ProgramSyntax
 
-trait AllSyntax extends PlanSyntax
+trait AllSyntax extends ProgramSyntax
