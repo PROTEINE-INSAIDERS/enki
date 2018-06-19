@@ -1,5 +1,5 @@
 package enki
 
 object implicits
-  extends enki.interpreter.Interpreter
+  extends enki.compiler.Compiler
     with enki.syntax.AllSyntax

@@ -1,7 +1,10 @@
 package enki
 package program
 
+import cats._
 import cats.free.FreeApplicative._
+import enki.internal.DefaultsTo
+import enki.internal.DefaultsTo._
 import enki.sources.Source
 import org.apache.spark.sql._
 

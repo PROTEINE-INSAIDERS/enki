@@ -6,8 +6,8 @@ import org.apache.spark.sql._
 
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
-trait EmptySource extends Source {
-  protected def getSchema(name: Symbol): Option[StructType] = None
+trait EmptySource extends Source with SchemaProvider {
+  override def getSchema(name: Symbol): Option[StructType] = None
 
   override def qualifiedName(name: Symbol): Symbol = Symbol(s"empty.${name.name}")
 

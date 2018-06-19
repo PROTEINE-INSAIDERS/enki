@@ -1,18 +1,18 @@
 package enki
-package interpreter
+package compiler
 
 import cats._
 import cats.data.Tuple2K
 import enki.program._
 import org.apache.spark.sql._
 
-trait Interpreter {
+trait Compiler {
   def sourceMapper(f: SourceSt ~> SourceSt): Statement ~> Statement = λ[Statement ~> Statement] {
     case sourceOp: SourceSt[t] => f(sourceOp)
     case other => other
   }
 
-  def evaluator(session: SparkSession): Statement ~> Id = λ[Statement ~> Id] {
+  def evaluator(implicit session: SparkSession): Statement ~> Id = λ[Statement ~> Id] {
     case sourceOp: SourceSt[t] =>
       sourceOp.source.read[t](sourceOp.name, session)(sourceOp.typeTag)
     case SessionSt => session
@@ -27,7 +27,7 @@ trait Interpreter {
 
   //TODO: unstage - получить свободную структуру, где все операции будут отмечены стейджем, к которому они относятся.
   def aaa[T](plan: Program[T]) = {
-    //TODO: 
+    //TODO:
 
     // val bbb = plan.foldMap(λ[Statement ~> (stage, Statement[?])] {
     //  case _ => (10, ???)
