@@ -1,4 +1,4 @@
-package enki.sources
+package enki.readers
 
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.types.StructType
@@ -6,10 +6,8 @@ import org.apache.spark.sql._
 
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
-trait EmptySource extends Source with SchemaProvider {
+trait EmptyReader extends Reader with SchemaProvider {
   override def getSchema(name: Symbol): Option[StructType] = None
-
-  override def qualifiedName(name: Symbol): Symbol = Symbol(s"empty.${name.name}")
 
   override def read[T: TypeTag](name: Symbol, session: SparkSession): Dataset[T] = {
     if (typeOf[T] == typeOf[Row]) {

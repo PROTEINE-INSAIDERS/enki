@@ -3,9 +3,15 @@ import cats.free.FreeApplicative
 package object enki {
   type Program[A] = FreeApplicative[program.Statement, A]
 
-  type SourceSt[A] = program.SourceSt[A]
-  val SourceSt = program.SourceSt
+  type ReadSt[A] = program.Read[A]
+  val ReadSt = program.Read
 
-  type EmptySource = sources.EmptySource
-  type SchemaFromResource = sources.SchemaFromResource
+  val SessionSt = program.Session
+
+
+  type Reader = readers.Reader
+  type EmptyReader = readers.EmptyReader
+  type SchemaFromSource = readers.SchemaFromSource
+
+  type Writer = writers.Writer
 }

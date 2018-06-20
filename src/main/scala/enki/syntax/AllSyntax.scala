@@ -1,6 +1,6 @@
 package enki
 package syntax
 
-import enki.program.ProgramSyntax
+import enki.program.Syntax
 
-trait AllSyntax extends ProgramSyntax
+trait AllSyntax extends Syntax

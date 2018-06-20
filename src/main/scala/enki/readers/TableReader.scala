@@ -1,13 +1,13 @@
 package enki
-package sources
+package readers
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders._
 
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
-trait TableSource extends Source {
-  protected def resolveTableName(name: Symbol): String
+trait TableReader extends Reader {
+  protected def getTableName(name: Symbol): String
 
   protected def decode[T: TypeTag](dataFrame: DataFrame): Dataset[T] = {
     if (typeOf[T] == typeOf[Row]) {
@@ -18,7 +18,7 @@ trait TableSource extends Source {
     }
   }
 
-  override def read[T: TypeTag](name: Symbol, session: SparkSession): Dataset[T] = {
-    decode[T](session.table(resolveTableName(name)))
+  override def read[T: TypeTag](table: Symbol, session: SparkSession): Dataset[T] = {
+    decode[T](session.table(getTableName(table)))
   }
 }

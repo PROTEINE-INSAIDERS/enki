@@ -1,4 +1,4 @@
-package enki.sources
+package enki.readers
 
 import org.apache.spark.sql.types.StructType
 
