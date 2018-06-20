@@ -6,8 +6,8 @@ import enki.program._
 import org.apache.spark.sql._
 
 trait Compiler {
-  def sourceMapper(f: Read ~> Read): Statement ~> Statement = λ[Statement ~> Statement] {
-    case sourceOp: Read[t] => f(sourceOp)
+  def readerMapper(f: Reader => Reader): Statement ~> Statement = λ[Statement ~> Statement] {
+    case read: Read[t] => Read[t](read.name, f(read.source))(read.typeTag)
     case other => other // это приведет к пропуску stage
   }
 

@@ -42,9 +42,7 @@ class TestTest extends WordSpec with Matchers with EnkiSuite {
       override def root: Path = Path("/schemas")
     }
 
-    val m = sourceMapper(λ[ReadSt ~> ReadSt] {
-      case op: ReadSt[t] => ReadSt[t](op.name, emptySource)(op.typeTag)
-    })
+    val m = readerMapper(_ => emptySource)
 
     val ee = evaluator compose m
 
