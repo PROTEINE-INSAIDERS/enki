@@ -16,4 +16,5 @@ package object enki {
   type SchemaFromSource = readers.SchemaFromSource
 
   type Writer = writers.Writer
+  type TableWriter = writers.TableWriter
 }

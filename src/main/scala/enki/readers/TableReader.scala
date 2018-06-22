@@ -7,7 +7,8 @@ import org.apache.spark.sql.catalyst.encoders._
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 trait TableReader extends Reader {
-  protected def getTableName(name: Symbol): String
+  protected def getTableName(table: Symbol): String
+  //TODO: и TableReader и TableWriter содержат это поле, надо подумать о введении трейта TableNameResolver
 
   protected def decode[T: TypeTag](dataFrame: DataFrame): Dataset[T] = {
     if (typeOf[T] == typeOf[Row]) {
