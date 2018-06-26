@@ -12,7 +12,7 @@ import scala.reflect.io.Path
 
 class TestTest extends WordSpec with Matchers with EnkiSuite {
   "stages" in {
-
+/*
     val a = read[Row]('testTable1)
 
     val s1 = stage('s1, a)
@@ -24,6 +24,7 @@ class TestTest extends WordSpec with Matchers with EnkiSuite {
     val s2 = stage('s2, (s1, s1) mapN b)
 
     val s3 = stage('s3, (s1, s1) mapN b)
+*/
   }
 
   "aaa" in {

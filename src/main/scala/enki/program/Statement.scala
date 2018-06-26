@@ -1,6 +1,8 @@
 package enki
 package program
 
+import cats._
+import cats.implicits._
 import enki.readers.Reader
 import enki.writers.Writer
 import org.apache.spark.sql._
@@ -9,14 +11,23 @@ import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class Statement[T]
 
-object Session extends Statement[SparkSession]
+final case class Session[A](f: SparkSession => A) extends Statement[A]
 
-case class Read[T: TypeTag](name: Symbol, source: Reader) extends Statement[Dataset[T]] {
+final case class Read[T: TypeTag, A](name: Symbol, reader: Reader, f: Dataset[T] => A) extends Statement[A] {
   val typeTag: TypeTag[T] = implicitly[TypeTag[T]]
 }
 
-case class Stage[T](name: Symbol, program: Program[Dataset[T]]) extends Statement[Dataset[T]]
-
-case class Write[T: TypeTag](name: Symbol, writer: Writer) extends Statement[Dataset[T] => Unit] {
+final case class Write[T: TypeTag, A](name: Symbol, writer: Writer, program: Program[Dataset[T]], value: A) extends Statement[A] {
   val typeTag: TypeTag[T] = implicitly[TypeTag[T]]
+}
+
+trait StatementInstances {
+  //TODO: Зачем нам тут функтор?
+  implicit val statementInstances: Functor[Statement] = new Functor[Statement] {
+    override def map[A, B](fa: Statement[A])(f: A => B): Statement[B] = fa match {
+      case Session(g) => Session(f <<< g)
+      case r@Read(name, reader, g) => Read(name, reader, f <<< g)(r.typeTag)
+      case w@Write(name, writer, p, a) => Write(name, writer, p, f(a))(w.typeTag)
+    }
+  }
 }

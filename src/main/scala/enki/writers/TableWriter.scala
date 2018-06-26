@@ -6,11 +6,13 @@ import org.apache.spark.sql._
 import scala.reflect.runtime.universe.TypeTag
 
 trait TableWriter extends Writer {
-  protected def getTableName(table: Symbol): String
+  protected def tableName(table: Symbol): String
+
+  protected def saveMode: SaveMode = SaveMode.ErrorIfExists
 
   protected def encode[T: TypeTag](data: Dataset[T]): DataFrame = data.toDF()
 
   override def write[T: TypeTag](table: Symbol, data: Dataset[T], session: SparkSession): Unit = {
-    data.write.saveAsTable(getTableName(table))
+    data.write.mode(saveMode).saveAsTable(tableName(table))
   }
 }

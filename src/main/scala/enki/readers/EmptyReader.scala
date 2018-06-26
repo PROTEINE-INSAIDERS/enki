@@ -7,8 +7,6 @@ import org.apache.spark.sql._
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 trait EmptyReader extends Reader with SchemaProvider {
-  override def name: Symbol = 'empty
-  
   override def getSchema(name: Symbol): Option[StructType] = None
 
   override def read[T: TypeTag](name: Symbol, session: SparkSession): Dataset[T] = {

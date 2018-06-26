@@ -1,10 +1,8 @@
-import cats.free.FreeApplicative
-
 package object enki {
+  type Program[A] = program.Program[A]
   type Statement[A] = program.Statement[A]
-  type Program[A] = FreeApplicative[Statement, A]
 
-  type Read[A] = program.Read[A]
+  type Read[T, A] = program.Read[T, A]
   val Read = program.Read
   val Session = program.Session
   type Write[A] = program.Write[A]
@@ -16,5 +14,6 @@ package object enki {
   type SchemaFromSource = readers.SchemaFromSource
 
   type Writer = writers.Writer
+  type EmptyWriter = writers.Writer
   type TableWriter = writers.TableWriter
 }

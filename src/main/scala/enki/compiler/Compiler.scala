@@ -7,34 +7,27 @@ import org.apache.spark.sql._
 
 trait Compiler {
   def readerMapper(f: Reader => Reader): Statement ~> Statement = λ[Statement ~> Statement] {
-    case read: Read[t] => Read[t](read.name, f(read.source))(read.typeTag)
+    case read@Read(name, reader, g) => Read(name, f(reader), g)(read.typeTag)
+    case other => other // это приведет к пропуску stage
+  }
+
+  def writerMapper(f: Writer => Writer): Statement ~> Statement = λ[Statement ~> Statement] {
+    case write@Write(n, w, p, a) => Write(n, f(w), p.compile(writerMapper(f)), a)(write.typeTag)
     case other => other // это приведет к пропуску stage
   }
 
   def evaluator(implicit session: SparkSession): Statement ~> Id = λ[Statement ~> Id] {
-    case readSt: Read[t] =>
-      readSt.source.read[t](readSt.name, session)(readSt.typeTag)
-    case Session => session
-    case Stage(name, _) =>
-      //TODO: решить, как вычислять stage - простой select, либо построение заново.
-      ???
-    case writeSt: Write[t] => (data: Dataset[t]) =>
-      writeSt.writer.write[t](writeSt.name, data, session)(writeSt.typeTag)
+    case r@Read(name, reader, f) =>
+      f(reader.read(name, session)(r.typeTag))
+    case Session(f) =>
+      f(session)
+    case write@Write(n, w, p, a) =>
+      val d = p.foldMap(evaluator(session))
+      w.write(n, d, session)(write.typeTag)
+      a
   }
 
   def eval[T](plan: Program[T])(implicit session: SparkSession): T = {
     plan.foldMap(evaluator(session))
-  }
-
-  //TODO: unstage - получить свободную структуру, где все операции будут отмечены стейджем, к которому они относятся.
-  def aaa[T](plan: Program[T]) = {
-    //TODO:
-
-    // val bbb = plan.foldMap(λ[Statement ~> (stage, Statement[?])] {
-    //  case _ => (10, ???)
-    //})
-
-
-    ???
   }
 }
