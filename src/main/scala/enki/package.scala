@@ -5,7 +5,7 @@ package object enki {
   type Read[T, A] = program.Read[T, A]
   val Read = program.Read
   val Session = program.Session
-  type Write[A] = program.Write[A]
+  type Write[T, A] = program.Write[T, A]
   val Write = program.Write
 
   type Reader = readers.Reader
