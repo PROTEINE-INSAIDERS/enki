@@ -11,9 +11,13 @@ trait DataFrameSyntax {
     }
 
 
+    /**
+      * Diff current dataset against other.
+      *
+      * "Current" dataset considered "original" or "left" in diff operation.
+      */
     def diff(other: DataFrame, keyColumns: Seq[String]): DataFrame = {
       functions.diff(dataFrame, other, keyColumns)
     }
   }
-
 }
