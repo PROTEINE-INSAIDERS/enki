@@ -30,4 +30,8 @@ trait Compiler {
   def eval[T](plan: Program[T])(implicit session: SparkSession): T = {
     plan.foldMap(evaluator(session))
   }
+
+  def test[T](pr: Program[T]): Unit = {
+  ???
+  }
 }

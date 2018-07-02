@@ -8,48 +8,29 @@ import enki.writers.default._
 import org.apache.spark.sql._
 import org.scalatest.{Matchers, WordSpec}
 
+import frameless.cats.implicits._
+import cats.mtl.implicits._
+import cats.effect._
+
+
 import scala.reflect.io.Path
+import frameless.TypedDataset
+// import frameless.TypedDataset
+
+import cats.data.ReaderT
+// import cats.data.ReaderT
+
+import cats.effect.IO
+// import cats.effect.IO
+
+import cats.effect.implicits._
 
 class TestTest extends WordSpec with Matchers with EnkiSuite {
+
+  type Action[T] = ReaderT[IO, SparkSession, T]
+
   "stages" in {
-/*
-    val a = read[Row]('testTable1)
 
-    val s1 = stage('s1, a)
 
-    val b = (d1: Dataset[Row], d2: Dataset[Row]) => {
-      d1.crossJoin(d2)
-    }
-
-    val s2 = stage('s2, (s1, s1) mapN b)
-
-    val s3 = stage('s3, (s1, s1) mapN b)
-*/
-  }
-
-  "aaa" in {
-/* TODO: отклчено, пока не доделана работа с подпрограммами.
-    val a = read[Row]('testTable1)
-    val b = read[(Int, Int)]('sourceB)
-
-    val c: Program[DataFrame] = (a, b, session) mapN { (dsa, dsb, s) =>
-      import s.implicits._
-      dsa.as("a").join(dsb.as("b"), $"a.c" === $"b._1")
-    }
-
-    val d = write[Row]('testDst, c)
-
-    val emptySource = new EmptyReader with SchemaFromSource {
-      override def root: Path = Path("/schemas")
-    }
-
-    val m = readerMapper(_ => emptySource)
-
-    val ee = evaluator compose m
-
-    val res = d foldMap ee
-
-    sparkSession.sql("select * from testDst").show
-    */
   }
 }
