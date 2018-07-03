@@ -1,5 +1,7 @@
 package enki
 
+import enki.program.Compiler
+
 object implicits
-  extends enki.compiler.Compiler
+  extends Compiler
     with enki.syntax.AllSyntax

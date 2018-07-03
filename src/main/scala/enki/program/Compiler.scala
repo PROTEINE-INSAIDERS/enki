@@ -1,8 +1,7 @@
-package enki
-package compiler
+package enki.program
 
 import cats._
-import enki.program._
+import enki.{Reader, Writer}
 import org.apache.spark.sql._
 
 trait Compiler {
@@ -19,8 +18,6 @@ trait Compiler {
   def evaluator(implicit session: SparkSession): Statement ~> Id = λ[Statement ~> Id] {
     case r@Read(name, reader, f) =>
       f(reader.read(name, session)(r.typeTag))
-    case Session(f) =>
-      f(session)
     case write@Write(n, w, p, a) =>
       val d = p.foldMap(evaluator(session))
       w.write(n, d, session)(write.typeTag)
@@ -29,9 +26,5 @@ trait Compiler {
 
   def eval[T](plan: Program[T])(implicit session: SparkSession): T = {
     plan.foldMap(evaluator(session))
-  }
-
-  def test[T](pr: Program[T]): Unit = {
-  ???
   }
 }

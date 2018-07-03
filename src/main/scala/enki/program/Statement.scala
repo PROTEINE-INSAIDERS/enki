@@ -11,8 +11,6 @@ import scala.reflect.runtime.universe.TypeTag
 
 sealed abstract class Statement[T]
 
-final case class Session[A](f: SparkSession => A) extends Statement[A]
-
 final case class Read[T: TypeTag, A](name: Symbol, reader: Reader, f: Dataset[T] => A) extends Statement[A] {
   val typeTag: TypeTag[T] = implicitly[TypeTag[T]]
 }
@@ -25,7 +23,6 @@ trait StatementInstances {
   //TODO: Зачем нам тут функтор?
   implicit val statementInstances: Functor[Statement] = new Functor[Statement] {
     override def map[A, B](fa: Statement[A])(f: A => B): Statement[B] = fa match {
-      case Session(g) => Session(f <<< g)
       case r@Read(name, reader, g) => Read(name, reader, f <<< g)(r.typeTag)
       case w@Write(name, writer, p, a) => Write(name, writer, p, f(a))(w.typeTag)
     }

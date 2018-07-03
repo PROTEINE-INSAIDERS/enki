@@ -10,8 +10,6 @@ trait Syntax {
   def read[T: TypeTag](src: Symbol)(implicit reader: Reader): Program[Dataset[T]] =
     lift[Statement, Dataset[T]](Read[T, Dataset[T]](src, reader, identity))
 
-  def session: Program[SparkSession] = lift(Session(identity))
-
   def write[T: TypeTag](table: Symbol, data: Program[Dataset[T]])(implicit writer: Writer): Program[Unit] =
     lift[Statement, Unit](Write(table, writer, data, Unit))
 }
