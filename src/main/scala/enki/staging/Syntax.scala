@@ -10,50 +10,23 @@ import shapeless._
 // именование потребуется в процессе добавления их в граф.
 sealed trait StagingOp[A]
 
-trait Source[A] {
-  type Row
+final case class SourceOp[T](f: SparkSession => Dataset[T]) extends StagingOp[Dataset[T]]
 
-  def get(session: SparkSession): Dataset[Row]
-}
-
-final case class SourceOp[S, T](source: Source[S]) extends StagingOp[Dataset[T]]
-
-final case class StageOp[T](program: StagingF[Dataset[T]]) extends StagingOp[Dataset[T]]
+final case class StageOp[T](stage: Symbol) extends StagingOp[Dataset[T]]
 
 trait Syntax {
 
 }
 
 object Test {
-  // 1. затягивать source через witness - идея интересная, но её надо реализовать поверх DSL-а, чтобы не усложнять его.
-  // минимально souce - это функция из Session в Dataset.
-  def source(source: WitnessWith[Source]): StagingOp[Dataset[source.instance.Row]] =
-    SourceOp[source.T, source.instance.Row](source.instance)
 
-  implicit val r1 = new Source[Witness.`'source1`.T] {
-    type Row = (Int, Int)
-
-    override def get(session: SparkSession): Dataset[(Int, Int)] = ???
-  }
-
-  implicit val r2 = new Source[Witness.`'source2`.T] {
-    type Row = String
-
-    override def get(session: SparkSession): Dataset[String] = ???
-  }
-
-  val aaa = source('source1)
-
-  def bbb(k: StagingOp[Dataset[(Int, Int)]]) = {}
-
-  bbb(aaa)
-
+/*
   def evaluator(implicit session: SparkSession): StagingOp ~> Id = λ[StagingOp ~> Id] {
     case so: SourceOp[s, t] =>
       so.source.get(session) // здесь нет доказательства, что source.Row === Dataset[T]
     case StageOp(p) => ???
   }
-
+*/
 
   /*
   val (wTrue, wFalse) = (Witness(true), Witness(false))

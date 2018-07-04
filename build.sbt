@@ -14,13 +14,13 @@ scalacOptions += "-Ypartial-unification"
 
 libraryDependencies ++= Seq(
   "org.atnos" %% "eff" % "5.1.0",
-"com.chuusai" %% "shapeless" % "2.3.3",
+  "com.chuusai" %% "shapeless" % "2.3.3",
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "cats-free" % catsVersion,
   "org.typelevel" %% "cats-effect" % catsEffectVersion,
   "org.scala-graph" %% "graph-core" % "1.12.5",
-  "org.apache.spark" %% "spark-core" % sparkVersion % Provided,
-  "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
+  "org.apache.spark" %% "spark-core" % sparkVersion,// % Provided,
+  "org.apache.spark" %% "spark-sql" % sparkVersion, // % Provided,
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
 )
 
