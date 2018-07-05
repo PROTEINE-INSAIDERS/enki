@@ -1,10 +1,11 @@
 package enki.dataset
 
+import enki.AllModules
 import enki.tests.EnkiSuite
 import org.apache.spark.sql.Row
 import org.scalatest.{Matchers, WordSpec}
 
-class SyntaxTest extends WordSpec with Matchers with EnkiSuite with Syntax {
+class SyntaxTest extends WordSpec with Matchers with EnkiSuite  {
   "diff" should {
     "format" in {
       import sparkSession.implicits._
@@ -13,7 +14,7 @@ class SyntaxTest extends WordSpec with Matchers with EnkiSuite with Syntax {
       val b = sparkSession.createDataset(Seq((2, "x"), (3, "c"), (4, "d"))).toDF()
 
       val c = a.diff(b, Seq("_1"))
-      val d = functions.formatDiff(c)
+      val d = formatDiff(c)
 
       d.collect().sortBy(_.getString(1)) shouldBe Array(
         Row("---", "1", "a"),

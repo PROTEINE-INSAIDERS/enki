@@ -1,3 +1,5 @@
 package enki.dataset
 
-trait Syntax extends DataFrameSyntax with DatasetSyntax
+import enki.DataFrameModule
+
+trait Syntax extends DataFrameModule with DatasetSyntax

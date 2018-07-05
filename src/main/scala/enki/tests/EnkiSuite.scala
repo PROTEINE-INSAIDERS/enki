@@ -1,17 +1,12 @@
-package enki.tests
+package enki
+package tests
 
 import java.nio.file.Files
 
-import enki.program.Compiler
-import enki.syntax.AllSyntax
-import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 
-trait EnkiSuite extends AllSyntax with Compiler {
+trait EnkiSuite extends AllModules {
   protected implicit lazy val sparkSession: SparkSession = {
-    Logger.getLogger("org").setLevel(Level.WARN)
-    Logger.getLogger("akka").setLevel(Level.WARN)
-
     SparkSession
       .builder()
       .appName("enki-test")
