@@ -54,7 +54,7 @@ trait ProgramModule {
 
   type StageWriter[A] = Writer[List[(String, Stage[Unit])], A]
 
-  val stageExtractor: ProgramA ~> StageWriter = λ[ProgramA ~> StageWriter] {
+  val programSplitter: ProgramA ~> StageWriter = λ[ProgramA ~> StageWriter] {
     case r: StageAction[t] => {
       val toStage = r.stage.ap(write[t](r.writer))
       for {
@@ -65,8 +65,15 @@ trait ProgramModule {
     }
   }
 
+
+  def programAnalyser[L: Monoid]: ProgramA ~> Writer[L, ?] = λ[ProgramA ~> Writer[L, ?]] {
+    case r: StageAction[t] => {
+      ???
+    }
+  }
+
   def exec[A](program: Program[Stage[A]])(implicit session: SparkSession): A = {
-    val (stages, finalStage) = program.foldMap(stageExtractor).run
+    val (stages, finalStage) = program.foldMap(programSplitter).run
     stages.foreach(stage => {
       session.sparkContext.setJobDescription(stage._1)
       try {

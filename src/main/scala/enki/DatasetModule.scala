@@ -1,15 +1,13 @@
-package enki.dataset
+package enki
 
-import enki.DataFrameModule
 import org.apache.spark.sql._
 
-trait DatasetSyntax {
+trait DatasetModule {
   this: DataFrameModule =>
 
   implicit class DatasetExtensions[T](dataset: Dataset[T]) {
     def fillna(value: Any)(implicit encoder: Encoder[T]): Dataset[T] = {
-      functions.fillna(dataset.toDF(), value).as[T]
+      DatasetModule.this.fillna(dataset.toDF(), value).as[T]
     }
   }
-
 }

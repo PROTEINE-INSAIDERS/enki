@@ -1,6 +1,5 @@
 package enki
 
-import enki.dataset.functions
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
@@ -57,13 +56,15 @@ trait DataFrameModule {
       formatActionColumn.as(diffStatusColName) +: diff.schema.filter(_.name != diffStatusColName).map(c => formatDiffColumn(c.name).as(c.name)): _*)
   }
 
+  def fillna(dataFrame: DataFrame, value: Any): DataFrame = {
+    dataFrame.select(dataFrame.columns.map(colName => coalesce(dataFrame(colName), lit(value)).as(colName)): _*)
+  }
 
   implicit class DataFrameExtensions(dataFrame: DataFrame) {
     def fillna(value: Any): DataFrame = {
-      functions.fillna(dataFrame, value)
+      DataFrameModule.this.fillna(dataFrame, value)
     }
-
-
+    
     /**
       * Diff current dataset against other.
       *

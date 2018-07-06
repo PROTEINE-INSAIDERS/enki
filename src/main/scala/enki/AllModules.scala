@@ -1,3 +1,3 @@
 package enki
 
-trait AllModules extends StageModule with ProgramModule with dataset.Syntax
+trait AllModules extends StageModule with ProgramModule with DataFrameModule with DatasetModule
