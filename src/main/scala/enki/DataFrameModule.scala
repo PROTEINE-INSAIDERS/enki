@@ -60,11 +60,11 @@ trait DataFrameModule {
     dataFrame.select(dataFrame.columns.map(colName => coalesce(dataFrame(colName), lit(value)).as(colName)): _*)
   }
 
+  def nonUnique(data: DataFrame, cols: Seq[Column]): DataFrame = {
+    data.groupBy(cols: _*).count().where(col("count") > 1).select(cols: _*)
+  }
+
   implicit class DataFrameExtensions(dataFrame: DataFrame) {
-    def fillna(value: Any): DataFrame = {
-      DataFrameModule.this.fillna(dataFrame, value)
-    }
-    
     /**
       * Diff current dataset against other.
       *
@@ -73,6 +73,13 @@ trait DataFrameModule {
     def diff(other: DataFrame, keyColumns: Seq[String]): DataFrame = {
       DataFrameModule.this.diff(dataFrame, other, keyColumns)
     }
-  }
 
+    def fillna(value: Any): DataFrame = {
+      DataFrameModule.this.fillna(dataFrame, value)
+    }
+
+    def nonUniq(col: Column*): DataFrame = {
+      DataFrameModule.this.nonUnique(dataFrame, col)
+    }
+  }
 }

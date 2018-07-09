@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "cats-free" % catsVersion,
 //  "org.typelevel" %% "cats-effect" % catsEffectVersion,
-//  "org.scala-graph" %% "graph-core" % "1.12.5",
+  "org.scala-graph" %% "graph-core" % "1.12.5",
   "org.apache.spark" %% "spark-core" % sparkVersion % Provided,
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test"

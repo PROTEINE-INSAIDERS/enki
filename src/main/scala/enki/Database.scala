@@ -3,7 +3,7 @@ package enki
 import org.apache.spark.sql._
 
 abstract class Database {
-  protected def schema: String
+  def schema: String
 
   protected def saveMode: Option[SaveMode] = None
 
