@@ -14,6 +14,8 @@ class ProgramTest extends WordSpec with Matchers with EnkiSuite {
 
     val aaa = read[Row]("test")
 
+    val kk = (aaa, aaa) mapN { (a, b) => ??? }
+
     val bbb = for { a <- aaa.pure[Program] } yield ()
   }
 }

@@ -125,16 +125,8 @@ trait ProgramModule {
 
   def buildGraph(program: Program[Stage[_]]) = {
     val (stages, _) = program.foldMap(programSplitter).run
-    //TODO: table_name -> stage_name (стейдж сейчас эквивалентен одной таблице, поэтому его название совпадает с названием
-    // таблицы, но это не обязательно в общем случае).
-    val aaa = stages.flatMap { case (stageName, stage) =>  writeActions(stage).map(a => (a.tableName, stageName)).toList  }
-  }
+    val tableToStage = stages.flatMap { case (stageName, stage) =>  writeActions(stage).map(a => (a.tableName, stageName)).toList  }.toSet
 
-  /* TODO: реализовать построение графа из программы.
-    1. При построении графа необходимо уметь связывать читателя с писателем.
-       Такая возможность есть в dls-е: сплиттер может проставить связи. Также можно связывать по имени.
-    2. Некоторые ридеры могут не иметь соответсвующих им райтеров, они классифицируются как источники.
-    3. Базы данных должны иметь уникальные имена. Пока задаём вручную, потом можно будет проверять уникальность в
-       монадке программы (но нужно ли?)
-   */
+
+  }
 }
