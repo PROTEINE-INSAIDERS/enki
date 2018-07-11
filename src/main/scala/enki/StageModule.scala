@@ -13,6 +13,7 @@ trait StageModule {
 
   //TODO: возможно следует вычислять зависимости из ридера.
   //но для этого надо понимать, является ли эта зависимость "внешней" или "внутренней".
+  //TODO: convert to concrete actions.
   final case class StageAction[T](action: SparkAction[T], dependencies: Set[String])
 
   type Stage[A] = FreeApplicative[StageAction, A]
