@@ -35,6 +35,9 @@ trait ProgramModule {
 
   val programSplitter: ProgramAction ~> StageWriter = λ[ProgramAction ~> StageWriter] {
     case p: PersistAction[t] => {
+      //TODO: надо использовать стабильные имена.
+      //при этом во многих случаях имя таблицы вполне подходит в качестве стабильного имени,
+      //просто должен быть механизм перегрузки этого имени в момент чтения/записи на базе конфигурации.
       val stageName = s"${p.database.schema}.${p.tableName}"
       val stage = p.stage ap write[t](p.tableName)(p.database)
       for {

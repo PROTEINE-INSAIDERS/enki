@@ -5,12 +5,14 @@ scalaVersion := "2.11.12"
 val sparkVersion = "2.2.1"
 val scalaTestVersion = "3.0.5"
 val catsVersion = "1.1.0"
+/*
 val framelessVersion = sparkVersion match {
   case "2.2.1" => "0.5.2"
   case "2.3.0" => "0.6.1"
 }
+*/
 val scalaGraphVersion = "1.12.5"
-val declineVersion = "0.3.0"
+val declineVersion = "0.4.2"
 
 scalacOptions += "-Ypartial-unification"
 

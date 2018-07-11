@@ -1,16 +1,28 @@
 package enki
 
+import cats.data._
 import com.monovore.decline._
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql._
 
 class EnkiApp(name: String, header: String, actionGraph: ActionGraph) extends CommandApp(
   name = name,
   header = header,
   main = {
-    val actionOpt = Opts
-      .option[String]("action", help = "Action to execute.")
-      .validate("Action not found")(actionGraph.actions.contains)
-
-    actionOpt map (actionGraph.runAction(_)(SparkSession.builder().getOrCreate()))
+    Opts.subcommand(name = "list",
+      help = "List all actions."
+    )(Opts {
+      actionGraph.linearized.foreach(println)
+    }) orElse
+      Opts.subcommand(
+        name = "exec",
+        help = "Execute actions."
+      )(Opts.arguments[String]("action").mapValidated { actions =>
+        actions.filterNot(actionGraph.actions.contains) match {
+          case Nil => Validated.valid(actions)
+          case missing => Validated.invalidNel(s"Action(s) ${missing.mkString(", ")} not found!")
+        }
+      } map { actions =>
+        actions.toList.foreach(actionGraph.runAction(_)(SparkSession.builder().getOrCreate()))
+      })
   }
 )
