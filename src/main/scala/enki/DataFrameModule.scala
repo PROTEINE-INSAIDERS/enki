@@ -27,13 +27,16 @@ trait DataFrameModule {
       diffStatus(original(name), `new`(name)).as(diffStatusColName)
     )
 
+    //TODO: найти лучший способ работать с таблицами, у которых не совпадают схемы.
+    val columns = (original.schema.map(_.name).toSet intersect `new`.schema.map(_.name).toSet).toSeq
+
     def rowStatus: Column =
       when(added, addedStatus)
         .when(removed, removedStatus)
-        .when(not(original.schema.map(col => original(col.name) <=> `new`(col.name)).foldLeft(lit(true))(_ and _)), updatedStatus)
+        .when(not(columns.map(col => original(col) <=> `new`(col)).foldLeft(lit(true))(_ and _)), updatedStatus)
 
     original.join(`new`, keyColumns.map { c => original(c) === `new`(c) }.reduce(_ and _), "outer")
-      .select(rowStatus.as(diffStatusColName) +: original.schema.map(c => colDiff(c.name).as(c.name)): _*)
+      .select(rowStatus.as(diffStatusColName) +: columns.map(c => colDiff(c).as(c)): _*)
   }
 
   /**
