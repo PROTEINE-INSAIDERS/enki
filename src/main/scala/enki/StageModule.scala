@@ -15,34 +15,36 @@ trait StageModule {
   //но для этого надо понимать, является ли эта зависимость "внешней" или "внутренней".
   sealed trait StageAction[T]
 
-  //TODO: вынести action в базовый класс??
-  final case class ReadAction[T](action: SparkAction[Dataset[T]], dependencies: Set[String]) extends StageAction[Dataset[T]]
+  final case class ReadAction[T](database: Database, table: String, dependencies: Set[String]) extends StageAction[Dataset[T]]
 
-  final case class WriteAction[T](action: SparkAction[Dataset[T] => Unit]) extends StageAction[Dataset[T] => Unit]
+  final case class WriteAction[T](database: Database, table: String) extends StageAction[Dataset[T] => Unit]
 
-  //TODO: добавить действие по созданию датасета из Seq.
-  //TODO: можно даже общее дейстиве по созданию датасета из Session.
+  final case class DataAction[T](data: Seq[T]) extends StageAction[Dataset[T]]
 
   type Stage[A] = FreeApplicative[StageAction, A]
 
+  def data[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
+    lift[StageAction, Dataset[T]](DataAction(data))
+
   def read[T: TypeTag](database: Database, tableName: String): Stage[Dataset[T]] =
-    lift[StageAction, Dataset[T]](ReadAction(readAction(database, tableName), Set.empty))
+    lift[StageAction, Dataset[T]](ReadAction(database, tableName, Set.empty))
 
   def read[T: TypeTag](database: Database, tableName: String, dependency: String): Stage[Dataset[T]] =
-    lift[StageAction, Dataset[T]](ReadAction(readAction(database, tableName), Set(dependency)))
+    lift[StageAction, Dataset[T]](ReadAction(database, tableName, Set(dependency)))
 
   def write[T](database: Database, tableName: String): Stage[Dataset[T] => Unit] =
-    lift[StageAction, Dataset[T] => Unit](WriteAction(writeAction(database, tableName)))
+    lift[StageAction, Dataset[T] => Unit](WriteAction(database, tableName))
 
   def stageCompiler: StageAction ~> SparkAction = λ[StageAction ~> SparkAction] {
-    case ReadAction(a, _) => a
-    case WriteAction(a) => a
+    case DataAction(data) => dataAction(data)
+    case ReadAction(database, table, _) => readAction(database, table)
+    case WriteAction(database, table) => writeAction(database, table)
   }
 
   def stageDependencies(stage: Stage[_]): Set[String] = {
     stage.analyze(λ[StageAction ~> λ[α => Set[String]]] {
-      case ReadAction(_, d) => d
-      case WriteAction(_) => Set.empty
+      case ReadAction(_, _, d) => d
+      case _ => Set.empty
     })
   }
 }
