@@ -1,21 +1,23 @@
 package enki
 
+import enki._
 import enki.tests.EnkiSuite
 import org.apache.spark.sql.Row
 import org.scalatest.{Matchers, WordSpec}
 import cats._
 import cats.implicits._
 
+object Otest extends Database {
+  override def schema: String = "schema"
+
+  val a = read[Row]("test")
+
+  val program = for {
+    b <- persist[Row]("test2", a)
+  } yield ()
+}
+
 class ProgramTest extends WordSpec with Matchers with EnkiSuite {
   "ddd" in {
-    implicit val db = new Database {
-      override def schema: String = ""
-    }
-
-    val aaa = read[Row]("test")
-
-    val kk = (aaa, aaa) mapN { (a, b) => ??? }
-
-    val bbb = for { a <- aaa.pure[Program] } yield ()
   }
 }

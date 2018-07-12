@@ -4,7 +4,7 @@ trait StageModule {
   this: ActionModule =>
 
   import cats._
-  import cats.implicits._
+  import cats.instances.all._
   import cats.free.FreeApplicative
   import cats.free.FreeApplicative._
   import org.apache.spark.sql._
@@ -13,30 +13,36 @@ trait StageModule {
 
   //TODO: возможно следует вычислять зависимости из ридера.
   //но для этого надо понимать, является ли эта зависимость "внешней" или "внутренней".
-  //TODO: convert to concrete actions.
-  final case class StageAction[T](action: SparkAction[T], dependencies: Set[String])
+  sealed trait StageAction[T]
+
+  //TODO: вынести action в базовый класс??
+  final case class ReadAction[T](action: SparkAction[Dataset[T]], dependencies: Set[String]) extends StageAction[Dataset[T]]
+
+  final case class WriteAction[T](action: SparkAction[Dataset[T] => Unit]) extends StageAction[Dataset[T] => Unit]
+
+  //TODO: добавить действие по созданию датасета из Seq.
+  //TODO: можно даже общее дейстиве по созданию датасета из Session.
 
   type Stage[A] = FreeApplicative[StageAction, A]
 
-  def stage[T](action: SparkAction[T]): Stage[T] = lift(StageAction(action, Set.empty[String]))
+  def read[T: TypeTag](database: Database, tableName: String): Stage[Dataset[T]] =
+    lift[StageAction, Dataset[T]](ReadAction(readAction(database, tableName), Set.empty))
 
-  def read[T: TypeTag](tableName: String)(implicit db: Database): Stage[Dataset[T]] = stage(readAction(db, tableName))
+  def read[T: TypeTag](database: Database, tableName: String, dependency: String): Stage[Dataset[T]] =
+    lift[StageAction, Dataset[T]](ReadAction(readAction(database, tableName), Set(dependency)))
 
-  def read[T: TypeTag](tableName: String, db: Database, dependency: String): Stage[Dataset[T]] =
-    lift(StageAction(readAction(db, tableName), Set(dependency)))
-
-  def write[T](tableName: String)(implicit db: Database): Stage[Dataset[T] => Unit] = stage { _ =>
-    data =>
-      db.writeTable(tableName, data.toDF())
-  }
+  def write[T](database: Database, tableName: String): Stage[Dataset[T] => Unit] =
+    lift[StageAction, Dataset[T] => Unit](WriteAction(writeAction(database, tableName)))
 
   def stageCompiler: StageAction ~> SparkAction = λ[StageAction ~> SparkAction] {
-    case StageAction(a, _) => a
+    case ReadAction(a, _) => a
+    case WriteAction(a) => a
   }
 
   def stageDependencies(stage: Stage[_]): Set[String] = {
     stage.analyze(λ[StageAction ~> λ[α => Set[String]]] {
-      case StageAction(_, d) => d
+      case ReadAction(_, d) => d
+      case WriteAction(_) => Set.empty
     })
   }
 }

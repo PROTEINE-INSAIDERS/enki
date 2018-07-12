@@ -25,11 +25,11 @@ trait ProgramModule {
 
   type Program[A] = Free[ProgramAction, A]
 
-  def persist[T: TypeTag](tableName: String)(stage: Stage[Dataset[T]])(implicit db: Database): Program[Stage[Dataset[T]]] =
+  def persist[T: TypeTag](database: Database, tableName: String, stage: Stage[Dataset[T]]): Program[Stage[Dataset[T]]] =
     liftF[ProgramAction, Stage[Dataset[T]]](PersistAction[T](
       tableName,
       stage,
-      db))
+      database))
 
   type StageWriter[A] = Writer[List[(String, Stage[Unit])], A]
 
@@ -39,11 +39,11 @@ trait ProgramModule {
       //при этом во многих случаях имя таблицы вполне подходит в качестве стабильного имени,
       //просто должен быть механизм перегрузки этого имени в момент чтения/записи на базе конфигурации.
       val stageName = s"${p.database.schema}.${p.tableName}"
-      val stage = p.stage ap write[t](p.tableName)(p.database)
+      val stage = p.stage ap write[t](p.database, p.tableName)
       for {
         _ <- List((stageName, stage)).tell
       } yield {
-        read[t](p.tableName, p.database, stageName)(p.tag)
+        read[t](p.database, p.tableName, stageName)(p.tag)
       }
     }
   }

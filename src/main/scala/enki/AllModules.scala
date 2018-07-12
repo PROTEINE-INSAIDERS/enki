@@ -7,3 +7,4 @@ trait AllModules
     with ProgramModule
     with DataFrameModule
     with DatasetModule
+    with DocumentationModule

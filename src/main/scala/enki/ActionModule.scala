@@ -1,5 +1,6 @@
 package enki
 
+//TODO: возможно это следует объединить с функциональностью Database в одном модуле.
 trait ActionModule {
 
   import org.apache.spark.sql._
@@ -9,10 +10,13 @@ trait ActionModule {
 
   type SparkAction[A] = SparkSession => A
 
-  protected def readAction[T: TypeTag](db: Database, table: String): SparkAction[Dataset[T]] = session => {
+  protected def readAction[T: TypeTag](database: Database, table: String): SparkAction[Dataset[T]] = session => {
     if (typeOf[T] == typeOf[Row])
-      db.readTable(session, table).asInstanceOf[Dataset[T]]
+      database.readTable(session, table).asInstanceOf[Dataset[T]]
     else
-      db.readTable(session, table).as[T](ExpressionEncoder())
+      database.readTable(session, table).as[T](ExpressionEncoder())
   }
+
+  protected def writeAction(database: Database, table: String): SparkAction[Dataset[_] => Unit] = _ => data =>
+    database.writeTable(table, data.toDF())
 }
