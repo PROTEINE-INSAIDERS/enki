@@ -19,12 +19,12 @@ trait StageModule {
 
   final case class WriteAction[T](database: Database, table: String) extends StageAction[Dataset[T] => Unit]
 
-  final case class DataAction[T](data: Seq[T]) extends StageAction[Dataset[T]]
+  final case class DatasetAction[T](data: Seq[T]) extends StageAction[Dataset[T]]
 
   type Stage[A] = FreeApplicative[StageAction, A]
 
-  def data[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
-    lift[StageAction, Dataset[T]](DataAction(data))
+  def dataset[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
+    lift[StageAction, Dataset[T]](DatasetAction(data))
 
   def read[T: TypeTag](database: Database, tableName: String): Stage[Dataset[T]] =
     lift[StageAction, Dataset[T]](ReadAction(database, tableName, Set.empty))
@@ -36,7 +36,7 @@ trait StageModule {
     lift[StageAction, Dataset[T] => Unit](WriteAction(database, tableName))
 
   def stageCompiler: StageAction ~> SparkAction = λ[StageAction ~> SparkAction] {
-    case DataAction(data) => dataAction(data)
+    case DatasetAction(data) => datasetAction(data)
     case ReadAction(database, table, _) => readAction(database, table)
     case WriteAction(database, table) => writeAction(database, table)
   }

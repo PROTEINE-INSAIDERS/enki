@@ -10,7 +10,7 @@ trait ActionModule {
 
   type SparkAction[A] = SparkSession => A
 
-  protected def dataAction[T: TypeTag](data: Seq[T]): SparkAction[Dataset[T]] = session =>
+  protected def datasetAction[T: TypeTag](data: Seq[T]): SparkAction[Dataset[T]] = session =>
     session.createDataset(data)(ExpressionEncoder())
 
   protected def readAction[T: TypeTag](database: Database, table: String): SparkAction[Dataset[T]] = session => {

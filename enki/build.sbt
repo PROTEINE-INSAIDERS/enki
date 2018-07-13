@@ -27,3 +27,8 @@ libraryDependencies ++= Seq(
 )
 
 addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.7" cross CrossVersion.binary)
+
+licenses += ("BSD-3-Clause", url("http://opensource.org/licenses/BSD-3-Clause"))
+publishMavenStyle := true
+publishArtifact := true
+publishArtifact in Test := false
