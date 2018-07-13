@@ -25,6 +25,9 @@ abstract class Database {
 
   /* syntactic sugar */
 
+  final def dataset[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
+    enki.dataset(data)
+
   final def read[T: TypeTag](tableName: String): Stage[Dataset[T]] =
     enki.read[T](this, tableName)
 
