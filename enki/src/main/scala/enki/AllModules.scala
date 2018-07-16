@@ -8,3 +8,4 @@ trait AllModules
     with DataFrameModule
     with DatasetModule
     with DocumentationModule
+    with SqlModule

@@ -1,5 +1,7 @@
 package enki
 
+import org.apache.spark.SparkContext
+
 trait GraphModule {
 
   import cats._
@@ -53,7 +55,10 @@ trait GraphModule {
       }
     }
 
-    def linearized: Seq[String] = graph.topologicalSort.right.get.toList.reverse.map(_.value)
+    def linearized: Seq[String] = graph.topologicalSort.fold(
+      cycleNode => throw new Exception(s"Circular dependency found at ${cycleNode.value}"),
+      order => order.toList.reverse.map(_.value)
+    )
 
     def runAll(implicit session: SparkSession): Unit = {
       validate()
