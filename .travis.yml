@@ -1,9 +1,10 @@
 language: scala
+
 scala:
    - 2.11.12
 
 script:
-  - sbt clean coverage test coverageReport &&
-    sbt coverageAggregate
+  - sbt clean coverage test coverageReport
+
 after_success:
-  - sbt coveralls
+  - bash <(curl -s https://codecov.io/bash)
