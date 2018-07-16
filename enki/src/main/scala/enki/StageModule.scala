@@ -15,11 +15,15 @@ trait StageModule {
   //но для этого надо понимать, является ли эта зависимость "внешней" или "внутренней".
   sealed trait StageAction[T]
 
-  final case class ReadAction[T](database: Database, table: String, dependencies: Set[String]) extends StageAction[Dataset[T]]
+  final case class ReadAction[T: TypeTag](database: Database, table: String, dependencies: Set[String]) extends StageAction[Dataset[T]] {
+    val tag: TypeTag[T] = implicitly
+  }
 
   final case class WriteAction[T](database: Database, table: String) extends StageAction[Dataset[T] => Unit]
 
-  final case class DatasetAction[T](data: Seq[T]) extends StageAction[Dataset[T]]
+  final case class DatasetAction[T: TypeTag](data: Seq[T]) extends StageAction[Dataset[T]] {
+    val tag: TypeTag[T] = implicitly
+  }
 
   type Stage[A] = FreeApplicative[StageAction, A]
 
@@ -36,9 +40,9 @@ trait StageModule {
     lift[StageAction, Dataset[T] => Unit](WriteAction(database, tableName))
 
   def stageCompiler: StageAction ~> SparkAction = λ[StageAction ~> SparkAction] {
-    case DatasetAction(data) => datasetAction(data)
-    case ReadAction(database, table, _) => readAction(database, table)
-    case WriteAction(database, table) => writeAction(database, table)
+    case action: DatasetAction[t] => datasetAction[t](action.data)(action.tag)
+    case action: ReadAction[t] => readAction[t](action.database, action.table)(action.tag)
+    case action: WriteAction[t] => writeAction(action.database, action.table)
   }
 
   def stageDependencies(stage: Stage[_]): Set[String] = {

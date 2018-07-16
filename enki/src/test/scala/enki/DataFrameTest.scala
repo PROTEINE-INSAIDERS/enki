@@ -1,11 +1,10 @@
-package enki.dataset
+package enki
 
-import enki.AllModules
 import enki.tests.EnkiSuite
 import org.apache.spark.sql.Row
 import org.scalatest.{Matchers, WordSpec}
 
-class SyntaxTest extends WordSpec with Matchers with EnkiSuite  {
+class DataFrameTest extends WordSpec with Matchers with EnkiSuite  {
   "diff" should {
     "format" in {
       import sparkSession.implicits._
