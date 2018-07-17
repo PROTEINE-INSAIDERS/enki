@@ -1,10 +1,13 @@
 package enki
 
+import java.sql.Struct
+
 import cats._
 import cats.implicits._
 import cats.free.FreeApplicative
 import cats.free.FreeApplicative._
 import org.apache.spark.sql._
+import org.apache.spark.sql.types._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -25,7 +28,12 @@ trait StageModule {
     val tag: TypeTag[T] = implicitly
   }
 
+  final case class DataFrameAction(rows: Seq[Row], schema: StructType) extends StageAction[DataFrame]
+
   type Stage[A] = FreeApplicative[StageAction, A]
+
+  def dataFrame(rows: Seq[Row], schema: StructType): Stage[DataFrame] =
+    lift[StageAction, DataFrame](DataFrameAction(rows, schema))
 
   def dataset[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
     lift[StageAction, Dataset[T]](DatasetAction(data))
@@ -43,6 +51,7 @@ trait StageModule {
     case action: DatasetAction[t] => datasetAction[t](action.data)(action.tag)
     case action: ReadAction[t] => readAction[t](action.database, action.table)(action.tag)
     case action: WriteAction[t] => writeAction(action.database, action.table)
+    case action: DataFrameAction => dataFrameAction(action.rows, action.schema)
   }
 
   def stageDependencies(stage: Stage[_]): Set[String] = {

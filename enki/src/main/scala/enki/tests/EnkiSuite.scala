@@ -5,7 +5,7 @@ import java.nio.file.Files
 
 import org.apache.spark.sql.SparkSession
 
-trait EnkiSuite extends AllModules {
+trait EnkiSuite {
   protected implicit lazy val sparkSession: SparkSession = {
     SparkSession
       .builder()

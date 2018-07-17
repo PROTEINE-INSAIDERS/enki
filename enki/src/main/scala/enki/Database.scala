@@ -1,10 +1,11 @@
 package enki
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.types.StructType
 
 import scala.reflect.runtime.universe.TypeTag
 
-abstract class Database {
+trait Database {
   def schema: String
 
   protected def saveMode: Option[SaveMode] = None
@@ -25,6 +26,9 @@ abstract class Database {
   }
 
   /* syntactic sugar */
+
+  final def dataFrame(rows: Seq[Row], schema: StructType): Stage[DataFrame] =
+    enki.dataFrame(rows, schema)
 
   final def dataset[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
     enki.dataset(data)
