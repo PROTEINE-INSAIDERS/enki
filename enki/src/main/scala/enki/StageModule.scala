@@ -1,15 +1,15 @@
 package enki
 
+import cats._
+import cats.implicits._
+import cats.free.FreeApplicative
+import cats.free.FreeApplicative._
+import org.apache.spark.sql._
+
+import scala.reflect.runtime.universe.TypeTag
+
 trait StageModule {
   this: ActionModule =>
-
-  import cats._
-  import cats.instances.all._
-  import cats.free.FreeApplicative
-  import cats.free.FreeApplicative._
-  import org.apache.spark.sql._
-
-  import scala.reflect.runtime.universe.TypeTag
 
   //TODO: возможно следует вычислять зависимости из ридера.
   //но для этого надо понимать, является ли эта зависимость "внешней" или "внутренней".
