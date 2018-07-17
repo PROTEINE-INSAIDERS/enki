@@ -85,4 +85,5 @@ trait DataFrameModule {
       DataFrameModule.this.nonUnique(dataFrame, col)
     }
   }
+
 }

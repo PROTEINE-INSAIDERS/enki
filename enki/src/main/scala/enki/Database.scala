@@ -1,6 +1,7 @@
 package enki
 
 import org.apache.spark.sql._
+
 import scala.reflect.runtime.universe.TypeTag
 
 abstract class Database {

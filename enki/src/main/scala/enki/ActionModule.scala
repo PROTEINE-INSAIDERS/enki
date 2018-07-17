@@ -1,12 +1,12 @@
 package enki
 
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.encoders._
+
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
+
 //TODO: возможно это следует объединить с функциональностью Database в одном модуле.
 trait ActionModule {
-
-  import org.apache.spark.sql._
-  import org.apache.spark.sql.catalyst.encoders._
-
-  import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
   type SparkAction[A] = SparkSession => A
 

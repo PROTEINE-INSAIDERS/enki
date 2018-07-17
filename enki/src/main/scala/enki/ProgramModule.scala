@@ -1,19 +1,18 @@
 package enki
 
+import cats._
+import cats.data._
+import cats.free.Free._
+import cats.free._
+import cats.implicits._
+import org.apache.spark.sql._
+import scalax.collection.Graph
+import scalax.collection.GraphPredef._
+
+import scala.reflect.runtime.universe.TypeTag
+
 trait ProgramModule {
   this: GraphModule =>
-
-  import cats._
-  import cats.implicits._
-  import cats.data._
-  import cats.free.Free._
-  import cats.free._
-  import cats.implicits._
-  import org.apache.spark.sql._
-  import scalax.collection.Graph
-  import scalax.collection.GraphPredef._
-
-  import scala.reflect.runtime.universe.TypeTag
 
   sealed trait ProgramAction[A]
 

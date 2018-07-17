@@ -24,12 +24,12 @@ class EnkiApp(name: String, header: String, actionGraph: ActionGraph) extends Co
       } map { actions =>
         actions.toList.foreach(actionGraph.runAction(_)(EnkiApp.session))
       }) orElse
-    Opts.subcommand(
-      name = "execAll",
-      help = "Execute all actions."
-    )(Opts {
-      actionGraph.runAll(EnkiApp.session)
-    })
+      Opts.subcommand(
+        name = "execAll",
+        help = "Execute all actions."
+      )(Opts {
+        actionGraph.runAll(EnkiApp.session)
+      })
   }
 )
 

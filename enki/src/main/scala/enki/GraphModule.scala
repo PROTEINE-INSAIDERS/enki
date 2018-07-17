@@ -1,14 +1,12 @@
 package enki
 
-import org.apache.spark.SparkContext
+import cats._
+import org.apache.spark.sql._
+import scalax.collection.Graph
+import scalax.collection.GraphEdge._
+import scalax.collection.GraphPredef._
 
 trait GraphModule {
-
-  import cats._
-  import org.apache.spark.sql._
-  import scalax.collection.Graph
-  import scalax.collection.GraphEdge._
-  import scalax.collection.GraphPredef._
 
   case class ActionGraph(graph: Graph[String, DiEdge], actions: Map[String, SparkAction[Unit]]) {
     private def checkActionExists(name: String): Unit = {
