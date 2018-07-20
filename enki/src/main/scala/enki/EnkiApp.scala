@@ -14,8 +14,8 @@ class EnkiApp(name: String, header: String, actionGraph: ActionGraph) extends Co
       actionGraph.linearized.foreach(println)
     }) orElse
       Opts.subcommand(
-        name = "exec",
-        help = "Execute action."
+        name = "run",
+        help = "Execute specified actions."
       )(Opts.arguments[String]("action").mapValidated { actions =>
         actions.filterNot(actionGraph.actions.contains) match {
           case Nil => Validated.valid(actions)
@@ -25,7 +25,7 @@ class EnkiApp(name: String, header: String, actionGraph: ActionGraph) extends Co
         actions.toList.foreach(actionGraph.runAction(_)(EnkiApp.session))
       }) orElse
       Opts.subcommand(
-        name = "execAll",
+        name = "runAll",
         help = "Execute all actions."
       )(Opts {
         actionGraph.runAll(EnkiApp.session)

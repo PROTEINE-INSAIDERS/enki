@@ -1,6 +1,6 @@
 package enki
 
-import org.apache.spark.sql.Encoder
+import org.apache.spark.sql._
 
 import scala.collection.immutable.Queue
 import scala.reflect.macros.whitebox
@@ -19,9 +19,9 @@ private class DatasetMacros(val c: whitebox.Context) {
 
   import c.universe._
 
-  def fromFunction[A: WeakTypeTag, B: WeakTypeTag, R: WeakTypeTag](selector: c.Expr[A => B])
-                                                                  (relation: c.Expr[ColumnTypeRelation[A, R]],
-                                                                   encoder: c.Expr[Encoder[R]]): Tree = {
+  def fromFunction[A: WeakTypeTag, B: WeakTypeTag, R: WeakTypeTag](selector: Expr[A => B])
+                                                                  (relation: Expr[ColumnTypeRelation[A, R]],
+                                                                   encoder: Expr[Encoder[R]]): Expr[TypedColumn[A, R]] = {
     def fail(tree: Tree) = {
       val err =
         s"Could not create a column identifier from $tree - try using _.a.b syntax"
@@ -38,9 +38,7 @@ private class DatasetMacros(val c: whitebox.Context) {
       // $COVERAGE-ON$
     }
 
-    val datasetCol = c.typecheck(q"${c.prefix}.dataset.col($selectorStr).as[$R]($encoder)")
-
-    c.typecheck(datasetCol)
+    c.Expr(q"${c.prefix}.dataset.col($selectorStr).as[$R]($encoder)")
   }
 
   case class NameExtractor(name: TermName) {

@@ -2,6 +2,7 @@ package enki
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 
 trait DataFrameModule {
   private val diffStatusColName = "diff_status"
@@ -11,32 +12,44 @@ trait DataFrameModule {
   private val oldValue = "old"
   private val newValue = "new"
 
-  def diff(original: DataFrame, `new`: DataFrame, keyColumns: Seq[String]): DataFrame = {
+  def diff(l: DataFrame,
+           r: DataFrame,
+           keyColumns: Seq[String],
+           withEpsilon: Boolean): DataFrame = {
 
-    val added = keyColumns.map(original(_).isNull).reduce(_ and _)
-    val removed = keyColumns.map(`new`(_).isNull).reduce(_ and _)
-
-    def diffStatus(l: Column, r: Column): Column =
-      when(added, addedStatus)
-        .when(removed, removedStatus)
-        .when(not(l <=> r), updatedStatus)
-
-    def colDiff(name: String): Column = struct(
-      original(name).as("old"),
-      `new`(name).as("new"),
-      diffStatus(original(name), `new`(name)).as(diffStatusColName)
-    )
+    val added = keyColumns.map(l(_).isNull).reduce(_ and _)
+    val removed = keyColumns.map(r(_).isNull).reduce(_ and _)
 
     //TODO: найти лучший способ работать с таблицами, у которых не совпадают схемы.
-    val columns = (original.schema.map(_.name).toSet intersect `new`.schema.map(_.name).toSet).toSeq
+    val columns = (l.schema.map(_.name).toSet intersect r.schema.map(_.name).toSet).toSeq
+
+    def floatSafeEq[T](l: Column, r: Column, e: T): Column =
+      (l.isNull && r.isNull) or not(abs(l - r) > e)
+
+    def different(name: String) = not(l.schema(name).dataType match {
+      case FloatType if withEpsilon => floatSafeEq(l(name), r(name), Float.MinPositiveValue)
+      case DoubleType if withEpsilon => floatSafeEq(l(name), r(name), Double.MinPositiveValue)
+      case _ => l(name) <=> r(name)
+    })
+
+    def colDiff(name: String): Column = struct(
+      l(name).as(oldValue),
+      r(name).as(newValue),
+      when(added, addedStatus)
+        .when(removed, removedStatus)
+        .when(not(l(name) <=> r(name)), updatedStatus).as(diffStatusColName)
+    )
 
     def rowStatus: Column =
       when(added, addedStatus)
         .when(removed, removedStatus)
-        .when(not(columns.map(col => original(col) <=> `new`(col)).foldLeft(lit(true))(_ and _)), updatedStatus)
+        .when(not(columns.map(col => l(col) <=> r(col)).foldLeft(lit(true))(_ and _)), updatedStatus)
 
-    original.join(`new`, keyColumns.map { c => original(c) === `new`(c) }.reduce(_ and _), "outer")
-      .select(rowStatus.as(diffStatusColName) +: columns.map(c => colDiff(c).as(c)): _*)
+    l
+      .join(r, keyColumns.map { c => l(c) === r(c) }.reduce(_ and _), "outer")
+      .select(columns.map(c => colDiff(c).as(c)): _*)
+      .withColumn(diffStatusColName, coalesce(columns.map(c => col(s"$c.$diffStatusColName")): _*))
+    // .select(rowStatus.as(diffStatusColName) +: columns.map(c => colDiff(c).as(c)): _*)
   }
 
   /**
@@ -73,8 +86,8 @@ trait DataFrameModule {
       *
       * "Current" dataset considered "original" or "left" in diff operation.
       */
-    def diff(other: DataFrame, keyColumns: Seq[String]): DataFrame = {
-      DataFrameModule.this.diff(dataFrame, other, keyColumns)
+    def diff(other: DataFrame, keyColumns: Seq[String], withEpsilon: Boolean = false): DataFrame = {
+      DataFrameModule.this.diff(dataFrame, other, keyColumns, withEpsilon)
     }
 
     def fillna(value: Any): DataFrame = {

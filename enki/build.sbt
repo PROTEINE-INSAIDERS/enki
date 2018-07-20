@@ -13,6 +13,8 @@ val framelessVersion = sparkVersion match {
 */
 val scalaGraphVersion = "1.12.5"
 val declineVersion = "0.4.2"
+val kindProjectorVersion = "0.9.6"
+val shapelessVersion = "2.3.3"
 
 scalacOptions += "-Ypartial-unification"
 
@@ -20,13 +22,13 @@ libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "cats-free" % catsVersion,
   "org.scala-graph" %% "graph-core" % scalaGraphVersion,
+  "com.monovore" %% "decline" % declineVersion,
+  "com.chuusai" %% "shapeless" % shapelessVersion,
   "org.apache.spark" %% "spark-core" % sparkVersion % Provided,
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
-  "com.monovore" %% "decline" % declineVersion,
-  "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+  "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
+  compilerPlugin("org.spire-math" % "kind-projector" % kindProjectorVersion cross CrossVersion.binary)
 )
-
-addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.7" cross CrossVersion.binary)
 
 licenses += ("BSD-3-Clause", url("http://opensource.org/licenses/BSD-3-Clause"))
 publishMavenStyle := true
