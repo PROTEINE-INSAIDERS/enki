@@ -47,9 +47,9 @@ trait ProgramModule {
     }
   }
 
-  def buildActionGraph(name: String, p: Program[Stage[Unit]]): ActionGraph = {
+  def buildActionGraph(rootName: String, p: Program[Stage[Unit]]): ActionGraph = {
     val (stages, lastStage) = p.foldMap(programSplitter).run
-    ((name, lastStage) :: stages)
+    ((rootName, lastStage) :: stages)
       .foldMap { case (name, stage) =>
         val action = stage.foldMap(stageCompiler)
         val dependencies = stageDependencies(stage)

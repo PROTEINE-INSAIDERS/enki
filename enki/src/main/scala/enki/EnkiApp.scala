@@ -8,7 +8,8 @@ class EnkiApp(name: String, header: String, actionGraph: ActionGraph) extends Co
   name = name,
   header = header,
   main = {
-    Opts.subcommand(name = "list",
+    Opts.subcommand(
+      name = "list",
       help = "List all actions."
     )(Opts {
       actionGraph.linearized.foreach(println)

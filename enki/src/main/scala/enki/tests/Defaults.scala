@@ -2,9 +2,10 @@ package enki.tests
 
 import java.sql.Timestamp
 
+import org.apache.spark.sql._
 import shapeless._
 
-trait DefaultsModule {
+trait Defaults {
 
   trait Default[A] {
     def default: A
@@ -56,4 +57,8 @@ trait DefaultsModule {
 
 
   def default[T: Default](implicit d: Default[T]): T = d.default
+
+  implicit class EnkiSessionDefaultsExtension(session: SparkSession) {
+    def createDataset[T: Default : Encoder](f: T => Seq[T]): Dataset[T] = session.createDataset[T](f(default[T]))
+  }
 }

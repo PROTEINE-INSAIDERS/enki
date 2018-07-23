@@ -1,7 +1,7 @@
 package enki
 package timestamp
 
-import java.sql.Timestamp
+import java.sql._
 import java.time._
 import java.time.temporal.ChronoUnit._
 
@@ -52,4 +52,5 @@ trait TimestampModule {
 
     def plusYears(years: Long): Timestamp = adjust(_.plusYears(years))
   }
+
 }

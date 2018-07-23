@@ -24,6 +24,7 @@ libraryDependencies ++= Seq(
   "org.scala-graph" %% "graph-core" % scalaGraphVersion,
   "com.monovore" %% "decline" % declineVersion,
   "com.chuusai" %% "shapeless" % shapelessVersion,
+  "com.propensive" %% "contextual" % "1.1.0",
   "org.apache.spark" %% "spark-core" % sparkVersion % Provided,
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
