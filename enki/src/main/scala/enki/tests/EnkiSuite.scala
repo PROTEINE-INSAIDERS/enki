@@ -10,7 +10,7 @@ trait EnkiSuite extends Defaults with ImplicitConversions {
     SparkSession
       .builder()
       .appName("enki-test")
-      .master("local")
+      .master(s"local[${Runtime.getRuntime.availableProcessors}]")
       .config("spark.sql.shuffle.partitions", Runtime.getRuntime.availableProcessors)
       .config("spark.sql.warehouse.dir", Files.createTempDirectory("spark-warehouse").toUri.toString)
       .getOrCreate()
