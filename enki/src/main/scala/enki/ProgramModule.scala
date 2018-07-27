@@ -42,7 +42,7 @@ trait ProgramModule {
       for {
         _ <- List((stageName, stage)).tell
       } yield {
-        read[t](p.database, p.tableName, stageName)(p.tag)
+        read[t](p.database, p.tableName, false, stageName)(p.tag)
       }
     }
   }
