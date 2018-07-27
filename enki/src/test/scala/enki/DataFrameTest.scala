@@ -4,7 +4,7 @@ import enki.tests.EnkiSuite
 import org.apache.spark.sql.Row
 import org.scalatest.{Matchers, WordSpec}
 
-class DataFrameTest extends WordSpec with Matchers with EnkiSuite {
+class DataFrameTest extends WordSpec with Matchers with SilentEnkiSuite {
   "diff" should {
     "format" in {
       import sparkSession.implicits._

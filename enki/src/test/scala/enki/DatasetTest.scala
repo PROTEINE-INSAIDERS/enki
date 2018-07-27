@@ -7,7 +7,7 @@ import org.scalatest._
 
 import scala.beans.BeanProperty
 
-class DatasetTest extends WordSpec with Matchers with EnkiSuite {
+class DatasetTest extends WordSpec with Matchers with SilentEnkiSuite {
   "col" should {
     "resolve column by field accessor" in {
       import sparkSession.implicits._
