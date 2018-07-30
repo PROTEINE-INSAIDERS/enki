@@ -12,28 +12,45 @@ case class EnkiApp(
   name = name,
   header = header,
   main = {
-    Opts.subcommand(
+    val list = Opts.subcommand(
       name = "list",
-      help = "List all actions."
+      help = "List all stages."
     )(Opts {
       actionGraph.linearized.foreach(println)
-    }) orElse
-      Opts.subcommand(
-        name = "run",
-        help = "Execute specified actions."
-      )(Opts.arguments[String]("action").mapValidated { actions =>
-        actions.filterNot(actionGraph.actions.contains) match {
-          case Nil => Validated.valid(actions)
-          case missing => Validated.invalidNel(s"Action(s) ${missing.mkString(", ")} not found!")
-        }
-      } map { actions =>
-        actions.toList.foreach(actionGraph.runAction(_)(session))
-      }) orElse
-      Opts.subcommand(
-        name = "runAll",
-        help = "Execute all actions."
-      )(Opts {
-        actionGraph.runAll(session)
-      })
+    })
+
+    val run = Opts.subcommand(
+      name = "run",
+      help = "Execute specified stage."
+    )(Opts.arguments[String]("stage").mapValidated { stages =>
+      stages.filterNot(actionGraph.actions.contains) match {
+        case Nil => Validated.valid(stages)
+        case missing => Validated.invalidNel(s"Stages(s) ${missing.mkString(", ")} not found!")
+      }
+    } map { stage =>
+      stage.toList.foreach(actionGraph.runAction(_)(session))
+    })
+
+    val runAll = Opts.subcommand(
+      name = "runAll",
+      help = "Execute all stages."
+    )(Opts {
+      actionGraph.runAll(session)
+    })
+
+    val resume = Opts.subcommand(
+      name = "resume",
+      help = "Resume computation from specified stage."
+    )(Opts.argument[String]("action").mapValidated { stage =>
+      if (actionGraph.actions.contains(stage)) {
+        Validated.valid(stage)
+      } else {
+        Validated.invalidNel(s"Stage $stage not found!")
+      }
+    } map { stage =>
+      actionGraph.linearized.dropWhile(_ != stage).foreach(actionGraph.runAction(_)(session))
+    })
+
+    list orElse resume orElse run orElse runAll
   }
 )

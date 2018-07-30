@@ -20,6 +20,9 @@ trait ActionModule {
 
   protected def readAction[T: TypeTag](database: Database, tableName: String, restricted: Boolean): SparkAction[Dataset[T]] = session => {
     if (typeOf[T] == typeOf[Row]) {
+      if (restricted) {
+        throw new Exception("Unable to restrict schema for generic type Row.")
+      }
       database.readTable(session, tableName).asInstanceOf[Dataset[T]]
     }
     else {
