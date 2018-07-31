@@ -1,6 +1,5 @@
 import enki._
 import org.apache.spark.sql._
-import org.apache.log4j._
 
 object Main extends EnkiApp(
   name = "tutorial",

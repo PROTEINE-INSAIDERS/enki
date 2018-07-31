@@ -8,7 +8,7 @@ import scalax.collection.GraphPredef._
 
 trait GraphModule {
 
-  case class ActionGraph(graph: Graph[String, DiEdge], actions: Map[String, SparkAction[Unit]]) {
+  case class ActionGraph(graph: Graph[String, DiEdge], actions: Map[String, SparkAction[_]]) {
     private def checkActionExists(name: String): Unit = {
       if (!actions.contains(name)) {
         throw new Exception(s"Action $name not found.")
@@ -25,11 +25,11 @@ trait GraphModule {
       }
     }
 
-    def addAction(name: String, action: SparkAction[Unit]): ActionGraph = {
+    def addAction(name: String, action: SparkAction[_]): ActionGraph = {
       copy(actions = actions + (name -> action))
     }
 
-    def addAction(name: String, action: SparkAction[Unit], dependsOn: String*): ActionGraph = {
+    def addAction(name: String, action: SparkAction[_], dependsOn: String*): ActionGraph = {
       copy(actions = actions + (name -> action), graph = graph ++ dependsOn.map(name ~> _))
     }
 
@@ -65,7 +65,7 @@ trait GraphModule {
   }
 
   implicit val actionGraphMonoid: Monoid[ActionGraph] = new Monoid[ActionGraph] {
-    override def empty: ActionGraph = ActionGraph(Graph.empty[String, DiEdge], Map.empty[String, SparkAction[Unit]])
+    override def empty: ActionGraph = ActionGraph(Graph.empty[String, DiEdge], Map.empty[String, SparkAction[_]])
 
     override def combine(x: ActionGraph, y: ActionGraph): ActionGraph = ActionGraph(x.graph ++ y.graph, x.actions ++ y.actions)
   }

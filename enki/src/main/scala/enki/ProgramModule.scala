@@ -30,7 +30,7 @@ trait ProgramModule {
       stage,
       database))
 
-  type StageWriter[A] = Writer[List[(String, Stage[Unit])], A]
+  type StageWriter[A] = Writer[List[(String, Stage[_])], A]
 
   val programSplitter: ProgramAction ~> StageWriter = λ[ProgramAction ~> StageWriter] {
     case p: PersistAction[t] => {
@@ -40,14 +40,14 @@ trait ProgramModule {
       val stageName = s"${p.database.schema}.${p.tableName}"
       val stage = p.stage ap write[t](p.database, p.tableName)
       for {
-        _ <- List((stageName, stage)).tell
+        _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
       } yield {
         read[t](p.database, p.tableName, false, stageName)(p.tag)
       }
     }
   }
 
-  def buildActionGraph(rootName: String, p: Program[Stage[Unit]]): ActionGraph = {
+  def buildActionGraph[T](rootName: String, p: Program[Stage[T]]): ActionGraph = {
     val (stages, lastStage) = p.foldMap(programSplitter).run
     ((rootName, lastStage) :: stages)
       .foldMap { case (name, stage) =>
