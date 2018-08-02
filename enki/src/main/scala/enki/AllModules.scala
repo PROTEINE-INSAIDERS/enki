@@ -9,3 +9,4 @@ trait AllModules
     with DatasetModule
     with DocumentationModule
     with SqlModule
+with ApplicationModule
