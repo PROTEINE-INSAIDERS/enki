@@ -28,14 +28,14 @@ case class EnkiApp(
         case missing => Validated.invalidNel(s"Stages(s) ${missing.mkString(", ")} not found!")
       }
     } map { stage =>
-      stage.toList.foreach(actionGraph.runAction(_)(session))
+      stage.toList.foreach { stageName => actionGraph.runAction(stageName, session, stageCompiler) }
     })
 
     val runAll = Opts.subcommand(
       name = "runAll",
       help = "Execute all stages."
     )(Opts {
-      actionGraph.runAll(session)
+      actionGraph.runAll(session, _ => stageCompiler)
     })
 
     val resume = Opts.subcommand(
@@ -48,7 +48,7 @@ case class EnkiApp(
         Validated.invalidNel(s"Stage $stage not found!")
       }
     } map { stage =>
-      actionGraph.linearized.dropWhile(_ != stage).foreach(actionGraph.runAction(_)(session))
+      actionGraph.resume(stage, session, _ => stageCompiler)
     })
 
     list orElse resume orElse run orElse runAll
