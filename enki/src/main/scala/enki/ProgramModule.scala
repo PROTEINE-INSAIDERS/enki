@@ -16,6 +16,7 @@ trait ProgramModule {
 
   sealed trait ProgramAction[A]
 
+  //TODO: тут нужен ридер и райтер. их может предоставить база данных.
   final case class PersistAction[T: TypeTag](tableName: String,
                                              stage: Stage[Dataset[T]],
                                              database: Database) extends ProgramAction[Stage[Dataset[T]]] {

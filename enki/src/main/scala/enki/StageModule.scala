@@ -1,15 +1,13 @@
 package enki
 
-import java.sql.Struct
-
 import cats._
-import cats.implicits._
 import cats.free.FreeApplicative
 import cats.free.FreeApplicative._
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.types._
 
-import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
 trait StageModule {
   this: ActionModule =>
@@ -18,7 +16,12 @@ trait StageModule {
   //но для этого надо понимать, является ли эта зависимость "внешней" или "внутренней".
   sealed trait StageAction[T]
 
-  final case class ReadAction[T: TypeTag](database: Database, table: String, restricted: Boolean, dependencies: Set[String]) extends StageAction[Dataset[T]] {
+  final case class ReadAction[T: TypeTag](reader: (SparkSession, String, String) => DataFrame,
+                                          schemaName: String,
+                                          tableName: String,
+                                          restricted: Boolean,
+                                          dependencies: Set[String]
+                                         ) extends StageAction[Dataset[T]] {
     val tag: TypeTag[T] = implicitly
   }
 
@@ -38,21 +41,39 @@ trait StageModule {
   def dataset[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
     lift[StageAction, Dataset[T]](DatasetAction(data))
 
-  //TODO: нам тут не нужно много смарт-конструкторов, поскольку эти функции будут использоваться только в библиотеке,
-  // а весь сахар для пользователей определен на Database.
-  def read[T: TypeTag](database: Database, tableName: String, restricted: Boolean): Stage[Dataset[T]] =
-    lift[StageAction, Dataset[T]](ReadAction(database, tableName, restricted, Set.empty))
-
-  def read[T: TypeTag](database: Database, tableName: String, restricted: Boolean, dependency: String): Stage[Dataset[T]] =
-    lift[StageAction, Dataset[T]](ReadAction(database, tableName, restricted, Set(dependency)))
+  def read[T: TypeTag](reader: (SparkSession, String, String) => DataFrame,
+                       schemaName: String,
+                       tableName: String,
+                       restricted: Boolean,
+                       dependencies: Set[String]): Stage[Dataset[T]] =
+    lift[StageAction, Dataset[T]](ReadAction(reader, schemaName, tableName, restricted, Set.empty))
 
   def write[T](database: Database, tableName: String): Stage[Dataset[T] => Unit] =
     lift[StageAction, Dataset[T] => Unit](WriteAction(database, tableName))
 
   def stageCompiler: StageAction ~> SparkAction = λ[StageAction ~> SparkAction] {
     case action: DatasetAction[t] => datasetAction[t](action.data)(action.tag)
-    case action: ReadAction[t] => readAction[t](action.database, action.table, action.restricted)(action.tag)
+
+    case action: ReadAction[t] => session: SparkSession => {
+      if (typeOf[t] == typeOf[Row]) {
+        if (action.restricted) {
+          throw new Exception("Unable to restrict schema for generic type Row.")
+        }
+        action.reader(session, action.schemaName, action.tableName).asInstanceOf[Dataset[t]]
+      }
+      else {
+        val encoder = ExpressionEncoder[t]
+        val table = action.reader(session, action.schemaName, action.tableName)
+        if (action.restricted) {
+          table.select(encoder.schema.map(f => table(f.name)): _*).as[t](encoder)
+        } else {
+          table.as[t](encoder)
+        }
+      }
+    }
+
     case action: WriteAction[t] => writeAction(action.database, action.table)
+
     case action: DataFrameAction => dataFrameAction(action.rows, action.schema)
   }
 

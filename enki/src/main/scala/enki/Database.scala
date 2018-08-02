@@ -14,7 +14,7 @@ trait Database {
     s"$schema.$tableName"
   }
 
-  def readTable(session: SparkSession, tableName: String): DataFrame = {
+  protected def readTable(session: SparkSession, schemaName: String, tableName: String): DataFrame = {
     session.table(qualifiedTableName(tableName))
   }
 
@@ -34,7 +34,7 @@ trait Database {
     enki.dataset(data)
 
   final def read[T: TypeTag](tableName: String, restricted: Boolean = false): Stage[Dataset[T]] =
-    enki.read[T](this, tableName, restricted)
+    enki.read[T](readTable, schema, tableName, restricted, Set.empty)
 
   final def persist[T: TypeTag](tableName: String, stage: Stage[Dataset[T]]): Program[Stage[Dataset[T]]] =
     enki.persist[T](this, tableName, stage)
