@@ -1,14 +1,8 @@
 package enki
 
 import cats.implicits._
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.internal.StaticSQLConf
-import org.apache.spark.sql.types.{DecimalType, StructField, StructType}
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.GraphPredef._
-
-case class TestData(a: BigDecimal)
 
 class ProgramTest extends EnkiTestSuite {
   "buildActionGraph" should {
@@ -41,34 +35,4 @@ class ProgramTest extends EnkiTestSuite {
       g.actions.keys.toSeq shouldBe Seq("default.a")
     }
   }
-  /*
-
-"test_test" in {
-
-
-
-  val customSchema = StructType(Seq(StructField(
-    name = "a",
-    dataType = DecimalType(38, 12)
-  )))
-
-  val aa = sparkSession.createDataFrame(sparkSession.sparkContext.emptyRDD[Row], customSchema )
-  val encoder =  ExpressionEncoder[TestData]().copy(schema = customSchema )
-  println(encoder)
-
-
-  aa.write.saveAsTable("testTable")
-
-   val table = sparkSession.table("testTable")
-
-  //println(s"=== pure schema: ${table.schema}")
-
-  val converted = table.as[TestData](encoder)
-
-  println(s"=== converted schema: ${converted.schema}")
-
-  // b.show()
-
-}
-*/
 }
