@@ -1,12 +1,12 @@
 package enki
 
 trait AllModules
-  extends ActionModule
-    with StageModule
+  extends StageModule
     with GraphModule
     with ProgramModule
     with DataFrameModule
     with DatasetModule
     with DocumentationModule
     with SqlModule
-with ApplicationModule
+    with ApplicationModule
+    with ConfigurationModule

@@ -8,22 +8,11 @@ import scala.reflect.runtime.universe.TypeTag
 trait Database {
   def schema: String
 
+  //TODO: у нас имеются несколько уровней настройки параметров сохранения: таблица <- база данных <- параметры спарка по-умолчанию.
+  // на каждом из уровней должна быть возможность перегрузить настройки, либо унаследовать их. Возможно для этого
+  // подойдёт HList. Если настройка присутсвует в HList-e, берем её, иначе наследуем (HList обеспечивает строгую типизацию
+  // по сравнению со словарём, с другой стороны иных преимуществ он не даёт).
   protected def saveMode: Option[SaveMode] = None
-
-  protected def qualifiedTableName(tableName: String): String = {
-    s"$schema.$tableName"
-  }
-
-  protected def readTable(session: SparkSession, schemaName: String, tableName: String): DataFrame = {
-    session.table(qualifiedTableName(tableName))
-  }
-
-  def writeTable(tableName: String, data: DataFrame): Unit = {
-    val writer = data.write
-
-    saveMode.foreach(writer.mode)
-    writer.saveAsTable(qualifiedTableName(tableName))
-  }
 
   /* syntactic sugar */
 
@@ -34,8 +23,8 @@ trait Database {
     enki.dataset(data)
 
   final def read[T: TypeTag](tableName: String, restricted: Boolean = false): Stage[Dataset[T]] =
-    enki.read[T](readTable, schema, tableName, restricted, Set.empty)
+    enki.read[T](schema, tableName, restricted)
 
-  final def persist[T: TypeTag](tableName: String, stage: Stage[Dataset[T]]): Program[Stage[Dataset[T]]] =
-    enki.persist[T](this, tableName, stage)
+  final def persist[T: TypeTag](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false): Program[Stage[Dataset[T]]] =
+    enki.persist(schema, tableName, stage, strict, saveMode)
 }

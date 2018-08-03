@@ -69,13 +69,6 @@ trait GraphModule {
     }
   }
 
-  object ActionGraph {
-    def apply(name: String, stage: Stage[_]): ActionGraph = {
-      val dependencies = stageDependencies(stage)
-      ActionGraph(Graph(dependencies.toSeq.map(name ~> _): _*), Map(name -> stage))
-    }
-  }
-
   implicit val actionGraphMonoid: Monoid[ActionGraph] = new Monoid[ActionGraph] {
     override def empty: ActionGraph = ActionGraph(Graph.empty[String, DiEdge], Map.empty[String, Stage[_]])
 
