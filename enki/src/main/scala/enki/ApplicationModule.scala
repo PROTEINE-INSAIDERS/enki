@@ -36,7 +36,7 @@ trait ApplicationModule {
         case missing => Validated.invalidNel(s"Stages(s) ${missing.mkString(", ")} not found!")
       }
     } map { stage =>
-      stage.toList.foreach(actionGraph.runAction(_)(session))
+      stage.toList.foreach { stageName => actionGraph.runAction(stageName, session, stageCompiler) }
     })
 
     protected def resume: Opts[Unit] = Opts.subcommand(
@@ -49,7 +49,7 @@ trait ApplicationModule {
         Validated.invalidNel(s"Stage $stage not found!")
       }
     } map { stage =>
-      actionGraph.linearized.dropWhile(_ != stage).foreach(actionGraph.runAction(_)(session))
+      actionGraph.resume(stage, session, _ => stageCompiler)
     })
 
     protected def runAll: Opts[Unit] = Opts.subcommand(
