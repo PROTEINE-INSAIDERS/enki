@@ -49,8 +49,8 @@ object SourceDatabase extends Database {
       Purchase(id = 2, client_id = 2, product_id = 2, date = timestamp"1919-09-05", 8)
     ))
 
-    writeTable("client", clients.toDF)
-    writeTable("product", products.toDF)
-    writeTable("purchase", purchases.toDF)
+    clients.write.saveAsTable(s"$schema.client")
+    products.write.saveAsTable(s"$schema.product")
+    purchases.write.saveAsTable(s"$schema.purchase")
   }
 }
