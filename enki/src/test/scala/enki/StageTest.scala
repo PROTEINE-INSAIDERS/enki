@@ -1,5 +1,6 @@
 package enki
 
+import cats.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
@@ -14,8 +15,8 @@ class StageTest extends EnkiTestSuite {
       val schema = StructType(Array(StructField(name = "a", dataType = DecimalType(38, 12))))
 
       sparkSession.sqlContext.createDataFrame(Seq(Row(BigDecimal(10))), schema).write.saveAsTable("default.DecimalPrecisionTestData")
-      val ra = new ReadAction[DecimalPrecisionTestData](schemaName = "default", tableName = "DecimalPrecisionTestData", strict = true)
-      ra(sparkSession).collect() shouldBe Array(DecimalPrecisionTestData(a = BigDecimal(10)))
+      val r = enki.read[DecimalPrecisionTestData](schemaName = "default", tableName = "DecimalPrecisionTestData", strict = true)
+      r.foldMap(stageCompiler).apply(sparkSession).collect() shouldBe Array(DecimalPrecisionTestData(a = BigDecimal(10)))
     }
   }
 }
