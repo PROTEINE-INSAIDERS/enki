@@ -22,8 +22,8 @@ trait Database {
   final def dataset[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
     enki.dataset(data)
 
-  final def read[T: TypeTag](tableName: String, restricted: Boolean = false): Stage[Dataset[T]] =
-    enki.read[T](schema, tableName, restricted)
+  final def read[T: TypeTag](tableName: String, strict: Boolean = false): Stage[Dataset[T]] =
+    enki.read[T](schema, tableName, strict)
 
   final def persist[T: TypeTag](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false): Program[Stage[Dataset[T]]] =
     enki.persist(schema, tableName, stage, strict, saveMode)

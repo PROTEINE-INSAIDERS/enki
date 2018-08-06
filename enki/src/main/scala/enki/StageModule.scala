@@ -5,16 +5,11 @@ import cats.free.FreeApplicative
 import cats.free.FreeApplicative._
 import cats.implicits._
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.encoders._
-import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.objects.StaticInvoke
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
-import scala.reflect.runtime.currentMirror
 import scala.reflect.runtime.universe._
-import scala.tools.reflect.ToolBox
 
 trait StageModule {
 
@@ -27,68 +22,6 @@ trait StageModule {
                                            tableName: String,
                                            strict: Boolean
                                          ) extends StageAction[Dataset[T]] {
-    private lazy val toolbox = currentMirror.mkToolBox()
-
-    private lazy val expressionEncoder: ExpressionEncoder[T] = ExpressionEncoder[T]()
-
-    //TODO: move to metadata module??
-    private lazy val bigDecimalReplacements: Map[String, DecimalType] = {
-      def instantiate(annotation: Annotation): Any = {
-        toolbox.eval(toolbox.untypecheck(annotation.tree))
-      }
-
-      symbolOf[T].asClass.primaryConstructor.typeSignature.paramLists.head
-        .map { symbol =>
-          symbol.name.toString -> symbol.annotations.filter(_.tree.tpe <:< typeOf[decimalPrecision]).map(instantiate(_).asInstanceOf[decimalPrecision])
-        }
-        .flatMap {
-          case (name, a :: Nil) => Some((name, DecimalType(a.precision, a.scale)))
-          case (_, Nil) => None
-          case (name, _) => throw new Exception(s"Multiple ${typeOf[decimalPrecision]} annotation applied to $name.")
-        }.toMap
-    }
-
-    //TODO: support nested classes.
-    private lazy val strictEncoder: ExpressionEncoder[T] = {
-      val schema = StructType(expressionEncoder.schema.map {
-        case f: StructField if bigDecimalReplacements.contains(f.name) => f.copy(dataType = bigDecimalReplacements(f.name))
-        case other => other
-      })
-
-      val serializer = expressionEncoder.serializer.map {
-        case a: Alias if bigDecimalReplacements.contains(a.name) =>
-          a.transform {
-            case s: StaticInvoke =>
-              s.copy(dataType = bigDecimalReplacements(a.name))
-          }
-        case other => other
-      }
-
-      val deserializer = expressionEncoder.deserializer.transform {
-        case u@UpCast(a@UnresolvedAttribute(_), _, _) if bigDecimalReplacements.contains(a.name) =>
-          u.copy(dataType = bigDecimalReplacements(a.name))
-      }
-
-      expressionEncoder.copy(schema = schema, serializer = serializer, deserializer = deserializer)
-    }
-
-    private[enki] def apply(session: SparkSession): Dataset[T] = {
-      if (typeOf[T] == typeOf[Row]) {
-        if (strict) {
-          throw new Exception("Unable to restrict schema for generic type Row.")
-        }
-        session.table(s"$schemaName.$tableName").asInstanceOf[Dataset[T]]
-      }
-      else {
-        val table = session.table(s"$schemaName.$tableName")
-        if (strict) {
-          table.select(strictEncoder.schema.map(f => table(f.name)): _*).as[T](strictEncoder)
-        } else {
-          table.as[T](expressionEncoder)
-        }
-      }
-    }
-
     def tag: TypeTag[T] = implicitly
   }
 
@@ -115,9 +48,9 @@ trait StageModule {
   def read[T: TypeTag](
                         schemaName: String,
                         tableName: String,
-                        restricted: Boolean
+                        strict: Boolean
                       ): Stage[Dataset[T]] =
-    lift[StageAction, Dataset[T]](ReadAction(schemaName, tableName, restricted))
+    lift[StageAction, Dataset[T]](ReadAction(schemaName, tableName, strict))
 
   def write[T](
                 schemaName: String,
@@ -130,7 +63,8 @@ trait StageModule {
     case action: DatasetAction[t] => session: SparkSession =>
       session.createDataset(action.data)(ExpressionEncoder()(action.tag))
 
-    case action: ReadAction[t] => action(_)
+    case action: ReadAction[t] => session: SparkSession =>
+      session.table(s"${action.schemaName}.${action.tableName}").cast[t](action.strict)(action.tag)
 
     case action: WriteAction[t] => _: SparkSession =>
       (dataset: Dataset[t]) => {
