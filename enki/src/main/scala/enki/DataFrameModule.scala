@@ -1,8 +1,16 @@
 package enki
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.analysis._
+import org.apache.spark.sql.catalyst.encoders._
+import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.objects._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+
+import scala.reflect.runtime.currentMirror
+import scala.reflect.runtime.universe._
+import scala.tools.reflect.ToolBox
 
 trait DataFrameModule {
   private val diffStatusColName = "diff_status"
@@ -81,6 +89,60 @@ trait DataFrameModule {
   }
 
   implicit class DataFrameExtensions(dataFrame: DataFrame) {
+    def cast[T: TypeTag](strict: Boolean): Dataset[T] = {
+      //TODO: move to module level?
+      if (typeOf[T] == typeOf[Row]) {
+        if (strict) {
+          throw new Exception("Unable to restrict schema for generic type Row.")
+        }
+        dataFrame.asInstanceOf[Dataset[T]]
+      } else {
+        val expressionEncoder: ExpressionEncoder[T] = ExpressionEncoder[T]()
+        if (strict) {
+          val toolbox = currentMirror.mkToolBox()
+
+          def instantiate(annotation: Annotation): Any = {
+            toolbox.eval(toolbox.untypecheck(annotation.tree))
+          }
+
+          val bigDecimalReplacements = symbolOf[T].asClass.primaryConstructor.typeSignature.paramLists.head
+            .map { symbol =>
+              symbol.name.toString -> symbol.annotations.filter(_.tree.tpe <:< typeOf[decimalPrecision]).map(instantiate(_).asInstanceOf[decimalPrecision])
+            }
+            .flatMap {
+              case (name, a :: Nil) => Some((name, DecimalType(a.precision, a.scale)))
+              case (_, Nil) => None
+              case (name, _) => throw new Exception(s"Multiple ${typeOf[decimalPrecision]} annotations applied to $name.")
+            }.toMap
+
+          val schema = StructType(expressionEncoder.schema.map {
+            case f: StructField if bigDecimalReplacements.contains(f.name) => f.copy(dataType = bigDecimalReplacements(f.name))
+            case other => other
+          })
+
+          val serializer = expressionEncoder.serializer.map {
+            case a: Alias if bigDecimalReplacements.contains(a.name) =>
+              a.transform {
+                case s: StaticInvoke =>
+                  s.copy(dataType = bigDecimalReplacements(a.name))
+              }
+            case other => other
+          }
+
+          val deserializer = expressionEncoder.deserializer.transform {
+            case u@UpCast(a@UnresolvedAttribute(_), _, _) if bigDecimalReplacements.contains(a.name) =>
+              u.copy(dataType = bigDecimalReplacements(a.name))
+          }
+
+          val strictEncoder = expressionEncoder.copy(schema = schema, serializer = serializer, deserializer = deserializer)
+
+          dataFrame.select(strictEncoder.schema.map(f => dataFrame(f.name)): _*).as[T](strictEncoder)
+        } else {
+          dataFrame.as[T](expressionEncoder)
+        }
+      }
+    }
+
     /**
       * Diff current dataset against other.
       *

@@ -9,7 +9,7 @@ import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
-import scala.reflect.runtime.universe.{TypeTag, typeOf}
+import scala.reflect.runtime.universe._
 
 trait StageModule {
 
@@ -22,7 +22,7 @@ trait StageModule {
                                            tableName: String,
                                            strict: Boolean
                                          ) extends StageAction[Dataset[T]] {
-    val tag: TypeTag[T] = implicitly
+    def tag: TypeTag[T] = implicitly
   }
 
   final case class WriteAction[T](
@@ -48,9 +48,9 @@ trait StageModule {
   def read[T: TypeTag](
                         schemaName: String,
                         tableName: String,
-                        restricted: Boolean
+                        strict: Boolean
                       ): Stage[Dataset[T]] =
-    lift[StageAction, Dataset[T]](ReadAction(schemaName, tableName, restricted))
+    lift[StageAction, Dataset[T]](ReadAction(schemaName, tableName, strict))
 
   def write[T](
                 schemaName: String,
@@ -63,24 +63,8 @@ trait StageModule {
     case action: DatasetAction[t] => session: SparkSession =>
       session.createDataset(action.data)(ExpressionEncoder()(action.tag))
 
-    case action: ReadAction[t] => session: SparkSession => {
-      if (action.tag.tpe == typeOf[Row]) {
-        if (action.strict) {
-          throw new Exception("Unable to restrict schema for generic type Row.")
-        }
-        session.table(s"${action.schemaName}.${action.tableName}").asInstanceOf[Dataset[t]]
-      }
-      else {
-        val encoder = ExpressionEncoder[t]()(action.tag)
-        val table = session.table(s"${action.schemaName}.${action.tableName}")
-        if (action.strict) {
-          //TODO: здесь можно добавить некоторые преобразования на основании метаданных.
-          table.select(encoder.schema.map(f => table(f.name)): _*).as[t](encoder)
-        } else {
-          table.as[t](encoder)
-        }
-      }
-    }
+    case action: ReadAction[t] => session: SparkSession =>
+      session.table(s"${action.schemaName}.${action.tableName}").cast[t](action.strict)(action.tag)
 
     case action: WriteAction[t] => _: SparkSession =>
       (dataset: Dataset[t]) => {
