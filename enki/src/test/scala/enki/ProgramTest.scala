@@ -32,7 +32,7 @@ class ProgramTest extends EnkiTestSuite {
       } yield ().pure[Stage]
 
       val g = buildActionGraph("root", p)
-      g.actions.keys.toSeq shouldBe Seq("default.a")
+      g.stages.keys.toSeq shouldBe Seq("default.a")
     }
   }
 }

@@ -1,9 +1,7 @@
 package enki
 
-import enki.tests.EnkiSuite
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
-import org.scalatest._
 
 import scala.beans.BeanProperty
 
@@ -31,7 +29,7 @@ class DatasetTest extends EnkiTestSuite {
     }
 
     "support java beans" in {
-      import  sparkSession.implicits._
+      import sparkSession.implicits._
       class Bean {
         @BeanProperty var field1: Int = 0
         @BeanProperty var field2: Boolean = false

@@ -3,6 +3,7 @@ package enki
 import cats._
 
 trait ConfigurationModule {
+  //TODO: следует ли добавить информацию о том, читается данная таблица, записывается, или оба варианта.
   def tableNameMapper(f: (String, String) => (String, String)): StageAction ~> StageAction = λ[StageAction ~> StageAction] {
     case read: ReadAction[t] =>
       val (schemaName, tableName) = f(read.schemaName, read.tableName)

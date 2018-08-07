@@ -40,7 +40,7 @@ trait ApplicationModule {
       name = "resume",
       help = "Resume computation from specified stage."
     )(Opts.argument[String]("action").mapValidated { stage =>
-      if (actionGraph.actions.contains(stage)) {
+      if (actionGraph.stages.contains(stage)) {
         Validated.valid(stage)
       } else {
         Validated.invalidNel(s"Stage $stage not found!")
@@ -53,7 +53,7 @@ trait ApplicationModule {
       name = "run",
       help = "Execute specified stage."
     )(Opts.arguments[String]("stage").mapValidated { stages =>
-      stages.filterNot(actionGraph.actions.contains) match {
+      stages.filterNot(actionGraph.stages.contains) match {
         case Nil => Validated.valid(stages)
         case missing => Validated.invalidNel(s"Stages(s) ${missing.mkString(", ")} not found!")
       }

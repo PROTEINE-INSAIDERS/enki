@@ -34,12 +34,6 @@ trait DataFrameModule {
     def floatSafeEq[T](l: Column, r: Column, e: T): Column =
       (l.isNull && r.isNull) or not(abs(l - r) > e)
 
-    def different(name: String) = not(l.schema(name).dataType match {
-      case FloatType if withEpsilon => floatSafeEq(l(name), r(name), Float.MinPositiveValue)
-      case DoubleType if withEpsilon => floatSafeEq(l(name), r(name), Double.MinPositiveValue)
-      case _ => l(name) <=> r(name)
-    })
-
     def colDiff(name: String): Column = struct(
       l(name).as(oldValue),
       r(name).as(newValue),
@@ -48,16 +42,10 @@ trait DataFrameModule {
         .when(not(l(name) <=> r(name)), updatedStatus).as(diffStatusColName)
     )
 
-    def rowStatus: Column =
-      when(added, addedStatus)
-        .when(removed, removedStatus)
-        .when(not(columns.map(col => l(col) <=> r(col)).foldLeft(lit(true))(_ and _)), updatedStatus)
-
     l
       .join(r, keyColumns.map { c => l(c) === r(c) }.reduce(_ and _), "outer")
       .select(columns.map(c => colDiff(c).as(c)): _*)
       .withColumn(diffStatusColName, coalesce(columns.map(c => col(s"$c.$diffStatusColName")): _*))
-    // .select(rowStatus.as(diffStatusColName) +: columns.map(c => colDiff(c).as(c)): _*)
   }
 
   /**
@@ -105,9 +93,11 @@ trait DataFrameModule {
             toolbox.eval(toolbox.untypecheck(annotation.tree))
           }
 
-          val bigDecimalReplacements = symbolOf[T].asClass.primaryConstructor.typeSignature.paramLists.head
+          val bigDecimalReplacements = symbolOf[T].asClass.primaryConstructor.typeSignature.paramLists.headOption.getOrElse(Nil)
             .map { symbol =>
-              symbol.name.toString -> symbol.annotations.filter(_.tree.tpe <:< typeOf[decimalPrecision]).map(instantiate(_).asInstanceOf[decimalPrecision])
+              symbol.name.toString -> symbol.annotations
+                .filter(_.tree.tpe <:< typeOf[decimalPrecision])
+                .map(instantiate(_).asInstanceOf[decimalPrecision])
             }
             .flatMap {
               case (name, a :: Nil) => Some((name, DecimalType(a.precision, a.scale)))
@@ -116,6 +106,7 @@ trait DataFrameModule {
             }.toMap
 
           val schema = StructType(expressionEncoder.schema.map {
+            //TODO: add sanity check = BigDecimal
             case f: StructField if bigDecimalReplacements.contains(f.name) => f.copy(dataType = bigDecimalReplacements(f.name))
             case other => other
           })

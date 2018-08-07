@@ -21,6 +21,7 @@ scalacOptions += "-Ypartial-unification"
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "cats-free" % catsVersion,
+  "org.typelevel" %% "alleycats-core" % catsVersion,
   "org.scala-graph" %% "graph-core" % scalaGraphVersion,
   "com.monovore" %% "decline" % declineVersion,
   "com.chuusai" %% "shapeless" % shapelessVersion,
