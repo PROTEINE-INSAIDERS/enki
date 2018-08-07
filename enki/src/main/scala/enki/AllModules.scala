@@ -6,7 +6,7 @@ trait AllModules
     with ProgramModule
     with DataFrameModule
     with DatasetModule
-    with DocumentationModule
+    with MetadataModule
     with SqlModule
     with ApplicationModule
     with ConfigurationModule
