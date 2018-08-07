@@ -1,6 +1,6 @@
 import com.monovore.decline.CommandApp
 import enki._
-import enki.tests.DatabaseState
+import enki.tests.EnkiSuite
 import org.apache.spark.sql._
 
 object Main extends CommandApp(
@@ -12,9 +12,7 @@ object Main extends CommandApp(
       val session = SparkSession.builder().master(s"local").getOrCreate()
       //      SourceDatabase.createDemoTables(session)
       //      UserDatabase.createDatabase(session)
-      new DatabaseState {
-        override protected def graph: enki.ActionGraph = buildActionGraph("root", UserDatabase.program)
-      }.emulate(session)
+      new EnkiSuite {}.createEmptySources(buildActionGraph("root", UserDatabase.program),session)
 
       session
     }
