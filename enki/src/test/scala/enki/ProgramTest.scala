@@ -1,15 +1,13 @@
 package enki
 
 import cats.implicits._
+import enki.sparkImplicits._
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.GraphPredef._
 
 class ProgramTest extends EnkiTestSuite {
   "buildActionGraph" should {
     "detect dependencies" in {
-
-      import sparkSession.implicits._
-
       val p: Program[Stage[Unit]] = for {
         a <- persist("default", "a", dataset(Seq(1)), strict = false, None)
         b <- persist("default", "b", a, strict = false, None)
