@@ -25,8 +25,8 @@ private class DatasetMacros(val c: whitebox.Context) {
     c.abort(tree.pos, err)
   }
 
-  def colFromFunction[A: WeakTypeTag, B: WeakTypeTag, R: WeakTypeTag](selector: Expr[A => B])
-                                                                     (relation: Expr[ColumnTypeRelation[A, R]],
+  def column[A: WeakTypeTag, B: WeakTypeTag, R: WeakTypeTag](selector: Expr[A => B])
+                                                            (relation: Expr[ColumnTypeRelation[A, R]],
                                                                       encoder: Expr[Encoder[R]]): Expr[TypedColumn[A, R]] = {
     val R = weakTypeOf[R].dealias
 
@@ -41,7 +41,7 @@ private class DatasetMacros(val c: whitebox.Context) {
     c.Expr(q"${c.prefix}.dataset.col($selectorStr).as[$R]($encoder)")
   }
 
-  def nameFromFunction[A, B](selector: Expr[A => B]): Expr[String] = {
+  def columnName[A, B](selector: Expr[A => B]): Expr[String] = {
     def fail(tree: Tree) = {
       val err =
         s"Could not create a column identifier from $tree - try using _.a.b syntax"

@@ -15,6 +15,7 @@ val scalaGraphVersion = "1.12.5"
 val declineVersion = "0.4.2"
 val kindProjectorVersion = "0.9.6"
 val shapelessVersion = "2.3.3"
+val contextualVersion = "1.1.0"
 
 scalacOptions += "-Ypartial-unification"
 
@@ -24,7 +25,7 @@ libraryDependencies ++= Seq(
   "org.scala-graph" %% "graph-core" % scalaGraphVersion,
   "com.monovore" %% "decline" % declineVersion,
   "com.chuusai" %% "shapeless" % shapelessVersion,
-  "com.propensive" %% "contextual" % "1.1.0",
+  "com.propensive" %% "contextual" % contextualVersion,
   "org.apache.spark" %% "spark-core" % sparkVersion % Provided,
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided,
   "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
