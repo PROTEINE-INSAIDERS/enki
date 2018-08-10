@@ -2,6 +2,7 @@ import java.sql.Timestamp
 
 import cats.implicits._
 import enki._
+import enki.sparkImplicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
@@ -12,7 +13,7 @@ case class PurchasesReport(
                             product_id: Long,
                             product_name: String,
                             date: Timestamp,
-                            price: BigDecimal
+                            @decimalPrecision(19, 4) price: BigDecimal
                           )
 
 case class ProductsByClientReport(
@@ -20,7 +21,7 @@ case class ProductsByClientReport(
                                    client_name: String,
                                    product_id: Long,
                                    product_name: String,
-                                   total_sum: BigDecimal
+                                   @decimalPrecision(19, 4) total_sum: BigDecimal
                                  )
 
 object UserDatabase extends Database {
@@ -28,9 +29,7 @@ object UserDatabase extends Database {
 
   def purchasesReport(clients: Dataset[Client],
                       products: Dataset[Product],
-                      purchases: Dataset[Purchase]): Dataset[PurchasesReport] = {
-    import purchases.sparkSession.implicits._
-
+                      purchases: Dataset[Purchase]): Dataset[PurchasesReport] =
     purchases
       .join(broadcast(products), purchases.$(_.product_id) === products.$(_.id))
       .join(broadcast(clients), purchases.$(_.client_id) === clients.$(_.id))
@@ -43,11 +42,8 @@ object UserDatabase extends Database {
         purchases $ (_.date) as "date",
         purchases $ (_.price) as "price"
       ).as[PurchasesReport]
-  }
 
-  def productByClientReport(purchasesReport: Dataset[PurchasesReport]): Dataset[ProductsByClientReport] = {
-    import purchasesReport.sparkSession.implicits._
-
+  def productByClientReport(purchasesReport: Dataset[PurchasesReport]): Dataset[ProductsByClientReport] =
     purchasesReport
       .groupBy(
         purchasesReport $ (_.client_id) as "client_id",
@@ -57,7 +53,6 @@ object UserDatabase extends Database {
         first(purchasesReport $ (_.product_name)) as "product_name",
         sum(purchasesReport $ (_.price)) as "total_sum"
       ).as[ProductsByClientReport]
-  }
 
   import SourceDatabase._
 

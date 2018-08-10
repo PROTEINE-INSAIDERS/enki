@@ -9,7 +9,7 @@ trait ConfigurationModule {
       read.copy[t](schemaName = schemaName, tableName = tableName)(read.tag)
     case write: WriteAction[t] =>
       val (schemaName, tableName) = f(write.schemaName, write.tableName)
-      write.copy[t](schemaName = schemaName, tableName = tableName)
+      write.copy[t](schemaName = schemaName, tableName = tableName)(write.tag)
     case other => other
   }
 }

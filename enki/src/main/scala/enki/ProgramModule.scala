@@ -48,7 +48,7 @@ trait ProgramModule {
   val programSplitter: ProgramAction ~> StageWriter = λ[ProgramAction ~> StageWriter] {
     case p: PersistAction[t] => {
       val stageName = s"${p.schemaName}.${p.tableName}"
-      val stage = p.stage ap write[t](p.schemaName, p.tableName, p.saveMode)
+      val stage = p.stage ap write[t](p.schemaName, p.tableName, p.strict, p.saveMode)(p.tag)
       for {
         _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
       } yield {

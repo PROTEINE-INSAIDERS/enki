@@ -25,11 +25,14 @@ trait StageModule {
     def tag: TypeTag[T] = implicitly
   }
 
-  final case class WriteAction[T](
-                                   schemaName: String,
-                                   tableName: String,
-                                   saveMode: Option[SaveMode]
-                                 ) extends StageAction[Dataset[T] => Unit]
+  final case class WriteAction[T: TypeTag](
+                                            schemaName: String,
+                                            tableName: String,
+                                            strict: Boolean,
+                                            saveMode: Option[SaveMode]
+                                          ) extends StageAction[Dataset[T] => Unit] {
+    def tag: TypeTag[T] = implicitly
+  }
 
   final case class DatasetAction[T: TypeTag](data: Seq[T]) extends StageAction[Dataset[T]] {
     val tag: TypeTag[T] = implicitly
@@ -52,12 +55,13 @@ trait StageModule {
                       ): Stage[Dataset[T]] =
     lift[StageAction, Dataset[T]](ReadAction(schemaName, tableName, strict))
 
-  def write[T](
-                schemaName: String,
-                tableName: String,
-                saveMode: Option[SaveMode]
-              ): Stage[Dataset[T] => Unit] =
-    lift[StageAction, Dataset[T] => Unit](WriteAction(schemaName, tableName, saveMode))
+  def write[T: TypeTag](
+                         schemaName: String,
+                         tableName: String,
+                         strict: Boolean,
+                         saveMode: Option[SaveMode]
+                       ): Stage[Dataset[T] => Unit] =
+    lift[StageAction, Dataset[T] => Unit](WriteAction(schemaName, tableName, strict, saveMode))
 
   def stageCompiler: StageAction ~> SparkAction = λ[StageAction ~> SparkAction] {
     case action: DatasetAction[t] => session: SparkSession =>
@@ -68,7 +72,7 @@ trait StageModule {
 
     case action: WriteAction[t] => _: SparkSession =>
       (dataset: Dataset[t]) => {
-        val writer = dataset.write
+        val writer = dataset.cast[t](action.strict)(action.tag).write
 
         action.saveMode.foreach(writer.mode)
         writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
