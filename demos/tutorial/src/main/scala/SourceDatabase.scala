@@ -47,7 +47,7 @@ object SourceDatabase extends Database {
     val createPurchases: Stage[Unit] = dataset(Seq(
       Purchase(id = 1, client_id = 1, product_id = 1, date = timestamp"1918-01-28", 108),
       Purchase(id = 2, client_id = 2, product_id = 2, date = timestamp"1919-09-05", 8)
-    )) ap write("purchase", strict = true)
+    ), strict = true, allowTruncate = true) ap write("purchase", strict = true)
 
     (createClients *> createProducts *> createPurchases).foldMap(stageCompiler).apply(session)
 

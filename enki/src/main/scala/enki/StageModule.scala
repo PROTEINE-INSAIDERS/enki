@@ -29,12 +29,13 @@ trait StageModule {
                                             schemaName: String,
                                             tableName: String,
                                             strict: Boolean,
+                                            allowTruncate: Boolean,
                                             saveMode: Option[SaveMode]
                                           ) extends StageAction[Dataset[T] => Unit] {
     def tag: TypeTag[T] = implicitly
   }
 
-  final case class DatasetAction[T: TypeTag](data: Seq[T]) extends StageAction[Dataset[T]] {
+  final case class DatasetAction[T: TypeTag](data: Seq[T], strict: Boolean, allowTruncate: Boolean) extends StageAction[Dataset[T]] {
     val tag: TypeTag[T] = implicitly
   }
 
@@ -45,8 +46,10 @@ trait StageModule {
   def dataFrame(rows: Seq[Row], schema: StructType): Stage[DataFrame] =
     lift[StageAction, DataFrame](DataFrameAction(rows, schema))
 
-  def dataset[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
-    lift[StageAction, Dataset[T]](DatasetAction(data))
+  def dataset[T: TypeTag](data: Seq[T], strict: Boolean, allowTruncate: Boolean): Stage[Dataset[T]] =
+    lift[StageAction, Dataset[T]](DatasetAction(data, strict, allowTruncate))
+
+  def emptyStage: Stage[Unit] = pure(Unit)
 
   def read[T: TypeTag](
                         schemaName: String,
@@ -59,20 +62,28 @@ trait StageModule {
                          schemaName: String,
                          tableName: String,
                          strict: Boolean,
+                         allowTruncate: Boolean,
                          saveMode: Option[SaveMode]
                        ): Stage[Dataset[T] => Unit] =
-    lift[StageAction, Dataset[T] => Unit](WriteAction(schemaName, tableName, strict, saveMode))
+    lift[StageAction, Dataset[T] => Unit](WriteAction(schemaName, tableName, strict, allowTruncate, saveMode))
 
   def stageCompiler: StageAction ~> SparkAction = λ[StageAction ~> SparkAction] {
-    case action: DatasetAction[t] => session: SparkSession =>
-      session.createDataset(action.data)(ExpressionEncoder()(action.tag))
+    case action: DatasetAction[t] => session: SparkSession => {
+      val expressionEncoder = ExpressionEncoder[t]()(action.tag)
+      val encoder = if (action.strict) {
+        enki.adjustUsingMetadata[t](expressionEncoder, action.allowTruncate)(action.tag)
+      } else {
+        expressionEncoder
+      }
+      session.createDataset[t](action.data)(encoder)
+    }
 
     case action: ReadAction[t] => session: SparkSession =>
-      session.table(s"${action.schemaName}.${action.tableName}").cast[t](action.strict)(action.tag)
+      session.table(s"${action.schemaName}.${action.tableName}").cast[t](action.strict, allowTruncate = false)(action.tag)
 
     case action: WriteAction[t] => _: SparkSession =>
       (dataset: Dataset[t]) => {
-        val writer = dataset.cast[t](action.strict)(action.tag).write
+        val writer = dataset.cast[t](action.strict, action.allowTruncate)(action.tag).write
 
         action.saveMode.foreach(writer.mode)
         writer.saveAsTable(s"${action.schemaName}.${action.tableName}")

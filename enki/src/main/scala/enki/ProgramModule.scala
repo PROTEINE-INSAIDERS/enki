@@ -22,6 +22,7 @@ trait ProgramModule {
                                               tableName: String,
                                               stage: enki.Stage[Dataset[T]],
                                               strict: Boolean,
+                                              allowTruncate: Boolean,
                                               saveMode: Option[SaveMode]
                                             ) extends ProgramAction[Stage[Dataset[T]]] {
     private[ProgramModule] def tag: TypeTag[T] = implicitly[TypeTag[T]]
@@ -29,11 +30,14 @@ trait ProgramModule {
 
   type Program[A] = Free[ProgramAction, A]
 
+  def emptyProgram: Program[Stage[Unit]] = pure(emptyStage)
+
   def persist[T: TypeTag](
                            schemaName: String,
                            tableName: String,
                            stage: Stage[Dataset[T]],
                            strict: Boolean,
+                           allowTruncate: Boolean,
                            saveMode: Option[SaveMode]
                          ): Program[Stage[Dataset[T]]] =
     liftF[ProgramAction, Stage[Dataset[T]]](PersistAction[T](
@@ -41,6 +45,7 @@ trait ProgramModule {
       tableName,
       stage,
       strict,
+      allowTruncate,
       saveMode))
 
   type StageWriter[A] = Writer[List[(String, Stage[_])], A]
@@ -48,7 +53,7 @@ trait ProgramModule {
   val programSplitter: ProgramAction ~> StageWriter = λ[ProgramAction ~> StageWriter] {
     case p: PersistAction[t] => {
       val stageName = s"${p.schemaName}.${p.tableName}"
-      val stage = p.stage ap write[t](p.schemaName, p.tableName, p.strict, p.saveMode)(p.tag)
+      val stage = p.stage ap write[t](p.schemaName, p.tableName, p.strict, p.allowTruncate, p.saveMode)(p.tag)
       for {
         _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
       } yield {
@@ -60,7 +65,7 @@ trait ProgramModule {
   def buildActionGraph[T](rootName: String, p: Program[Stage[T]]): ActionGraph = {
     val (stages, lastStage) = p.foldMap(programSplitter).run
 
-    val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) }
+    val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) } //TODO: стейджи, не содержащие write action попадают в граф, что, возможно, не верно.
 
     val createdIn = allStages.flatMap { case (name, stage) =>
       stageWrites(stage).map(w => (s"${w.schemaName}.${w.tableName}", name))

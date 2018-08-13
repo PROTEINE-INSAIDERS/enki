@@ -1,6 +1,8 @@
 package enki
 
+import enki.sparkImplicits._
 import org.apache.spark.sql._
+import org.apache.spark.sql.expressions.Window._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
@@ -75,8 +77,11 @@ trait DataFrameModule {
     dataFrame.select(dataFrame.columns.map(colName => coalesce(dataFrame(colName), lit(value)).as(colName)): _*)
   }
 
-  def nonUnique(data: DataFrame, cols: Seq[Column]): DataFrame = {
-    data.groupBy(cols: _*).count().where(col("count") > 1).select(cols: _*)
+  def nonUniq(data: DataFrame, cols: Seq[Column]): DataFrame = {
+    data
+      .withColumn("__count", count("*").over(partitionBy(cols: _*)))
+      .where($"__count" > 1)
+      .drop("__count")
   }
 
   implicit class DataFrameExtensions(dataFrame: DataFrame) {
@@ -94,7 +99,7 @@ trait DataFrameModule {
     }
 
     def nonUniq(col: Column*): DataFrame = {
-      DataFrameModule.this.nonUnique(dataFrame, col)
+      DataFrameModule.this.nonUniq(dataFrame, col)
     }
   }
 

@@ -52,7 +52,7 @@ object UserDatabase extends Database {
         first(purchasesReport $ (_.client_name)) as "client_name",
         first(purchasesReport $ (_.product_name)) as "product_name",
         sum(purchasesReport $ (_.price)) as "total_sum"
-      ).as[ProductsByClientReport]
+      ).cast[ProductsByClientReport](strict = true, allowTruncate = true)
 
   import SourceDatabase._
 
@@ -63,7 +63,7 @@ object UserDatabase extends Database {
 
     _ <- persist(
       "products_by_client_report",
-      purchasesReport fmap this.productByClientReport)
+      purchasesReport fmap this.productByClientReport, strict = true, allowTruncate = true)
   } yield ().pure[Stage]
 
   def createDatabase(session: SparkSession): Unit = {

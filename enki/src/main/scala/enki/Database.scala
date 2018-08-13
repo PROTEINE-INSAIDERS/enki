@@ -19,15 +19,15 @@ trait Database {
   final def dataFrame(rows: Seq[Row], schema: StructType): Stage[DataFrame] =
     enki.dataFrame(rows, schema)
 
-  final def dataset[T: TypeTag](data: Seq[T]): Stage[Dataset[T]] =
-    enki.dataset(data)
+  final def dataset[T: TypeTag](data: Seq[T], strict: Boolean = false, allowTruncate: Boolean = false): Stage[Dataset[T]] =
+    enki.dataset(data, strict, allowTruncate)
 
   final def read[T: TypeTag](tableName: String, strict: Boolean = false): Stage[Dataset[T]] =
     enki.read[T](schema, tableName, strict)
 
-  final def write[T: TypeTag](tableName: String, strict: Boolean = false): Stage[Dataset[T] => Unit] =
-    enki.write(schema, tableName, strict, saveMode)
-   
-  final def persist[T: TypeTag](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false): Program[Stage[Dataset[T]]] =
-    enki.persist(schema, tableName, stage, strict, saveMode)
+  final def write[T: TypeTag](tableName: String, strict: Boolean = false, allowTruncate: Boolean = false): Stage[Dataset[T] => Unit] =
+    enki.write(schema, tableName, strict, allowTruncate, saveMode)
+
+  final def persist[T: TypeTag](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false, allowTruncate: Boolean = false): Program[Stage[Dataset[T]]] =
+    enki.persist(schema, tableName, stage, strict, allowTruncate, saveMode)
 }

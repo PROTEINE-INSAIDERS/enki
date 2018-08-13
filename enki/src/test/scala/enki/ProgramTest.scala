@@ -9,10 +9,10 @@ class ProgramTest extends EnkiTestSuite {
   "buildActionGraph" should {
     "detect dependencies" in {
       val p: Program[Stage[Unit]] = for {
-        a <- persist("default", "a", dataset(Seq(1)), strict = false, None)
-        b <- persist("default", "b", a, strict = false, None)
-        c <- persist("default", "c", a, strict = false, None)
-        d <- persist("default", "d", (c, b) mapN { (_, _) => sparkSession.emptyDataset[Int] }, strict = false, None)
+        a <- persist("default", "a", dataset(Seq(1), strict = false, allowTruncate = false), strict = false, allowTruncate = false, None)
+        b <- persist("default", "b", a, strict = false, allowTruncate = false, None)
+        c <- persist("default", "c", a, strict = false, allowTruncate = false, None)
+        d <- persist("default", "d", (c, b) mapN { (_, _) => sparkSession.emptyDataset[Int] }, strict = false, allowTruncate = false, None)
       } yield ().pure[Stage]
 
       val g = buildActionGraph("root", p)
@@ -26,7 +26,7 @@ class ProgramTest extends EnkiTestSuite {
 
     "ignore empty stages" in {
       val p: Program[Stage[Unit]] = for {
-        a <- persist("default", "a", dataset(Seq(1)), strict = false, None)
+        a <- persist("default", "a", dataset(Seq(1), strict = false, allowTruncate = false), strict = false, allowTruncate = false, None)
       } yield ().pure[Stage]
 
       val g = buildActionGraph("root", p)
