@@ -3,13 +3,10 @@ package tests
 
 import java.nio.file.Files
 
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.{Row, SparkSession}
-
-import scala.reflect.runtime.universe.typeOf
+import org.apache.spark.sql.SparkSession
 
 
-trait EnkiSuite extends Defaults with ImplicitConversions with DataFrameModule {
+trait EnkiSuite extends Defaults with ImplicitConversions {
   protected def createSparkSession(): SparkSession = {
     SparkSession
       .builder()
@@ -24,15 +21,17 @@ trait EnkiSuite extends Defaults with ImplicitConversions with DataFrameModule {
 
   def createEmptySources: (ActionGraph, SparkSession) => Unit = (graph, session) => {
     sources(graph).foreach {
-      case action: ReadAction[t] =>
+      case action: ReadDatasetAction[t] =>
         if (!session.catalog.databaseExists(action.schemaName)) session.sql(s"create database ${action.schemaName}")
-        session.emptyDataFrame.cast[t](action.strict)(action.tag).write.saveAsTable(s"${action.schemaName}.${action.tableName}")
+        session.emptyDataset[t](action.encoder).write.saveAsTable(action.toString)
+
+      case _ => throw new UnsupportedOperationException("Can not create empty table from DataFrame.")
     }
   }
 
-  def sources: ActionGraph => Set[ReadAction[_]] = graph => {
-    val readers = graph.actions.flatMap { case (_, action) => stageReads(action) }.map(action => (s"${action.schemaName}.${action.tableName}", action)).toSet
-    val writers = graph.actions.flatMap { case (_, action) => stageWrites(action) }.map(action => s"${action.schemaName}.${action.tableName}").toSet
+  def sources: ActionGraph => Set[ReadTableAction] = graph => {
+    val readers = graph.actions.flatMap { case (_, action) => stageReads(action) }.map(action => (action.toString, action)).toSet
+    val writers = graph.actions.flatMap { case (_, action) => stageWrites(action) }.map(action => action.toString).toSet
     readers.filter { case (name, _) => !writers.contains(name) }.map { case (_, action) => action }
   }
 

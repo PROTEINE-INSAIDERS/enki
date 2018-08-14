@@ -21,6 +21,8 @@ trait StageModule {
     def schemaName: String
 
     def tableName: String
+
+    override def toString: String = s"$schemaName.$tableName"
   }
 
   trait ReadTableAction extends TableAction
