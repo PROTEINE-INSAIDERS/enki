@@ -1,12 +1,14 @@
 package enki
 
 import cats.implicits._
-import enki.implicits._
 import org.apache.spark.sql._
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.GraphPredef._
 
 class ProgramTest extends EnkiTestSuite with Database {
+
+  import implicits._
+
   override def schema: String = "default"
 
   override def saveMode = Some(SaveMode.Overwrite)

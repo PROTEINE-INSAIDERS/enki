@@ -12,7 +12,8 @@ import scala.reflect.runtime.universe._
 import scala.tools.reflect._
 
 trait SparkImplicits extends SparkImplicits1 {
-  def encoderStyle: EncoderStyle = EncoderStyle.Spark
+
+  // Columns creation
 
   implicit class StringToColumn(val sc: StringContext) {
     def $(args: Any*): ColumnName = {
@@ -22,7 +23,9 @@ trait SparkImplicits extends SparkImplicits1 {
 
   implicit def symbolToColumn(s: Symbol): ColumnName = new ColumnName(s.name.toString)
 
-  // Enki-styleEncoder
+  // Enki-style Encoder
+
+  def encoderStyle: EncoderStyle = EncoderStyle.Spark
 
   private def adjustUsingMetadata[R: TypeTag](expressionEncoder: ExpressionEncoder[R]): Encoder[R] = {
     val toolbox = currentMirror.mkToolBox()
@@ -72,7 +75,7 @@ trait SparkImplicits extends SparkImplicits1 {
     expressionEncoder.copy(schema = schema, serializer = serializer, deserializer = deserializer)
   }
 
-  private [enki] def selectEncoder[T: TypeTag](sparkEncoder: => Encoder[T]): Encoder[T] = encoderStyle match {
+  private[enki] def selectEncoder[T: TypeTag](sparkEncoder: => Encoder[T]): Encoder[T] = encoderStyle match {
     case EncoderStyle.Spark => sparkEncoder
     case EncoderStyle.Enki => adjustUsingMetadata(ExpressionEncoder())
   }
@@ -128,5 +131,6 @@ trait SparkImplicits extends SparkImplicits1 {
 
 trait SparkImplicits1 {
   self: SparkImplicits =>
+
   implicit def productEncoder[T <: Product : TypeTag]: Encoder[T] = self.selectEncoder(Encoders.product[T])
 }
