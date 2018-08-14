@@ -19,6 +19,7 @@ trait StageModule {
 
   trait TableAction {
     def schemaName: String
+
     def tableName: String
   }
 
@@ -107,23 +108,29 @@ trait StageModule {
     case action: ReadDatasetAction[t] => session: SparkSession => {
       val dataframe = session.table(s"${action.schemaName}.${action.tableName}")
       val restricted = if (action.strict) {
-        dataframe.select(action.encoder.schema.map(f => dataframe(f.name)):_*)
+        dataframe.select(action.encoder.schema.map(f => dataframe(f.name)): _*)
       } else {
         dataframe
       }
       restricted.as[t](action.encoder)
     }
 
-    case action: WriteDataFrameAction => _: SparkSession => dataFrame: DataFrame => {
-      val writer = dataFrame.write
-      action.saveMode.foreach(writer.mode)
-      writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
-    }
-
-    case action: WriteDatasetAction[t] => _: SparkSession => dataset: Dataset[t] => {
-        val writer = dataset.as[t](action.encoder).write //TODO: возможно в некоторых случаях этот каст лишний.
+    case action: WriteDataFrameAction => _: SparkSession =>
+      dataFrame: DataFrame => {
+        val writer = dataFrame.write
         action.saveMode.foreach(writer.mode)
-        //TODO: implement restricted mode.
+        writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
+      }
+
+    case action: WriteDatasetAction[t] => _: SparkSession =>
+      dataset: Dataset[t] => {
+        val resticted = if (action.strict) {
+          dataset.select(action.encoder.schema.map(f => dataset(f.name)): _*)
+        } else {
+          dataset
+        }
+        val writer = resticted.as[t](action.encoder).write //TODO: возможно в некоторых случаях этот каст лишний.
+        action.saveMode.foreach(writer.mode)
         writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
       }
   }
