@@ -43,5 +43,8 @@ trait Database {
     enki.writeDataFrame(schema, tableName, saveMode)
 
   final def persist[T: Encoder](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false): Program[Stage[Dataset[T]]] =
-    enki.persist(schema, tableName, stage, implicitly, strict, saveMode)
+    enki.persistDataset(schema, tableName, stage, implicitly, strict, saveMode)
+
+  final def persist(tableName: String, stage: Stage[DataFrame]): Program[Stage[DataFrame]] =
+    enki.persistDataFrame(schema, tableName, stage, saveMode)
 }

@@ -14,28 +14,47 @@ trait ProgramModule {
 
   sealed trait ProgramAction[A]
 
-  final case class PersistAction[T](
-                                     schemaName: String,
-                                     tableName: String,
-                                     stage: enki.Stage[Dataset[T]],
-                                     encoder: Encoder[T],
-                                     strict: Boolean,
-                                     saveMode: Option[SaveMode]
-                                   ) extends ProgramAction[Stage[Dataset[T]]]
+  final case class PersistDataFrameAction(
+                                           schemaName: String,
+                                           tableName: String,
+                                           stage: enki.Stage[DataFrame],
+                                           saveMode: Option[SaveMode]
+                                         ) extends ProgramAction[Stage[DataFrame]]
+
+  final case class PersistDatasetAction[T](
+                                            schemaName: String,
+                                            tableName: String,
+                                            stage: enki.Stage[Dataset[T]],
+                                            encoder: Encoder[T],
+                                            strict: Boolean,
+                                            saveMode: Option[SaveMode]
+                                          ) extends ProgramAction[Stage[Dataset[T]]]
 
   type Program[A] = Free[ProgramAction, A]
 
   def emptyProgram: Program[Stage[Unit]] = pure(emptyStage)
 
-  def persist[T](
-                  schemaName: String,
-                  tableName: String,
-                  stage: Stage[Dataset[T]],
-                  encoder: Encoder[T],
-                  strict: Boolean,
-                  saveMode: Option[SaveMode]
-                ): Program[Stage[Dataset[T]]] =
-    liftF[ProgramAction, Stage[Dataset[T]]](PersistAction[T](
+  def persistDataFrame(
+                        schemaName: String,
+                        tableName: String,
+                        stage: enki.Stage[DataFrame],
+                        saveMode: Option[SaveMode]
+                      ): Program[Stage[DataFrame]] =
+    liftF[ProgramAction, Stage[DataFrame]](PersistDataFrameAction(
+      schemaName,
+      tableName,
+      stage,
+      saveMode))
+
+  def persistDataset[T](
+                         schemaName: String,
+                         tableName: String,
+                         stage: Stage[Dataset[T]],
+                         encoder: Encoder[T],
+                         strict: Boolean,
+                         saveMode: Option[SaveMode]
+                       ): Program[Stage[Dataset[T]]] =
+    liftF[ProgramAction, Stage[Dataset[T]]](PersistDatasetAction[T](
       schemaName,
       tableName,
       stage,
@@ -46,13 +65,22 @@ trait ProgramModule {
   type StageWriter[A] = Writer[List[(String, Stage[_])], A]
 
   val programSplitter: ProgramAction ~> StageWriter = λ[ProgramAction ~> StageWriter] {
-    case p: PersistAction[t] => {
+    case p: PersistDatasetAction[t] => {
       val stageName = s"${p.schemaName}.${p.tableName}"
       val stage = p.stage ap writeDataset[t](p.schemaName, p.tableName, p.encoder, p.strict, p.saveMode)
       for {
         _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
       } yield {
         readDataset[t](p.schemaName, p.tableName, p.encoder, p.strict)
+      }
+    }
+    case p: PersistDataFrameAction => {
+      val stageName = s"${p.schemaName}.${p.tableName}"
+      val stage = p.stage ap writeDataFrame(p.schemaName, p.tableName, p.saveMode)
+      for {
+        _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
+      } yield {
+        readDataFrame(p.schemaName, p.tableName)
       }
     }
   }
