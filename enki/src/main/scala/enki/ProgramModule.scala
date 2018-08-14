@@ -9,37 +9,37 @@ import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
 
-import scala.reflect.runtime.universe.TypeTag
-
 trait ProgramModule {
   this: GraphModule =>
 
   sealed trait ProgramAction[A]
 
-  //TODO: тут нужен ридер и райтер. их может предоставить база данных.
-  final case class PersistAction[T: TypeTag](
-                                              schemaName: String,
-                                              tableName: String,
-                                              stage: enki.Stage[Dataset[T]],
-                                              strict: Boolean,
-                                              saveMode: Option[SaveMode]
-                                            ) extends ProgramAction[Stage[Dataset[T]]] {
-    private[ProgramModule] def tag: TypeTag[T] = implicitly[TypeTag[T]]
-  }
+  final case class PersistAction[T](
+                                     schemaName: String,
+                                     tableName: String,
+                                     stage: enki.Stage[Dataset[T]],
+                                     encoder: Encoder[T],
+                                     strict: Boolean,
+                                     saveMode: Option[SaveMode]
+                                   ) extends ProgramAction[Stage[Dataset[T]]]
 
   type Program[A] = Free[ProgramAction, A]
 
-  def persist[T: TypeTag](
-                           schemaName: String,
-                           tableName: String,
-                           stage: Stage[Dataset[T]],
-                           strict: Boolean,
-                           saveMode: Option[SaveMode]
-                         ): Program[Stage[Dataset[T]]] =
+  def emptyProgram: Program[Stage[Unit]] = pure(emptyStage)
+
+  def persist[T](
+                  schemaName: String,
+                  tableName: String,
+                  stage: Stage[Dataset[T]],
+                  encoder: Encoder[T],
+                  strict: Boolean,
+                  saveMode: Option[SaveMode]
+                ): Program[Stage[Dataset[T]]] =
     liftF[ProgramAction, Stage[Dataset[T]]](PersistAction[T](
       schemaName,
       tableName,
       stage,
+      encoder,
       strict,
       saveMode))
 
@@ -48,11 +48,11 @@ trait ProgramModule {
   val programSplitter: ProgramAction ~> StageWriter = λ[ProgramAction ~> StageWriter] {
     case p: PersistAction[t] => {
       val stageName = s"${p.schemaName}.${p.tableName}"
-      val stage = p.stage ap write[t](p.schemaName, p.tableName, p.saveMode)
+      val stage = p.stage ap writeDataset[t](p.schemaName, p.tableName, p.encoder, p.strict, p.saveMode)
       for {
         _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
       } yield {
-        read[t](p.schemaName, p.tableName, p.strict)(p.tag)
+        readDataset[t](p.schemaName, p.tableName, p.encoder, p.strict)
       }
     }
   }
@@ -60,7 +60,7 @@ trait ProgramModule {
   def buildActionGraph[T](rootName: String, p: Program[Stage[T]]): ActionGraph = {
     val (stages, lastStage) = p.foldMap(programSplitter).run
 
-    val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) }
+    val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) } //TODO: стейджи, не содержащие write action попадают в граф, что, возможно, не верно.
 
     val createdIn = allStages.flatMap { case (name, stage) =>
       stageWrites(stage).map(w => (s"${w.schemaName}.${w.tableName}", name))
