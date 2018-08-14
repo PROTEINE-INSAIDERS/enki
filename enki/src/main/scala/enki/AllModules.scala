@@ -10,3 +10,4 @@ trait AllModules
     with SqlModule
     with ApplicationModule
     with ConfigurationModule
+    with SessionModule

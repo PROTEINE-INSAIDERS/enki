@@ -1,12 +1,18 @@
 package enki
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.types.StructType
-
-import scala.reflect.runtime.universe.TypeTag
+import org.apache.spark.sql.types._
 
 trait Database {
-  def schema: String
+  /**
+    * Since using SparkImplicits and SparkSession.implicits at once will lead to ambiguity SparkImplicits not imported
+    * by default.
+    */
+  val implicits: SparkImplicits = new SparkImplicits {
+    override def encoderStyle: EncoderStyle = Database.this.encoderStyle
+  }
+
+  def encoderStyle: EncoderStyle = EncoderStyle.Spark
 
   //TODO: у нас имеются несколько уровней настройки параметров сохранения: таблица <- база данных <- параметры спарка по-умолчанию.
   // на каждом из уровней должна быть возможность перегрузить настройки, либо унаследовать их. Возможно для этого
@@ -14,20 +20,28 @@ trait Database {
   // по сравнению со словарём, с другой стороны иных преимуществ он не даёт).
   protected def saveMode: Option[SaveMode] = None
 
+  def schema: String
+
   /* syntactic sugar */
 
   final def dataFrame(rows: Seq[Row], schema: StructType): Stage[DataFrame] =
     enki.dataFrame(rows, schema)
 
-  final def dataset[T: TypeTag](data: Seq[T], strict: Boolean = false, allowTruncate: Boolean = false): Stage[Dataset[T]] =
-    enki.dataset(data, strict, allowTruncate)
+  final def dataset[T: Encoder](data: Seq[T]): Stage[Dataset[T]] =
+    enki.dataset(data, implicitly)
 
-  final def read[T: TypeTag](tableName: String, strict: Boolean = false): Stage[Dataset[T]] =
-    enki.read[T](schema, tableName, strict)
+  final def read[T: Encoder](tableName: String, strict: Boolean = false): Stage[Dataset[T]] =
+    enki.readDataset[T](schema, tableName, implicitly, strict)
 
-  final def write[T: TypeTag](tableName: String, strict: Boolean = false, allowTruncate: Boolean = false): Stage[Dataset[T] => Unit] =
-    enki.write(schema, tableName, strict, allowTruncate, saveMode)
+  final def read(tableName: String): Stage[DataFrame] =
+    enki.readDataFrame(schema, tableName)
 
-  final def persist[T: TypeTag](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false, allowTruncate: Boolean = false): Program[Stage[Dataset[T]]] =
-    enki.persist(schema, tableName, stage, strict, allowTruncate, saveMode)
+  final def write[T: Encoder](tableName: String, strict: Boolean = false): Stage[Dataset[T] => Unit] =
+    enki.writeDataset(schema, tableName, implicitly, strict, saveMode)
+
+  final def write(tableName: String): Stage[DataFrame => Unit] =
+    enki.writeDataFrame(schema, tableName, saveMode)
+
+  final def persist[T: Encoder](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false): Program[Stage[Dataset[T]]] =
+    enki.persist(schema, tableName, stage, implicitly, strict, saveMode)
 }

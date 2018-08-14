@@ -1,6 +1,6 @@
 package enki
 
-import enki.sparkImplicits._
+import enki.implicits._
 import org.apache.spark.sql.Row
 
 class DataFrameTest extends EnkiTestSuite {

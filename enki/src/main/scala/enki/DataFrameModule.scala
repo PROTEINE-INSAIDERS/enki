@@ -1,12 +1,12 @@
 package enki
 
-import enki.sparkImplicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.expressions.Window._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
 trait DataFrameModule {
+
   private val diffStatusColName = "diff_status"
   private val addedStatus = "added"
   private val removedStatus = "removed"
@@ -80,7 +80,7 @@ trait DataFrameModule {
   def nonUniq(data: DataFrame, cols: Seq[Column]): DataFrame = {
     data
       .withColumn("__count", count("*").over(partitionBy(cols: _*)))
-      .where($"__count" > 1)
+      .where(col("__count") > 1)
       .drop("__count")
   }
 

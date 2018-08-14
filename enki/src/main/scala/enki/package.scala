@@ -5,8 +5,7 @@ package object enki
   type SparkAction[A] = SparkSession => A
 
   /**
-    * Since using SparkImplicits and SparkSession.implicits at once will lead to ambiguity SparkImplicits not imported
-    * by default.
+    * Since using SparkImplicits and SparkSession.implicits at once will lead to ambiguity, SparkImplicits not imported by default.
     */
-  val sparkImplicits: SparkImplicits = new SparkImplicits {}
+  val implicits: SparkImplicits = new SparkImplicits {}
 }

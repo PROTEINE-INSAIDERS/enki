@@ -2,7 +2,6 @@ import java.sql.Timestamp
 
 import cats.implicits._
 import enki._
-import enki.sparkImplicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
@@ -13,7 +12,7 @@ case class PurchasesReport(
                             product_id: Long,
                             product_name: String,
                             date: Timestamp,
-                            @decimalPrecision(19, 4) price: BigDecimal
+                            @decimalPrecision(precision = 19, scale = 4) price: BigDecimal
                           )
 
 case class ProductsByClientReport(
@@ -21,11 +20,18 @@ case class ProductsByClientReport(
                                    client_name: String,
                                    product_id: Long,
                                    product_name: String,
-                                   @decimalPrecision(19, 4) total_sum: BigDecimal
+                                   @decimalPrecision(precision = 19, scale = 4, allowTruncate = true) total_sum: BigDecimal
                                  )
 
 object UserDatabase extends Database {
+
+  import implicits._
+  import SourceDatabase._
+
   override def schema: String = "user_db"
+
+  // Changing encoder style to Enki to enable annotation processing.
+  override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
   def purchasesReport(clients: Dataset[Client],
                       products: Dataset[Product],
@@ -52,9 +58,7 @@ object UserDatabase extends Database {
         first(purchasesReport $ (_.client_name)) as "client_name",
         first(purchasesReport $ (_.product_name)) as "product_name",
         sum(purchasesReport $ (_.price)) as "total_sum"
-      ).cast[ProductsByClientReport](strict = true, allowTruncate = true)
-
-  import SourceDatabase._
+      ).as[ProductsByClientReport]
 
   val program: Program[Stage[Unit]] = for {
     purchasesReport <- persist[PurchasesReport](
@@ -63,7 +67,7 @@ object UserDatabase extends Database {
 
     _ <- persist(
       "products_by_client_report",
-      purchasesReport fmap this.productByClientReport, strict = true, allowTruncate = true)
+      purchasesReport map this.productByClientReport)
   } yield ().pure[Stage]
 
   def createDatabase(session: SparkSession): Unit = {
