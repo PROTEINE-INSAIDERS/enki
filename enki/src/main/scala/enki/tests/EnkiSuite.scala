@@ -9,7 +9,7 @@ import org.apache.spark.sql.{Row, SparkSession}
 import scala.reflect.runtime.universe.typeOf
 
 
-trait EnkiSuite extends Defaults with ImplicitConversions with TestDataFrameModule {
+trait EnkiSuite extends Defaults with ImplicitConversions with DataFrameModule {
   protected def createSparkSession(): SparkSession = {
     SparkSession
       .builder()
