@@ -84,5 +84,6 @@ project/plugins/project/
 .cache
 .lib/
 
-# enki
+
+# Spark
 spark-warehouse/

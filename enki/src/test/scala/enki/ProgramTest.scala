@@ -1,20 +1,25 @@
 package enki
 
 import cats.implicits._
+import org.apache.spark.sql._
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.GraphPredef._
 
-class ProgramTest extends EnkiTestSuite {
+class ProgramTest extends EnkiTestSuite with Database {
+
+  import implicits._
+
+  override def schema: String = "default"
+
+  override def saveMode = Some(SaveMode.Overwrite)
+
   "buildActionGraph" should {
     "detect dependencies" in {
-
-      import sparkSession.implicits._
-
       val p: Program[Stage[Unit]] = for {
-        a <- persist("default", "a", dataset(Seq(1)), strict = false, None)
-        b <- persist("default", "b", a, strict = false, None)
-        c <- persist("default", "c", a, strict = false, None)
-        d <- persist("default", "d", (c, b) mapN { (_, _) => sparkSession.emptyDataset[Int] }, strict = false, None)
+        a <- persist("a", dataset(Seq(1)))
+        b <- persist("b", a)
+        c <- persist("c", a)
+        d <- persist("d", (c, b) mapN { (_, _) => sparkSession.emptyDataset[Int] })
       } yield ().pure[Stage]
 
       val g = buildActionGraph("root", p)
@@ -28,7 +33,7 @@ class ProgramTest extends EnkiTestSuite {
 
     "ignore empty stages" in {
       val p: Program[Stage[Unit]] = for {
-        a <- persist("default", "a", dataset(Seq(1)), strict = false, None)
+        a <- persist("a", dataset(Seq(1)))
       } yield ().pure[Stage]
 
       val g = buildActionGraph("root", p)

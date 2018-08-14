@@ -4,12 +4,18 @@ import cats._
 
 trait ConfigurationModule {
   def tableNameMapper(f: (String, String) => (String, String)): StageAction ~> StageAction = λ[StageAction ~> StageAction] {
-    case read: ReadAction[t] =>
-      val (schemaName, tableName) = f(read.schemaName, read.tableName)
-      read.copy[t](schemaName = schemaName, tableName = tableName)(read.tag)
-    case write: WriteAction[t] =>
-      val (schemaName, tableName) = f(write.schemaName, write.tableName)
-      write.copy[t](schemaName = schemaName, tableName = tableName)
+    case action: ReadDataFrameAction =>
+      val (schemaName, tableName) = f(action.schemaName, action.tableName)
+      action.copy(schemaName = schemaName, tableName = tableName)
+    case action: ReadDatasetAction[_] =>
+      val (schemaName, tableName) = f(action.schemaName, action.tableName)
+      action.copy(schemaName = schemaName, tableName = tableName)
+    case action: WriteDataFrameAction =>
+      val (schemaName, tableName) = f(action.schemaName, action.tableName)
+      action.copy(schemaName = schemaName, tableName = tableName)
+    case action: WriteDatasetAction[_] =>
+      val (schemaName, tableName) = f(action.schemaName, action.tableName)
+      action.copy(schemaName = schemaName, tableName = tableName)
     case other => other
   }
 }

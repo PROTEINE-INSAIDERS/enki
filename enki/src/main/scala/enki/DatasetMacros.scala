@@ -19,16 +19,34 @@ private class DatasetMacros(val c: whitebox.Context) {
 
   import c.universe._
 
-  def fromFunction[A: WeakTypeTag, B: WeakTypeTag, R: WeakTypeTag](selector: Expr[A => B])
-                                                                  (relation: Expr[ColumnTypeRelation[A, R]],
-                                                                   encoder: Expr[Encoder[R]]): Expr[TypedColumn[A, R]] = {
+  private def colSelectorFailed(tree: Tree): Nothing = {
+    val err =
+      s"Could not create a column identifier from $tree - try using _.a.b syntax"
+    c.abort(tree.pos, err)
+  }
+
+  def column[A: WeakTypeTag, B: WeakTypeTag, R: WeakTypeTag](selector: Expr[A => B])
+                                                            (relation: Expr[ColumnTypeRelation[A, R]],
+                                                                      encoder: Expr[Encoder[R]]): Expr[TypedColumn[A, R]] = {
+    val R = weakTypeOf[R].dealias
+
+    val selectorStr = selector.tree match {
+      case NameExtractor(str) => str
+      case Function(_, body) => colSelectorFailed(body)
+      // $COVERAGE-OFF$ - cannot be reached as typechecking will fail in this case before macro is even invoked
+      case other => colSelectorFailed(other)
+      // $COVERAGE-ON$
+    }
+
+    c.Expr(q"${c.prefix}.dataset.col($selectorStr).as[$R]($encoder)")
+  }
+
+  def columnName[A, B](selector: Expr[A => B]): Expr[String] = {
     def fail(tree: Tree) = {
       val err =
         s"Could not create a column identifier from $tree - try using _.a.b syntax"
       c.abort(tree.pos, err)
     }
-
-    val R = weakTypeOf[R].dealias
 
     val selectorStr = selector.tree match {
       case NameExtractor(str) => str
@@ -37,9 +55,9 @@ private class DatasetMacros(val c: whitebox.Context) {
       case other => fail(other)
       // $COVERAGE-ON$
     }
-
-    c.Expr(q"${c.prefix}.dataset.col($selectorStr).as[$R]($encoder)")
+    c.Expr(q"$selectorStr")
   }
+
 
   case class NameExtractor(name: TermName) {
     Self =>
@@ -59,5 +77,4 @@ private class DatasetMacros(val c: whitebox.Context) {
       case _ => None
     }
   }
-
 }

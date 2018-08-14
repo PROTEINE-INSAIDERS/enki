@@ -12,7 +12,7 @@ case class PurchasesReport(
                             product_id: Long,
                             product_name: String,
                             date: Timestamp,
-                            price: BigDecimal
+                            @decimalPrecision(precision = 19, scale = 4) price: BigDecimal
                           )
 
 case class ProductsByClientReport(
@@ -20,17 +20,22 @@ case class ProductsByClientReport(
                                    client_name: String,
                                    product_id: Long,
                                    product_name: String,
-                                   total_sum: BigDecimal
+                                   @decimalPrecision(precision = 19, scale = 4, allowTruncate = true) total_sum: BigDecimal
                                  )
 
 object UserDatabase extends Database {
+
+  import implicits._
+  import SourceDatabase._
+
   override def schema: String = "user_db"
+
+  // Changing encoder style to Enki to enable annotation processing.
+  override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
   def purchasesReport(clients: Dataset[Client],
                       products: Dataset[Product],
-                      purchases: Dataset[Purchase]): Dataset[PurchasesReport] = {
-    import purchases.sparkSession.implicits._
-
+                      purchases: Dataset[Purchase]): Dataset[PurchasesReport] =
     purchases
       .join(broadcast(products), purchases.$(_.product_id) === products.$(_.id))
       .join(broadcast(clients), purchases.$(_.client_id) === clients.$(_.id))
@@ -43,11 +48,8 @@ object UserDatabase extends Database {
         purchases $ (_.date) as "date",
         purchases $ (_.price) as "price"
       ).as[PurchasesReport]
-  }
 
-  def productByClientReport(purchasesReport: Dataset[PurchasesReport]): Dataset[ProductsByClientReport] = {
-    import purchasesReport.sparkSession.implicits._
-
+  def productByClientReport(purchasesReport: Dataset[PurchasesReport]): Dataset[ProductsByClientReport] =
     purchasesReport
       .groupBy(
         purchasesReport $ (_.client_id) as "client_id",
@@ -57,9 +59,6 @@ object UserDatabase extends Database {
         first(purchasesReport $ (_.product_name)) as "product_name",
         sum(purchasesReport $ (_.price)) as "total_sum"
       ).as[ProductsByClientReport]
-  }
-
-  import SourceDatabase._
 
   val program: Program[Stage[Unit]] = for {
     purchasesReport <- persist[PurchasesReport](
@@ -68,7 +67,7 @@ object UserDatabase extends Database {
 
     _ <- persist(
       "products_by_client_report",
-      purchasesReport fmap this.productByClientReport)
+      purchasesReport map this.productByClientReport)
   } yield ().pure[Stage]
 
   def createDatabase(session: SparkSession): Unit = {
