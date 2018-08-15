@@ -19,7 +19,7 @@ trait EnkiSuite extends Defaults with ImplicitConversions {
 
   protected implicit lazy val sparkSession: SparkSession = createSparkSession()
 
-  def createEmptySources: (ActionGraph, SparkSession) => Unit = (graph, session) => {
+  def createEmptySources(graph: ActionGraph, session: SparkSession): Unit = {
     sources(graph).foreach {
       case action: ReadDatasetAction[t] =>
         if (!session.catalog.databaseExists(action.schemaName)) session.sql(s"create database ${action.schemaName}")
