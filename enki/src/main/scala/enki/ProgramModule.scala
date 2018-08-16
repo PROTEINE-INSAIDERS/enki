@@ -98,9 +98,11 @@ trait ProgramModule {
       .foldMap { case (name, stage) =>
         val dependencies = stageReads(stage).flatMap { r => createdIn.get(s"${r.schemaName}.${r.tableName}") }
         if (dependencies.isEmpty)
-          ActionGraph(Graph(name), Map(name -> stage))
+          ???
+          //ActionGraph(Graph(name), Map(name -> stage))
         else
-          ActionGraph(Graph(dependencies.toSeq.map(name ~> _): _*), Map(name -> stage))
+          ???
+          //ActionGraph(Graph(dependencies.toSeq.map(name ~> _): _*), Map(name -> stage))
       }
   }
 }

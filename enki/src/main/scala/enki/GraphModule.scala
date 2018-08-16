@@ -1,19 +1,35 @@
 package enki
 
 import cats._
-import cats.implicits._
+import alleycats.std.iterable._
 import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphEdge._
-import scalax.collection.GraphPredef._
+
+import scala.annotation.tailrec
 
 trait GraphModule {
 
-  case class ActionGraph(graph: Graph[String, DiEdge], actions: Map[String, Stage[_]]) {
+  case class ActionGraph(graph: Graph[String, DiEdge], actions: Map[String, Either[ActionGraph, Stage[_]]]) {
+    private def path(pathStr: String): List[String] = pathStr.split("->").toList
+
     private def checkActionExists(name: String): Unit = {
-      if (!actions.contains(name)) {
+      if (getOpt(path(name)).isEmpty) {
         throw new Exception(s"Action $name not found.")
       }
+    }
+
+    @tailrec private def getOpt(path: List[String]): Option[Either[ActionGraph, Stage[_]]] = path match {
+      case Nil => None
+      case x :: Nil => actions.get(x)
+      case x :: xs => actions.get(x) match {
+        case Some(Left(g)) => g.getOpt(xs)
+        case _ => None
+      }
+    }
+
+    private def subGraphs: Seq[ActionGraph] = {
+      actions.values.collect { case Left(ag) => ag }.toSeq
     }
 
     private def validate(): Unit = {
@@ -24,19 +40,7 @@ trait GraphModule {
       graph.findCycle.map { cycle =>
         throw new Exception(s"Circular dependency: $cycle")
       }
-    }
-
-    def addAction(name: String, action: Stage[_]): ActionGraph = {
-      copy(actions = actions + (name -> action))
-    }
-
-    def addAction(name: String, action: Stage[_], dependsOn: String*): ActionGraph = {
-      copy(actions = actions + (name -> action), graph = graph ++ dependsOn.map(name ~> _))
-    }
-
-    //TODO: по идее зависимости можно доставать прямо из Stage, следует ли использовать для них отдельный метод?
-    def addDependency(from: String, to: String): ActionGraph = {
-      copy(graph = graph + (from ~> to))
+      subGraphs.foreach(_.validate())
     }
 
     def resume(name: String, session: SparkSession, compilers: String => StageAction ~> SparkAction): Unit = {
@@ -51,8 +55,9 @@ trait GraphModule {
       try {
         //TODO: stack descriptions
         session.sparkContext.setJobDescription(name)
-        val action = actions(name).foldMap(compiler)
-        action(session)
+        //val action = actions(name).foldMap(compiler)
+        //action(session)
+        ???
       } finally {
         session.sparkContext.setJobDescription(null)
       }
@@ -70,7 +75,7 @@ trait GraphModule {
   }
 
   implicit val actionGraphMonoid: Monoid[ActionGraph] = new Monoid[ActionGraph] {
-    override def empty: ActionGraph = ActionGraph(Graph.empty[String, DiEdge], Map.empty[String, Stage[_]])
+    override def empty: ActionGraph = ??? //ActionGraph(Graph.empty[String, DiEdge], Map.empty[String, Stage[_]])
 
     override def combine(x: ActionGraph, y: ActionGraph): ActionGraph = ActionGraph(x.graph ++ y.graph, x.actions ++ y.actions)
   }
