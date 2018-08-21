@@ -9,6 +9,12 @@ import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
 
+/**
+  * Monadic program builder designed to be used with for-comprehensions.
+  *
+  * Should not be confused with actual program AST because it's sole purpose is to provide syntatic sugar to construct
+  * AST using the Scala syntax.
+  */
 trait ProgramModule {
   this: GraphModule =>
 
@@ -91,16 +97,17 @@ trait ProgramModule {
     val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) } //TODO: стейджи, не содержащие write action попадают в граф, что, возможно, не верно.
 
     val createdIn = allStages.flatMap { case (name, stage) =>
-      stageWrites(stage).map(w => (s"${w.schemaName}.${w.tableName}", name))
+      stageWrites(stage, Set(_)).map(w => (s"${w.schemaName}.${w.tableName}", name))
     }.toMap
 
     allStages
       .foldMap { case (name, stage) =>
-        val dependencies = stageReads(stage).flatMap { r => createdIn.get(s"${r.schemaName}.${r.tableName}") }
+        //TODO: разрешение зависимостей будет встроено в API графа.
+        val dependencies = stageReads(stage, Set(_)).flatMap { r => createdIn.get(s"${r.schemaName}.${r.tableName}") }
         if (dependencies.isEmpty)
           ActionGraph(name, stage)
         else
-          ActionGraph(Graph(dependencies.toSeq.map(name ~> _): _*), Map(name -> Right(stage)))
+          ActionGraph(Graph(dependencies.toSeq.map(name ~> _): _*), Map(name -> StageNode(stage)))
       }
   }
 }
