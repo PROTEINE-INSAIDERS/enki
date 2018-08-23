@@ -1,6 +1,6 @@
 package enki
 
-import cats._
+import cats.{lift => _, _}
 import cats.free.FreeApplicative
 import cats.free.FreeApplicative._
 import cats.implicits._
@@ -63,7 +63,7 @@ trait StageModule {
   def dataset[T](data: Seq[T], encoder: Encoder[T]): Stage[Dataset[T]] =
     lift[StageAction, Dataset[T]](DatasetAction(data, encoder))
 
-  def emptyStage: Stage[Unit] = pure(Unit)
+  def emptyStage: Stage[Unit] = pure(())
 
   def readDataFrame(
                      schemaName: String,
@@ -153,7 +153,7 @@ trait StageModule {
 
   def stageNonEmpty(stage: Stage[_]): Boolean = {
     stage.analyze(λ[StageAction ~> λ[α => Option[Unit]]] {
-      case _ => Some(Unit)
+      case _ => Some(())
     }).nonEmpty
   }
 }

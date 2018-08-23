@@ -44,6 +44,7 @@ trait GraphModule {
 
     private def checkActionExists(name: String): Unit = {
       get(name)
+      ()
     }
 
     private def get(name: String): ActionNode = getOpt(splitPath(name)) match {
@@ -90,7 +91,9 @@ trait GraphModule {
         session.sparkContext.setJobDescription(name)
         get(name) match {
           case GraphNode(g) => g.runAll(session, _ => compiler)
-          case StageNode(a) => a.foldMap(compiler).apply(session)
+          case StageNode(a) =>
+            a.foldMap(compiler).apply(session)
+            ()
         }
       } finally {
         session.sparkContext.setJobDescription(null)

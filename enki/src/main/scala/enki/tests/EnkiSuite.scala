@@ -11,7 +11,7 @@ trait EnkiSuite extends Defaults with ImplicitConversions {
       .builder()
       .appName("enki-test")
       .master(s"local[${Runtime.getRuntime.availableProcessors}]")
-      .config("spark.sql.shuffle.partitions", Runtime.getRuntime.availableProcessors)
+      .config("spark.sql.shuffle.partitions", Runtime.getRuntime.availableProcessors.toLong)
       .config("spark.sql.warehouse.dir", Files.createTempDirectory("spark-warehouse").toUri.toString)
       .getOrCreate()
   }
