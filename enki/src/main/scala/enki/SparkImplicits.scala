@@ -39,7 +39,7 @@ trait SparkImplicits extends SparkImplicits1 {
         symbol.name.toString -> symbol.annotations.filter(_.tree.tpe <:< typeOf[decimalPrecision]).map(instantiate(_).asInstanceOf[decimalPrecision])
       }
       .flatMap {
-        case (name, a :: Nil) => Some(name -> (DecimalType(a.precision, a.scale), a.allowTruncate))
+        case (name, a :: Nil) => Some((name, (DecimalType(a.precision, a.scale), a.allowTruncate)))
         case (_, Nil) => None
         case (name, _) => throw new Exception(s"Multiple ${typeOf[decimalPrecision]} annotations applied to $name.")
       }.toMap

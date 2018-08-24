@@ -17,7 +17,22 @@ val kindProjectorVersion = "0.9.6"
 val shapelessVersion = "2.3.3"
 val contextualVersion = "1.1.0"
 
-scalacOptions += "-Ypartial-unification"
+scalacOptions ++= Seq(
+  "-encoding", "UTF-8",
+  "-feature",
+  "-language:existentials",
+  "-language:higherKinds",
+  "-language:implicitConversions",
+  "-language:experimental.macros",
+  "-unchecked",
+  "-Ywarn-dead-code",
+  "-Ywarn-numeric-widen",
+  "-Ywarn-value-discard",
+  "-Xfuture",
+
+  "-Ypartial-unification",
+  "-Yno-adapted-args"
+)
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,

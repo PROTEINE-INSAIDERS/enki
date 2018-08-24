@@ -23,10 +23,10 @@ case class ProductsByClientReport(
                                    @decimalPrecision(precision = 19, scale = 4, allowTruncate = true) total_sum: BigDecimal
                                  )
 
-object UserDatabase extends Database {
+trait UserDatabase extends Database {
+  self: SourceDatabase =>
 
   import implicits._
-  import SourceDatabase._
 
   override def schema: String = "user_db"
 
@@ -60,7 +60,7 @@ object UserDatabase extends Database {
         sum(purchasesReport $ (_.price)) as "total_sum"
       ).as[ProductsByClientReport]
 
-  val program: Program[Stage[Unit]] = for {
+  def program: Program[Stage[Unit]] = for {
     purchasesReport <- persist[PurchasesReport](
       "purchases_report",
       (clients, products, purchases) mapN this.purchasesReport)
