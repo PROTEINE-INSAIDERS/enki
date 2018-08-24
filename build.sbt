@@ -1,6 +1,5 @@
 val sparkVersion = "2.2.1"
 val scalaGraphVersion = "1.12.5"
-val declineVersion = "0.4.2"
 
 resolvers += Resolver.url("scoverage-bintray", url("https://dl.bintray.com/sksamuel/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
@@ -12,7 +11,6 @@ lazy val tutorial = (project in file("demos/tutorial")).dependsOn(enki)
     libraryDependencies ++= Seq(
       "org.apache.spark" %% "spark-core" % sparkVersion, //TODO: provided?
       "org.apache.spark" %% "spark-sql" % sparkVersion,
-      "com.monovore" %% "decline" % declineVersion,
       compilerPlugin("org.spire-math" % "kind-projector" % "0.9.6" cross CrossVersion.binary)
     )
   )
