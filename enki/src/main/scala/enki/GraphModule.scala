@@ -24,6 +24,7 @@ trait GraphModule {
       graph.findCycle.map { cycle =>
         throw new Exception(s"Circular dependency: $cycle")
       }
+      ()
     }
 
     def addAction(name: String, action: Stage[_]): ActionGraph = {
@@ -53,6 +54,7 @@ trait GraphModule {
         session.sparkContext.setJobDescription(name)
         val action = actions(name).foldMap(compiler)
         action(session)
+        ()
       } finally {
         session.sparkContext.setJobDescription(null)
       }

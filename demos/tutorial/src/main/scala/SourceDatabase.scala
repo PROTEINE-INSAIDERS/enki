@@ -24,7 +24,7 @@ case class Purchase(
                      @decimalPrecision(precision = 19, scale = 4) price: BigDecimal
                    )
 
-object SourceDatabase extends Database {
+trait SourceDatabase extends Database {
 
   import implicits._
 
