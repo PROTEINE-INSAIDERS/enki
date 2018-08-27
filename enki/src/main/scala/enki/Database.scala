@@ -27,6 +27,8 @@ trait Database {
 
   /* syntactic sugar */
 
+  /* stages */
+
   final def dataFrame(rows: Seq[Row], schema: StructType): Stage[DataFrame] =
     enki.dataFrame(rows, schema)
 
@@ -58,6 +60,8 @@ trait Database {
     } else {
       enki.writeDataset(schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false, saveMode)
     }
+
+  /* program builder */
 
   final def persist[T: Encoder](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false): Program[Stage[Dataset[T]]] =
     enki.persistDataset(schema, tableName, stage, implicitly, strict, saveMode)

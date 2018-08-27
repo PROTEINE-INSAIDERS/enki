@@ -3,6 +3,7 @@ package tests
 
 import java.nio.file.Files
 
+import cats.implicits._
 import org.apache.spark.sql.SparkSession
 
 
@@ -30,9 +31,8 @@ trait EnkiSuite extends Defaults with ImplicitConversions {
   }
 
   def sources: ActionGraph => Set[ReadTableAction] = graph => {
-    val readers = graph.actions.flatMap { case (_, action) => stageReads(action) }.map(action => (action.toString, action)).toSet
-    val writers = graph.actions.flatMap { case (_, action) => stageWrites(action) }.map(action => action.toString).toSet
+    val readers = graph.analyze(action => stageReads(action, action => Set((action.toString, action))))
+    val writers = graph.analyze(action => stageWrites(action, action => Set(action.toString)))
     readers.filter { case (name, _) => !writers.contains(name) }.map { case (_, action) => action }
   }
-
 }

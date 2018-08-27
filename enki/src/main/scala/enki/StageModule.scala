@@ -137,17 +137,19 @@ trait StageModule {
       }
   }
 
-  def stageReads(stage: Stage[_]): Set[ReadTableAction] = {
-    stage.analyze(λ[StageAction ~> λ[α => Set[ReadTableAction]]] {
-      case r: ReadTableAction => Set(r)
-      case _ => Set.empty
+  // Monoidal analysis
+
+  def stageReads[M: Monoid](stage: Stage[_], f: ReadTableAction => M): M = {
+    stage.analyze(λ[StageAction ~> λ[α => M]] {
+      case r: ReadTableAction => f(r)
+      case _ => implicitly[Monoid[M]].empty
     })
   }
 
-  def stageWrites(stage: Stage[_]): Set[WriteTableAction] = {
-    stage.analyze(λ[StageAction ~> λ[α => Set[WriteTableAction]]] {
-      case w: WriteTableAction => Set(w)
-      case _ => Set.empty
+  def stageWrites[M: Monoid](stage: Stage[_], f: WriteTableAction => M): M = {
+    stage.analyze(λ[StageAction ~> λ[α => M]] {
+      case w: WriteTableAction => f(w)
+      case _ => implicitly[Monoid[M]].empty
     })
   }
 
