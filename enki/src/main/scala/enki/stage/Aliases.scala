@@ -1,0 +1,41 @@
+package enki.stage
+
+import enki.{Environment, ParameterValue, stage}
+
+trait Aliases {
+  type StageAction[T] = stage.StageAction[T]
+
+  type DataFrameAction = stage.DataFrameAction
+  val DataFrameAction: stage.DataFrameAction.type = stage.DataFrameAction
+
+  type DatasetAction[T] = stage.DatasetAction[T]
+  val DatasetAction: stage.DatasetAction.type = stage.DatasetAction
+
+  type TableAction = stage.TableAction
+
+  type ReadTableAction = stage.ReadTableAction
+
+  type ReadDataFrameAction = stage.ReadDataFrameAction
+  val ReadDataFrameAction: stage.ReadDataFrameAction.type = stage.ReadDataFrameAction
+
+  type ReadDatasetAction[T] = stage.ReadDatasetAction[T]
+  val ReadDatasetAction: stage.ReadDatasetAction.type = stage.ReadDatasetAction
+
+  type WriteTableAction = stage.WriteTableAction
+
+  type WriteDataFrameAction = stage.WriteDataFrameAction
+  val WriteDataFrameAction: stage.WriteDataFrameAction.type = stage.WriteDataFrameAction
+
+  type WriteDatasetAction[T] = stage.WriteDatasetAction[T]
+  val WriteDatasetAction: stage.WriteDatasetAction.type = stage.WriteDatasetAction
+
+  type ArgumentType = stage.ArgumentType
+
+  type ArgumentAction = stage.ArgumentAction
+
+  type StringArgument = stage.StringArgument
+  val StringArgument: stage.StringArgument.type = stage.StringArgument
+
+  type IntegerArgument = stage.IntegerArgument
+  val IntegerArgument: stage.IntegerArgument.type = stage.IntegerArgument
+}

@@ -8,6 +8,5 @@ trait AllModules
     with DatasetModule
     with MetadataModule
     with SqlModule
-    with ApplicationModule
     with ConfigurationModule
     with SessionModule

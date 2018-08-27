@@ -3,7 +3,6 @@ package enki
 import alleycats.std.iterable._
 import cats._
 import cats.implicits._
-import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphEdge._
 
@@ -43,13 +42,8 @@ trait GraphModule {
     private def splitPath(pathStr: String): List[String] = pathStr.split("->").toList
 
     private def checkActionExists(name: String): Unit = {
-      get(name)
+      this (name)
       ()
-    }
-
-    private def get(name: String): ActionNode = getOpt(splitPath(name)) match {
-      case Some(a) => a
-      case None => throw new Exception(s"Action $name not found.")
     }
 
     @tailrec private def getOpt(path: List[String]): Option[ActionNode] = path match {
@@ -59,6 +53,11 @@ trait GraphModule {
         case Some(GraphNode(g)) => g.getOpt(xs)
         case _ => None
       }
+    }
+
+    def apply(name: String): ActionNode = getOpt(splitPath(name)) match {
+      case Some(a) => a
+      case None => throw new Exception(s"Action $name not found.")
     }
 
     def getOpt(pathStr: String): Option[ActionNode] = getOpt(splitPath(pathStr))
@@ -78,26 +77,25 @@ trait GraphModule {
       subGraphs.foreach(_.validate())
     }
 
-    def resume(name: String, session: SparkSession, compilers: String => StageAction ~> SparkAction): Unit = {
-      checkActionExists(name)
-      linearized.dropWhile(_ != name).foreach { stageName =>
-        runAction(stageName, session, compilers(stageName))
+    def resume(action: String, compiler: StageAction ~> SparkAction, environment: Environment): Unit = {
+      checkActionExists(action)
+      linearized.dropWhile(_ != action).foreach { stageName =>
+        runAction(stageName, compiler, environment)
       }
     }
 
-    def runAction(name: String, session: SparkSession, compiler: StageAction ~> SparkAction): Unit = {
+    def runAction(name: String, compiler: StageAction ~> SparkAction, environment: Environment): Unit = {
       try {
         //TODO: stack descriptions
-        session.sparkContext.setJobDescription(name)
-
-        get(name) match {
-          case GraphNode(g) => g.runAll(session, _ => compiler)
+        environment.session.sparkContext.setJobDescription(name)
+        this (name) match {
+          case GraphNode(g) => g.runAll(compiler, environment)
           case StageNode(a) =>
-            a.foldMap(compiler).apply(session)
+            a.foldMap(compiler).apply(environment)
             ()
         }
       } finally {
-        session.sparkContext.setJobDescription(null)
+        environment.session.sparkContext.setJobDescription(null)
       }
     }
 
@@ -113,9 +111,9 @@ trait GraphModule {
       order => order.toList.reverse.map(_.value)
     )
 
-    def runAll(session: SparkSession, compilers: String => StageAction ~> SparkAction): Unit = {
+    def runAll(compiler: StageAction ~> SparkAction, environment: Environment): Unit = {
       validate()
-      linearized.foreach { stageName => runAction(stageName, session, compilers(stageName)) }
+      linearized.foreach { stageName => runAction(stageName, compiler, environment) }
     }
   }
 

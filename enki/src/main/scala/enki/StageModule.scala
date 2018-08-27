@@ -11,51 +11,6 @@ import scala.collection.JavaConversions._
 
 trait StageModule {
 
-  sealed trait StageAction[T]
-
-  final case class DataFrameAction(rows: Seq[Row], schema: StructType) extends StageAction[DataFrame]
-
-  final case class DatasetAction[T](data: Seq[T], encoder: Encoder[T]) extends StageAction[Dataset[T]]
-
-  trait TableAction {
-    def schemaName: String
-
-    def tableName: String
-
-    override def toString: String = s"$schemaName.$tableName"
-  }
-
-  trait ReadTableAction extends TableAction
-
-  //TODO: ReadAction и WriteAction могут содержать много настроечных параметров. Необходимо вынести их в ReaderSettings и
-  // WriterSettings, чтобы в дальнейшем уменьнить количество рефакторингов при добавлении новых параметров.
-  final case class ReadDataFrameAction(
-                                        schemaName: String,
-                                        tableName: String
-                                      ) extends StageAction[DataFrame] with ReadTableAction
-
-  final case class ReadDatasetAction[T](
-                                         schemaName: String,
-                                         tableName: String,
-                                         encoder: Encoder[T],
-                                         strict: Boolean
-                                       ) extends StageAction[Dataset[T]] with ReadTableAction
-
-  trait WriteTableAction extends TableAction
-
-  final case class WriteDataFrameAction(
-                                         schemaName: String,
-                                         tableName: String,
-                                         saveMode: Option[SaveMode]
-                                       ) extends StageAction[DataFrame => Unit] with WriteTableAction
-
-  final case class WriteDatasetAction[T](
-                                          schemaName: String,
-                                          tableName: String,
-                                          encoder: Encoder[T],
-                                          strict: Boolean,
-                                          saveMode: Option[SaveMode]
-                                        ) extends StageAction[Dataset[T] => Unit] with WriteTableAction
 
   type Stage[A] = FreeApplicative[StageAction, A]
 
@@ -98,17 +53,17 @@ trait StageModule {
     lift[StageAction, Dataset[T] => Unit](WriteDatasetAction(schemaName, tableName, encoder, strict, saveMode))
 
   def stageCompiler: StageAction ~> SparkAction = λ[StageAction ~> SparkAction] {
-    case action: DataFrameAction => session: SparkSession =>
-      session.createDataFrame(action.rows, action.schema)
+    case action: DataFrameAction => env: Environment =>
+      env.session.createDataFrame(action.rows, action.schema)
 
-    case action: DatasetAction[t] => session: SparkSession =>
-      session.createDataset[t](action.data)(action.encoder)
+    case action: DatasetAction[t] => env: Environment =>
+      env.session.createDataset[t](action.data)(action.encoder)
 
-    case action: ReadDataFrameAction => session: SparkSession =>
-      session.table(s"${action.schemaName}.${action.tableName}")
+    case action: ReadDataFrameAction => env: Environment =>
+      env.session.table(s"${action.schemaName}.${action.tableName}")
 
-    case action: ReadDatasetAction[t] => session: SparkSession => {
-      val dataframe = session.table(s"${action.schemaName}.${action.tableName}")
+    case action: ReadDatasetAction[t] => env: Environment => {
+      val dataframe = env.session.table(s"${action.schemaName}.${action.tableName}")
       val restricted = if (action.strict) {
         dataframe.select(action.encoder.schema.map(f => dataframe(f.name)): _*)
       } else {
@@ -117,14 +72,14 @@ trait StageModule {
       restricted.as[t](action.encoder)
     }
 
-    case action: WriteDataFrameAction => _: SparkSession =>
+    case action: WriteDataFrameAction => _: Environment =>
       dataFrame: DataFrame => {
         val writer = dataFrame.write
         action.saveMode.foreach(writer.mode)
         writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
       }
 
-    case action: WriteDatasetAction[t] => _: SparkSession =>
+    case action: WriteDatasetAction[t] => _: Environment =>
       dataset: Dataset[t] => {
         val resticted = if (action.strict) {
           dataset.select(action.encoder.schema.map(f => dataset(f.name)): _*)
@@ -135,9 +90,30 @@ trait StageModule {
         action.saveMode.foreach(writer.mode)
         writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
       }
+
+    case arg@StringArgument(name) => env: Environment =>
+      env.parameters.get(name) match {
+        case Some(StringValue(str)) => str
+        case Some(other) =>
+          throw new Exception(s"Parameter's value $name has wrong type: required ${arg.typeName} actual ${other.typeName}.")
+        case None => throw new Exception(s"Parameter $name not found.")
+      }
+
+    case arg@IntegerArgument(name) => env: Environment =>
+      env.parameters.get(name) match {
+        case Some(IntegerValue(int)) => int
+        case Some(other) =>
+          throw new Exception(s"Parameter's value $name has wrong type: required ${arg.typeName} actual ${other.typeName}.")
+        case None => throw new Exception(s"Parameter $name not found.")
+      }
   }
 
-  // Monoidal analysis
+  def stageArguments[M: Monoid](stage: Stage[_], f: ArgumentAction => M): M = {
+    stage.analyze(λ[StageAction ~> λ[α => M]] {
+      case r: ArgumentAction => f(r)
+      case _ => implicitly[Monoid[M]].empty
+    })
+  }
 
   def stageReads[M: Monoid](stage: Stage[_], f: ReadTableAction => M): M = {
     stage.analyze(λ[StageAction ~> λ[α => M]] {
