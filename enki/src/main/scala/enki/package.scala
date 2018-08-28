@@ -1,6 +1,9 @@
 package object enki
   extends AllModules
     with stage.Aliases
+    with stage.Syntax
+    with stage.Compilers
+    with stage.Analyzers
     with application.Aliases
     with application.Implicits {
   type SparkAction[A] = Environment => A

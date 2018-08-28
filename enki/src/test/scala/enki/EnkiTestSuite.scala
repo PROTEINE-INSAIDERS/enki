@@ -1,6 +1,6 @@
 package enki
 
-import enki.tests._
+import enki.testsuite._
 import org.apache.spark.sql.SparkSession
 import org.scalatest.{Matchers, WordSpec}
 

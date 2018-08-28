@@ -1,7 +1,8 @@
 package enki.stage
 
+import enki.{ParameterValue, _}
 import org.apache.spark.sql._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types._
 
 sealed trait StageAction[T]
 
@@ -49,27 +50,51 @@ final case class WriteDatasetAction[T](
                                         saveMode: Option[SaveMode]
                                       ) extends StageAction[Dataset[T] => Unit] with WriteTableAction
 
-sealed trait ArgumentType
-object StringArgument extends ArgumentType
-object IntegerArgument extends ArgumentType
-
-trait ArgumentAction {
+sealed trait ArgumentAction {
   def name: String
 
-  //TODO: remove?
-  def argumentType: ArgumentType
+  def description: String
 
-  def typeName: String
+  def dataType: DataType
+
+  private [enki] def defaultStringValue: Option[String]
 }
 
-final case class StringArgument(name: String) extends StageAction[String] with ArgumentAction {
-  override def typeName: String = "String"
+private[enki] sealed trait ArgumentActionBase[T] extends StageAction[T] with ArgumentAction {
+  override def defaultStringValue: Option[String] = defaultValue.map(_.toString)
 
-  override def argumentType: ArgumentType = StringArgument
+  protected def fromParameter(extractor: PartialFunction[ParameterValue, T], parameterValue: ParameterValue): T = {
+    extractor.lift(parameterValue) match {
+      case Some(value) => value
+      case None => throw new Exception(s"Invalid parameter type: required $dataType actual ${parameterValue.dataType}")
+    }
+  }
+
+  protected def fromParameter(parameterValue: ParameterValue): T
+
+  def defaultValue: Option[T]
+
+  def fromParameterMap(parameters: Map[String, ParameterValue]): T = {
+    (parameters.get(name), defaultValue) match {
+      case (Some(parameterValue), _) => fromParameter(parameterValue)
+      case (None, Some(value)) => value
+      case (None, None) => throw new Exception(s"Parameter $name not found.")
+    }
+  }
 }
 
-final case class IntegerArgument(name: String) extends StageAction[Int] with ArgumentAction {
-  override def typeName: String = "Integer"
+final case class StringArgumentAction(name: String, description: String, defaultValue: Option[String])
+  extends ArgumentActionBase[String]  {
+  override def dataType: DataType = StringType
 
-  override def argumentType: ArgumentType = IntegerArgument
+  override def fromParameter(parameterValue: ParameterValue): String =
+    fromParameter({ case StringValue(str) => str }, parameterValue)
+}
+
+final case class IntegerArgumentAction(name: String, description: String, defaultValue: Option[Int])
+  extends ArgumentActionBase[Int]   {
+  override def dataType: DataType = IntegerType
+
+  override def fromParameter(parameterValue: ParameterValue): Int =
+    fromParameter({ case IntegerValue(int) => int }, parameterValue)
 }

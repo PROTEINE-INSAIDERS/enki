@@ -1,6 +1,6 @@
 package enki
 
-import alleycats.std.iterable._
+//import alleycats.std.iterable._
 import cats._
 import cats.implicits._
 import scalax.collection.Graph
@@ -100,7 +100,7 @@ trait GraphModule {
     }
 
     def analyze[M: Monoid](f: Stage[_] => M): M = {
-      actions.values.foldMap {
+      actions.values.toList.foldMap {
         case StageNode(s) => f(s)
         case GraphNode(g) => g.analyze(f)
       }

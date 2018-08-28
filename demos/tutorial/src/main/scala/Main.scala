@@ -1,7 +1,7 @@
 import cats._
 import com.monovore.decline._
 import enki._
-import enki.tests.EnkiSuite
+import enki.testsuite.EnkiSuite
 import org.apache.spark.sql._
 
 object Main extends CommandApp(
@@ -29,8 +29,8 @@ class TutorialMain extends EnkiMain with UserDatabase with SourceDatabase with E
     }
   }
 
-  override def run1(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = {
-    super.run1(action).map { f =>
+  override def run(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = {
+    super.run(action).map { f =>
       session =>
         compiler =>
           createEmptySources(actionGraph, session) // intercepting enki commands to create sample tables
@@ -38,8 +38,8 @@ class TutorialMain extends EnkiMain with UserDatabase with SourceDatabase with E
     }
   }
 
-  override def runAll1: Opts[SparkSession => StageAction ~> SparkAction => Unit] = {
-    super.runAll1.map { f =>
+  override def runAll: Opts[SparkSession => StageAction ~> SparkAction => Unit] = {
+    super.runAll.map { f =>
       session =>
         compiler =>
           createEmptySources(actionGraph, session) // intercepting enki commands to create sample tables

@@ -1,13 +1,15 @@
 package enki
 
+import org.apache.spark.sql.types._
+
 sealed trait ParameterValue {
-  def typeName: String
+  def dataType: DataType
 }
 
 final case class StringValue(value: String) extends ParameterValue {
-  override def typeName: String = "String"
+  override def dataType: DataType = StringType
 }
 
 final case class IntegerValue(value: Int) extends ParameterValue {
-  override def typeName: String = "Integer"
+  override def dataType: DataType = IntegerType
 }

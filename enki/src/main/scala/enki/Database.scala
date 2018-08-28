@@ -61,6 +61,16 @@ trait Database {
       enki.writeDataset(schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false, saveMode)
     }
 
+  final def arg[T: TypeTag](name: String, description: String = "", defaultValue: Option[T] = None): Stage[T] = {
+    if (typeOf[T] == typeOf[Int]) {
+      enki.integerArgument(name, description, defaultValue.asInstanceOf[Option[Int]]).asInstanceOf[Stage[T]]
+    } else if (typeOf[T] == typeOf[String]) {
+      enki.stringArgument(name, description, defaultValue.asInstanceOf[Option[String]]).asInstanceOf[Stage[T]]
+    } else {
+      throw new Exception(s"Arguments of type ${typeOf[T]} not supported.")
+    }
+  }
+
   /* program builder */
 
   final def persist[T: Encoder](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false): Program[Stage[Dataset[T]]] =

@@ -1,5 +1,6 @@
 package enki
 
+import cats._
 import cats.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._

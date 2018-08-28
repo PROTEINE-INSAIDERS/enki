@@ -6,17 +6,35 @@ import cats.implicits._
 import com.monovore.decline._
 import enki._
 import org.apache.spark.sql._
+import org.apache.spark.sql.types._
 
+import scala.collection.mutable
 import scala.util.Try
 
 //TODO: factor out Environment as only parametrized entity (should compiles be parametrized?)
 trait EnkiMain {
   private def actionParams(node: ActionNode): Opts[Map[String, ParameterValue]] = {
-    node.analyze(stageArguments(_, Set(_))).toList.traverse { (arg: ArgumentAction) =>
-      Opts.option[String](long = arg.name, help = "").mapValidated { (value: String) =>
-        arg.argumentType match {
-          case StringArgument => Validated.valid((arg.name, StringValue(value).asInstanceOf[ParameterValue]))
-          case IntegerArgument => Try(value.toInt).toOption match {
+    val arguments = node.analyze(stageArguments(_, Set(_)))
+    val argumentMap = mutable.Map[String, ArgumentAction]()
+    arguments.foreach { arg =>
+      argumentMap.get(arg.name) match {
+        case None => argumentMap += (arg.name -> arg)
+        case Some(other) =>
+          if (other.dataType != arg.dataType)
+            throw new Exception(s"Argument ${arg.name} is already added with different type.")
+          if (other.defaultStringValue != arg.defaultStringValue)
+            throw new Exception(s"Argument ${arg.name} is already added with different default value.")
+      }
+    }
+    argumentMap.values.toList.traverse { (arg: ArgumentAction) =>
+      val opt = Opts.option[String](long = arg.name, help = arg.description)
+      (arg.defaultStringValue match {
+        case Some(value) => opt.withDefault(value)
+        case None => opt
+      }).mapValidated { (value: String) =>
+        arg.dataType match {
+          case StringType => Validated.valid((arg.name, StringValue(value).asInstanceOf[ParameterValue]))
+          case IntegerType => Try(value.toInt).toOption match {
             case Some(intValue) => Validated.valid((arg.name, IntegerValue(intValue).asInstanceOf[ParameterValue]))
             case None => Validated.invalidNel(s"Unable to convert parameter's ${arg.name} value $value to integer.")
           }
@@ -38,14 +56,14 @@ trait EnkiMain {
           actionGraph.resume(action, compiler, Environment(session, params))
   } <*> actionParams(actionGraph(action))
 
-  protected def run1(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = Opts {
+  protected def run(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = Opts {
     (params: Map[String, ParameterValue]) =>
       (session: SparkSession) =>
         (compiler: StageAction ~> SparkAction) =>
           actionGraph.runAction(action, compiler, Environment(session, params))
   } <*> actionParams(actionGraph(action))
 
-  protected def runAll1: Opts[SparkSession => StageAction ~> SparkAction => Unit] = Opts {
+  protected def runAll: Opts[SparkSession => StageAction ~> SparkAction => Unit] = Opts {
     (params: Map[String, ParameterValue]) =>
       (session: SparkSession) =>
         (compiler: StageAction ~> SparkAction) =>
@@ -73,13 +91,13 @@ trait EnkiMain {
         name = action,
         help = s"Run $action."
       ) {
-        run1(action) <*> session <*> compiler
+        run(action) <*> session <*> compiler
       }
     }.reduce(_.orElse(_))
   }
 
   protected def runAllCommand: Opts[Unit] = Opts.subcommand(name = "runAll", help = "Execute all actions.") {
-    runAll1 <*> session <*> compiler
+    runAll <*> session <*> compiler
   }
 
   def main: Opts[Unit] = listCommand orElse resumeCommand orElse runCommand orElse runAllCommand
@@ -93,7 +111,7 @@ object EnkiMain {
     val g = actionGraph
     val s = session
     new EnkiMain {
-      override protected def actionGraph = g
+      override protected def actionGraph: ActionGraph = g
 
       override protected def session: Opts[SparkSession] = Opts(s)
 

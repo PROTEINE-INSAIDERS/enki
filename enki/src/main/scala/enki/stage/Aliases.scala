@@ -29,13 +29,11 @@ trait Aliases {
   type WriteDatasetAction[T] = stage.WriteDatasetAction[T]
   val WriteDatasetAction: stage.WriteDatasetAction.type = stage.WriteDatasetAction
 
-  type ArgumentType = stage.ArgumentType
-
   type ArgumentAction = stage.ArgumentAction
 
-  type StringArgument = stage.StringArgument
-  val StringArgument: stage.StringArgument.type = stage.StringArgument
+  type StringArgumentAction = stage.StringArgumentAction
+  val StringArgumentAction: stage.StringArgumentAction.type = stage.StringArgumentAction
 
-  type IntegerArgument = stage.IntegerArgument
-  val IntegerArgument: stage.IntegerArgument.type = stage.IntegerArgument
+  type IntegerArgumentAction = stage.IntegerArgumentAction
+  val IntegerArgumentAction: stage.IntegerArgumentAction.type = stage.IntegerArgumentAction
 }

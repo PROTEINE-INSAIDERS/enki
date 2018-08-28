@@ -1,5 +1,5 @@
 package enki
-package tests
+package testsuite
 
 import java.nio.file.Files
 
