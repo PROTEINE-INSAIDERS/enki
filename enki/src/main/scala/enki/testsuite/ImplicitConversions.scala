@@ -1,4 +1,4 @@
-package enki.tests
+package enki.testsuite
 
 import cats._
 

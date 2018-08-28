@@ -1,5 +1,6 @@
 package enki
 
+import cats._
 import cats.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
@@ -25,7 +26,7 @@ class StageTest extends EnkiTestSuite with Database {
 
       sparkSession.sqlContext.createDataFrame(Seq(Row(BigDecimal(10))), schema).write.mode(SaveMode.Overwrite).saveAsTable("default.DecimalPrecisionTestData")
       val r = read[DecimalPrecisionTestData](tableName = "DecimalPrecisionTestData")
-      r.foldMap(stageCompiler).apply(sparkSession).collect() shouldBe Array(DecimalPrecisionTestData(a = BigDecimal(10)))
+      sparkSession.run(r).collect() shouldBe Array(DecimalPrecisionTestData(a = BigDecimal(10)))
     }
 
     "read untyped datasets" in {
@@ -47,7 +48,7 @@ class StageTest extends EnkiTestSuite with Database {
   "DatasetAction" should {
     "handle non-default decimal's scale and precision" in {
       val a = dataset[DecimalPrecisionTestData](Seq(DecimalPrecisionTestData(a = BigDecimal(10))))
-      a.foldMap(stageCompiler).apply(sparkSession).collect() shouldBe Array(DecimalPrecisionTestData(a = BigDecimal(10)))
+      sparkSession.run(a).collect() shouldBe Array(DecimalPrecisionTestData(a = BigDecimal(10)))
     }
   }
 }
