@@ -1,14 +1,16 @@
 package enki
 
-//import alleycats.std.iterable._
 import cats._
 import cats.implicits._
 import scalax.collection.Graph
 import scalax.collection.GraphEdge._
 
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
 
 //TODO: Try cata to build dependency graph in form of annotations.
+
+final case class ActionFailedException(action: String, cause: Throwable) extends Exception(s"Action $action failed.", cause)
 
 trait GraphModule {
 
@@ -94,6 +96,8 @@ trait GraphModule {
             a.foldMap(compiler).apply(environment)
             ()
         }
+      } catch {
+        case NonFatal(e) => throw new ActionFailedException(name, e)
       } finally {
         environment.session.sparkContext.setJobDescription(null)
       }
