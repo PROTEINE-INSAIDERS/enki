@@ -1,19 +1,9 @@
-package enki
+package enki.ds
 
 import org.apache.spark.sql._
 
 import scala.collection.immutable.Queue
 import scala.reflect.macros.whitebox
-
-trait ColumnTypeRelation[X, Y]
-
-trait IdentityColumnRelation {
-  implicit def identity[X]: ColumnTypeRelation[X, X] = new ColumnTypeRelation[X, X] {}
-}
-
-trait OptionColumnRelation extends IdentityColumnRelation {
-  implicit def option[T[_] <: Option[_], R]: ColumnTypeRelation[T[R], R] = new ColumnTypeRelation[T[R], R] {}
-}
 
 private class DatasetMacros(val c: whitebox.Context) {
 
@@ -26,8 +16,8 @@ private class DatasetMacros(val c: whitebox.Context) {
   }
 
   def column[A: WeakTypeTag, B: WeakTypeTag, R: WeakTypeTag](selector: Expr[A => B])
-                                                            (relation: Expr[ColumnTypeRelation[A, R]],
-                                                                      encoder: Expr[Encoder[R]]): Expr[TypedColumn[A, R]] = {
+                                                            (relation: Expr[ColumnTypeMapping[A, R]],
+                                                             encoder: Expr[Encoder[R]]): Expr[TypedColumn[A, R]] = {
     val R = weakTypeOf[R].dealias
 
     val selectorStr = selector.tree match {
@@ -77,4 +67,5 @@ private class DatasetMacros(val c: whitebox.Context) {
       case _ => None
     }
   }
+
 }

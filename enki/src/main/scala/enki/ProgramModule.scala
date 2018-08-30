@@ -8,6 +8,7 @@ import cats.implicits._
 import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
+import scala.collection.mutable
 
 /**
   * Monadic program builder designed to be used with for-comprehensions.
@@ -95,11 +96,21 @@ trait ProgramModule {
     val (stages, lastStage) = p.foldMap(programSplitter).run
 
     val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) } //TODO: стейджи, не содержащие write action попадают в граф, что, возможно, не верно.
-
-    val createdIn = allStages.flatMap { case (name, stage) =>
-      stageWrites(stage, Set(_)).map(w => (s"${w.schemaName}.${w.tableName}", name))
-    }.toMap
-
+    val createdIn = mutable.Map[String, String]()
+    allStages.foreach { case (stageName, stage) =>
+      stageWrites(stage, Set(_)).foreach { w =>
+        val qualifiedName = s"${w.schemaName}.${w.tableName}"
+        createdIn.get(qualifiedName) match {
+          case None => createdIn += qualifiedName -> stageName
+          case Some(stageName1) =>
+            //TODO: Сейчас расстановка зависимостей выполняется в зависимости от имён генерируемых таблиц.
+            // это не единственный вариант, и не самый верный с точки зрения представления программы в виде
+            // монады. Такой подход следует использовать в случае direct sql execution, но для программы
+            // следует полагаться на явную вставку зависимостей programSplitter-ом (добавить явные засисимостияв stage?)
+            throw new Exception(s"Table $qualifiedName written both in $stageName1 and $stageName.")
+        }
+      }
+    }
     allStages
       .foldMap { case (name, stage) =>
         //TODO: разрешение зависимостей будет встроено в API графа.

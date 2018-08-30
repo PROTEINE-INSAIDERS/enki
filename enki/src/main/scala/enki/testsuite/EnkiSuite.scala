@@ -1,11 +1,10 @@
-package enki
-package testsuite
+package enki.testsuite
 
 import java.nio.file.Files
 
 import cats.implicits._
+import enki._
 import org.apache.spark.sql.SparkSession
-
 
 trait EnkiSuite extends Defaults with ImplicitConversions {
   protected def createSparkSession(): SparkSession = {

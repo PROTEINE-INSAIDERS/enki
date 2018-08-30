@@ -1,6 +1,6 @@
 package enki.stage
 
-import enki.{ParameterValue, _}
+import enki._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
@@ -57,7 +57,7 @@ sealed trait ArgumentAction {
 
   def dataType: DataType
 
-  private [enki] def defaultStringValue: Option[String]
+  private[enki] def defaultStringValue: Option[String]
 }
 
 private[enki] sealed trait ArgumentActionBase[T] extends StageAction[T] with ArgumentAction {
@@ -84,7 +84,7 @@ private[enki] sealed trait ArgumentActionBase[T] extends StageAction[T] with Arg
 }
 
 final case class StringArgumentAction(name: String, description: String, defaultValue: Option[String])
-  extends ArgumentActionBase[String]  {
+  extends ArgumentActionBase[String] {
   override def dataType: DataType = StringType
 
   override def fromParameter(parameterValue: ParameterValue): String =
@@ -92,7 +92,7 @@ final case class StringArgumentAction(name: String, description: String, default
 }
 
 final case class IntegerArgumentAction(name: String, description: String, defaultValue: Option[Int])
-  extends ArgumentActionBase[Int]   {
+  extends ArgumentActionBase[Int] {
   override def dataType: DataType = IntegerType
 
   override def fromParameter(parameterValue: ParameterValue): Int =

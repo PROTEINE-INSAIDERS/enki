@@ -42,7 +42,7 @@ class DatasetTest extends EnkiTestSuite {
 
   "columnName" in {
     val ds = sparkSession.emptyDataset[(Int, String)]
-    val columnName: String = ds.columnName(_._1)
+    val columnName: String = ds.colName(_._1)
     columnName shouldBe "_1"
   }
 }
