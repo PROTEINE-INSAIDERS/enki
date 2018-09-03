@@ -33,5 +33,4 @@ trait ImplicitDataTypeMappings {
   implicit object TimestampMapping extends DataTypeMapping[Timestamp] {
     override def dataType: DataType = TimestampType
   }
-
 }
