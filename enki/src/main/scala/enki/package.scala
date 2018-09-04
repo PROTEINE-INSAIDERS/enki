@@ -8,6 +8,7 @@ package object enki
     with stage.Analyzers
     with application.Aliases
     with application.Implicits
+    with writer.Aliases
     with Extensions {
   type SparkAction[A] = Environment => A
 

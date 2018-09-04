@@ -1,6 +1,8 @@
 package enki.stage
 
 import enki._
+import enki.writer.DataFrameWriter
+import freestyle.free.FreeS
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
@@ -39,7 +41,7 @@ trait WriteTableAction extends TableAction
 final case class WriteDataFrameAction(
                                        schemaName: String,
                                        tableName: String,
-                                       saveMode: Option[SaveMode]
+                                       writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                                      ) extends StageAction[DataFrame => Unit] with WriteTableAction
 
 final case class WriteDatasetAction[T](
@@ -47,7 +49,7 @@ final case class WriteDatasetAction[T](
                                         tableName: String,
                                         encoder: Encoder[T],
                                         strict: Boolean,
-                                        saveMode: Option[SaveMode]
+                                        writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                                       ) extends StageAction[Dataset[T] => Unit] with WriteTableAction
 
 sealed trait ArgumentAction {
