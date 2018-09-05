@@ -15,39 +15,27 @@ private class DatasetMacros(val c: whitebox.Context) {
     c.abort(tree.pos, err)
   }
 
-  def column[A: WeakTypeTag, B: WeakTypeTag, R: WeakTypeTag](selector: Expr[A => B])
-                                                            (relation: Expr[ColumnTypeMapping[A, R]],
-                                                             encoder: Expr[Encoder[R]]): Expr[TypedColumn[A, R]] = {
-    val R = weakTypeOf[R].dealias
-
-    val selectorStr = selector.tree match {
+  private def getColumnName[A: WeakTypeTag, B: WeakTypeTag](selector: Expr[A => B]): String = {
+    selector.tree match {
       case NameExtractor(str) => str
       case Function(_, body) => colSelectorFailed(body)
       // $COVERAGE-OFF$ - cannot be reached as typechecking will fail in this case before macro is even invoked
       case other => colSelectorFailed(other)
       // $COVERAGE-ON$
     }
-
-    c.Expr(q"${c.prefix}.dataset.col($selectorStr).as[$R]($encoder)")
   }
 
-  def columnName[A, B](selector: Expr[A => B]): Expr[String] = {
-    def fail(tree: Tree) = {
-      val err =
-        s"Could not create a column identifier from $tree - try using _.a.b syntax"
-      c.abort(tree.pos, err)
-    }
+  //TODO: от неё никакого толка. Обычно колонки удаляются после withColumn, либо после join-ов, когда тип датасета уже потерян.
+  def column[A: WeakTypeTag, B: WeakTypeTag, R: WeakTypeTag](selector: Expr[A => B])
+                                                            (relation: Expr[ColumnTypeMapping[A, R]],
+                                                             encoder: Expr[Encoder[R]]): Expr[TypedColumn[A, R]] =
+    c.Expr(q"${c.prefix}.dataset.col(${getColumnName(selector)}).as[${weakTypeOf[R].dealias}]($encoder)")
 
-    val selectorStr = selector.tree match {
-      case NameExtractor(str) => str
-      case Function(_, body) => fail(body)
-      // $COVERAGE-OFF$ - cannot be reached as typechecking will fail in this case before macro is even invoked
-      case other => fail(other)
-      // $COVERAGE-ON$
-    }
-    c.Expr(q"$selectorStr")
-  }
+  def columnName[A, B](selector: Expr[A => B]): Expr[String] =
+    c.Expr(q"${getColumnName(selector)}")
 
+  def drop[A, B](selector: Expr[A => B]): Expr[DataFrame] =
+    c.Expr(q"${c.prefix}.dataset.drop(${getColumnName(selector)})")
 
   case class NameExtractor(name: TermName) {
     Self =>

@@ -12,8 +12,9 @@ trait Extensions extends OptionTypeMapping {
                (implicit relation: ColumnTypeMapping[A, R], encoder: Encoder[R]): TypedColumn[T, R] =
     macro DatasetMacros.column[T, A, R]
 
-    def colName[R](selector: T => R): String =
-    macro DatasetMacros.columnName[T, R]
+    def colName[R](selector: T => R): String = macro DatasetMacros.columnName[T, R]
+
+    def dropCol[R](selector: T => R): DataFrame = macro DatasetMacros.drop[T, R]
 
     def typedCol[A, R](selector: T => A)
                       (implicit relation: ColumnTypeMapping[A, R], encoder: Encoder[R]): TypedColumn[T, R] =

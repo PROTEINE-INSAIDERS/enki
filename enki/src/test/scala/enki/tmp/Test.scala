@@ -3,12 +3,12 @@ package enki.tmp
 import cats._
 import cats.data._
 import cats.implicits._
-import enki.DataFrameWriterState
+import enki._
 import enki.arguments.Arguments
 import enki.tmp.test.test1
 import enki.writer._
 import freestyle.free._
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{Dataset, SaveMode}
 
 @module trait Yoba {
   val argument: enki.arguments.Arguments
@@ -16,12 +16,6 @@ import org.apache.spark.sql.SaveMode
 }
 
 object test {
-  def test2[F[_]](implicit writer: DataFrameWriter[F]): FreeS.Par[F, Unit] = {
-
-
-    val aa = ().pure[writer.FS]
-    aa
-  }
 
   def test[F[_]](implicit yoba: Yoba[F]): yoba.FS[Int] = {
     import yoba._
@@ -58,20 +52,6 @@ object test {
   }
 
 }
-
-object TTTTTTTTTTTT {
-  def main(args: Array[String]): Unit = {
-    val ddd = test.test2
-
-    println(ddd)
-
-    implicit val configurator = new DataFrameWriterConfigurator[(Int, Int)]()
-
-    val aaaaa = ddd.interpret[DataFrameWriterState[(Int, Int), ?]]
-  }
-
-}
-
 /*
 case class Customer(id: String, name: String)
 
