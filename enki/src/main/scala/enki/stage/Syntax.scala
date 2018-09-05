@@ -3,6 +3,8 @@ package enki.stage
 import cats.free.FreeApplicative
 import cats.free.FreeApplicative._
 import enki._
+import enki.writer.DataFrameWriter
+import freestyle.free.FreeS
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
@@ -34,18 +36,18 @@ trait Syntax {
   def writeDataFrame(
                       schemaName: String,
                       tableName: String,
-                      saveMode: Option[SaveMode]
+                      writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                     ): Stage[DataFrame => Unit] =
-    lift[StageAction, DataFrame => Unit](WriteDataFrameAction(schemaName, tableName, saveMode))
+    lift[StageAction, DataFrame => Unit](WriteDataFrameAction(schemaName, tableName, writerSettings))
 
   def writeDataset[T](
                        schemaName: String,
                        tableName: String,
                        encoder: Encoder[T],
                        strict: Boolean,
-                       saveMode: Option[SaveMode]
+                       writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                      ): Stage[Dataset[T] => Unit] =
-    lift[StageAction, Dataset[T] => Unit](WriteDatasetAction(schemaName, tableName, encoder, strict, saveMode))
+    lift[StageAction, Dataset[T] => Unit](WriteDatasetAction(schemaName, tableName, encoder, strict, writerSettings))
 
   def integerArgument(name: String, description: String, defaultValue: Option[Int]): Stage[Int] =
     lift[StageAction, Int](IntegerArgumentAction(name, description, defaultValue))

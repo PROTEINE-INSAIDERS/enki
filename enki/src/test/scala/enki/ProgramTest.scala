@@ -11,7 +11,7 @@ class ProgramTest extends EnkiTestSuite with Database {
 
   override def schema: String = "default"
 
-  override def saveMode = Some(SaveMode.Overwrite)
+  override def writerSettings[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] = writer.mode(SaveMode.Overwrite)
 
   "buildActionGraph" should {
     "detect dependencies" in {

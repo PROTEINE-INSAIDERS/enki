@@ -3,6 +3,8 @@ package enki.stage
 import cats._
 import enki._
 import org.apache.spark.sql._
+import freestyle.free._
+import freestyle.free.implicits._
 
 import scala.collection.JavaConversions._
 
@@ -28,21 +30,21 @@ trait Compilers {
     }
 
     case action: WriteDataFrameAction => _: Environment =>
-      dataFrame: DataFrame => {
-        val writer = dataFrame.write
-        action.saveMode.foreach(writer.mode)
+      dataFrame: DataFrame => imply(new DataFrameWriterConfigurator[Row]()) {
+        val state = action.writerSettings.interpret[DataFrameWriterState[Row, ?]]
+        val writer = state.runS(dataFrame.write).value
         writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
       }
 
     case action: WriteDatasetAction[t] => _: Environment =>
-      dataset: Dataset[t] => {
+      dataset: Dataset[t] => imply(new DataFrameWriterConfigurator[t]()) {
         val resticted = if (action.strict) {
           dataset.select(action.encoder.schema.map(f => dataset(f.name)): _*)
         } else {
           dataset
         }
-        val writer = resticted.as[t](action.encoder).write //TODO: возможно в некоторых случаях этот каст лишний.
-        action.saveMode.foreach(writer.mode)
+        val state = action.writerSettings.interpret[DataFrameWriterState[t, ?]]
+        val writer = state.runS(resticted.as[t](action.encoder).write).value //TODO: возможно в некоторых случаях этот каст лишний.
         writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
       }
 

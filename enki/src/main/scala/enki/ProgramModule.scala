@@ -5,9 +5,11 @@ import cats.data._
 import cats.free.Free._
 import cats.free._
 import cats.implicits._
+import freestyle.free._
 import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
+
 import scala.collection.mutable
 
 /**
@@ -25,7 +27,7 @@ trait ProgramModule {
                                            schemaName: String,
                                            tableName: String,
                                            stage: enki.Stage[DataFrame],
-                                           saveMode: Option[SaveMode]
+                                           writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                                          ) extends ProgramAction[Stage[DataFrame]]
 
   final case class PersistDatasetAction[T](
@@ -34,7 +36,7 @@ trait ProgramModule {
                                             stage: enki.Stage[Dataset[T]],
                                             encoder: Encoder[T],
                                             strict: Boolean,
-                                            saveMode: Option[SaveMode]
+                                            writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                                           ) extends ProgramAction[Stage[Dataset[T]]]
 
   type Program[A] = Free[ProgramAction, A]
@@ -45,13 +47,13 @@ trait ProgramModule {
                         schemaName: String,
                         tableName: String,
                         stage: enki.Stage[DataFrame],
-                        saveMode: Option[SaveMode]
+                        writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                       ): Program[Stage[DataFrame]] =
     liftF[ProgramAction, Stage[DataFrame]](PersistDataFrameAction(
       schemaName,
       tableName,
       stage,
-      saveMode))
+      writerSettings))
 
   def persistDataset[T](
                          schemaName: String,
@@ -59,7 +61,7 @@ trait ProgramModule {
                          stage: Stage[Dataset[T]],
                          encoder: Encoder[T],
                          strict: Boolean,
-                         saveMode: Option[SaveMode]
+                         writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                        ): Program[Stage[Dataset[T]]] =
     liftF[ProgramAction, Stage[Dataset[T]]](PersistDatasetAction[T](
       schemaName,
@@ -67,14 +69,14 @@ trait ProgramModule {
       stage,
       encoder,
       strict,
-      saveMode))
+      writerSettings))
 
   type StageWriter[A] = Writer[List[(String, Stage[_])], A]
 
   val programSplitter: ProgramAction ~> StageWriter = λ[ProgramAction ~> StageWriter] {
     case p: PersistDatasetAction[t] => {
       val stageName = s"${p.schemaName}.${p.tableName}"
-      val stage = p.stage ap writeDataset[t](p.schemaName, p.tableName, p.encoder, p.strict, p.saveMode)
+      val stage = p.stage ap writeDataset[t](p.schemaName, p.tableName, p.encoder, p.strict, p.writerSettings)
       for {
         _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
       } yield {
@@ -83,7 +85,7 @@ trait ProgramModule {
     }
     case p: PersistDataFrameAction => {
       val stageName = s"${p.schemaName}.${p.tableName}"
-      val stage = p.stage ap writeDataFrame(p.schemaName, p.tableName, p.saveMode)
+      val stage = p.stage ap writeDataFrame(p.schemaName, p.tableName, p.writerSettings)
       for {
         _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
       } yield {
