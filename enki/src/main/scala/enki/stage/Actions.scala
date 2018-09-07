@@ -5,6 +5,7 @@ import enki._
 import enki.writer.{DataFrameWriter, DataFrameWriterSettings}
 import freestyle.free._
 import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
 sealed trait StageAction[T]
@@ -47,7 +48,10 @@ trait WriteTableAction extends TableAction {
       val session = dataset.sparkSession
       (session.catalog.tableExists(schemaName, tableName), settings.partition) match {
         case (true, Some(partition)) if partition.nonEmpty =>
-          dataset.createTempView(s"tmp_$tableName")
+          dataset
+            .where(partition map (p => dataset(p._1) === lit(p._2)) reduce (_ and _))
+            .drop(partition.keys.toSeq: _*)
+            .createTempView(s"tmp_$tableName")
           try {
             val partitionStr = partition.map(a => s"${a._1} = '${a._2}'").mkString(", ")
             session.sql(s"insert ${if (settings.overwrite) "overwrite" else ""} table $schemaName.$tableName partition($partitionStr) select * from tmp_$tableName")
