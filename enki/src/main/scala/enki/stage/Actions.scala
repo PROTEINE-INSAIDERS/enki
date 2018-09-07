@@ -1,8 +1,9 @@
 package enki.stage
 
+import cats.data.State
 import enki._
-import enki.writer.DataFrameWriter
-import freestyle.free.FreeS
+import enki.writer.{DataFrameWriter, DataFrameWriterSettings}
+import freestyle.free._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
@@ -36,7 +37,29 @@ final case class ReadDatasetAction[T](
                                        strict: Boolean
                                      ) extends StageAction[Dataset[T]] with ReadTableAction
 
-trait WriteTableAction extends TableAction
+trait WriteTableAction extends TableAction {
+
+  //TODO: Временное решение. После перехода на freestyle этот метод будет в интерпретаторе.
+  private[enki] def write[T](writerSettings: FreeS.Par[DataFrameWriter.Op, Unit], dataset: Dataset[T]): Unit =
+    imply(new DataFrameWriterConfigurator[T]()) {
+      val state = writerSettings.interpret[State[DataFrameWriterSettings[T], ?]]
+      val settings = state.runS(DataFrameWriterSettings(dataset.write)).value
+      val session = dataset.sparkSession
+      (session.catalog.tableExists(schemaName, tableName), settings.partition) match {
+        case (true, Some(partition)) if partition.nonEmpty =>
+          dataset.createTempView(s"tmp_$tableName")
+          try {
+            val partitionStr = partition.map(a => s"${a._1} = '${a._2}'").mkString(", ")
+            session.sql(s"insert ${if (settings.overwrite) "overwrite" else ""} table $schemaName.$tableName partition($partitionStr) select * from tmp_$tableName")
+            ()
+          } finally {
+            session.catalog.dropGlobalTempView(s"tmp_$tableName")
+            ()
+          }
+        case _ => settings.dataFrameWriter.saveAsTable(s"$schemaName.$tableName")
+      }
+    }
+}
 
 final case class WriteDataFrameAction(
                                        schemaName: String,

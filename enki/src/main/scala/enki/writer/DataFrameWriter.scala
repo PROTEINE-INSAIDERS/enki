@@ -9,4 +9,6 @@ import org.apache.spark.sql._
   def format(source: String): FS[Unit]
 
   def partitionBy(colNames: Seq[String]): FS[Unit]
+
+  def partition(partition: Map[String, String]): FS[Unit]
 }

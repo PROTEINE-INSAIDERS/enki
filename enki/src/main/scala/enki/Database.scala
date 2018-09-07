@@ -1,7 +1,7 @@
 package enki
 
-import cats._
 import cats.implicits._
+import freestyle.free.FreeS
 import freestyle.free.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
@@ -74,8 +74,13 @@ trait Database {
 
   /* program builder */
 
-  final def persist[T: Encoder](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false): Program[Stage[Dataset[T]]] =
-    enki.persistDataset(schema, tableName, stage, implicitly, strict, writerSettings)
+  final def persist[T: Encoder](
+                                 tableName: String,
+                                 stage: Stage[Dataset[T]],
+                                 strict: Boolean = false,
+                                 writerSettings: FreeS.Par[DataFrameWriter.Op, Unit] = ().pure[FreeS.Par[DataFrameWriter.Op, ?]]
+                               ): Program[Stage[Dataset[T]]] =
+    enki.persistDataset(schema, tableName, stage, implicitly, strict, this.writerSettings *> writerSettings)
 
   final def persist(tableName: String, stage: Stage[DataFrame]): Program[Stage[DataFrame]] =
     enki.persistDataFrame(schema, tableName, stage, writerSettings)
