@@ -13,7 +13,7 @@ import scala.util.Try
 
 //TODO: factor out Environment as only parametrized entity (should compiles be parametrized?)
 trait EnkiMain {
-  private def actionParams(node: ActionNode): Opts[Map[String, ParameterValue]] = {
+  protected def actionParams(node: ActionNode): Opts[Map[String, ParameterValue]] = {
     val arguments = node.analyze(stageArguments(_, Set(_)))
     val argumentMap = mutable.Map[String, ArgumentAction]()
     arguments.foreach { arg =>
@@ -49,7 +49,7 @@ trait EnkiMain {
 
   protected def compiler: Opts[StageAction ~> SparkAction]
 
-  protected def resume1(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = Opts {
+  protected def resume(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = Opts {
     (params: Map[String, ParameterValue]) =>
       (session: SparkSession) =>
         (compiler: StageAction ~> SparkAction) =>
@@ -80,7 +80,7 @@ trait EnkiMain {
         name = action,
         help = s"Run $action."
       ) {
-        resume1(action) <*> session <*> compiler
+        resume(action) <*> session <*> compiler
       }
     }.reduce(_.orElse(_))
   }
