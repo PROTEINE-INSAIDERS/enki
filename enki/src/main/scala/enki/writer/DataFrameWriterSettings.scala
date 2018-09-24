@@ -5,7 +5,7 @@ import shapeless._
 
 case class DataFrameWriterSettings[T](
                                        dataFrameWriter: spark.DataFrameWriter[T],
-                                       partition: Option[Map[String, String]],
+                                       partition: Option[Map[String, String]], //TODO: убрать Option? (пустой Map эквивалентен отсутсвию партиционирования).
                                        overwrite: Boolean
                                      )
 

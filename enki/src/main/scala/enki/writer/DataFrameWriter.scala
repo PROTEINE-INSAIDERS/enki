@@ -10,5 +10,5 @@ import org.apache.spark.sql._
 
   def partitionBy(colNames: Seq[String]): FS[Unit]
 
-  def partition(partition: Map[String, String]): FS[Unit]
+  def partition(partition: Map[String, String]): FS[Unit] //TODO: rename to "static partition" (Spark 2.3 will support dynamic partitioning out of the box).
 }

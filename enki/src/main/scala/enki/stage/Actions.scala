@@ -41,6 +41,7 @@ final case class ReadDatasetAction[T](
 trait WriteTableAction extends TableAction {
 
   //TODO: Временное решение. После перехода на freestyle этот метод будет в интерпретаторе.
+  //TODO:
   private[enki] def write[T](writerSettings: FreeS.Par[DataFrameWriter.Op, Unit], dataset: Dataset[T]): Unit =
     imply(new DataFrameWriterConfigurator[T]()) {
       val state = writerSettings.interpret[State[DataFrameWriterSettings[T], ?]]
@@ -57,9 +58,13 @@ trait WriteTableAction extends TableAction {
             session.sql(s"insert ${if (settings.overwrite) "overwrite" else ""} table $schemaName.$tableName partition($partitionStr) select * from tmp_$tableName")
             ()
           } finally {
-            session.catalog.dropGlobalTempView(s"tmp_$tableName")
+            session.catalog.dropTempView(s"tmp_$tableName")
             ()
           }
+        case (false, Some(partition)) if partition.nonEmpty =>
+          settings.dataFrameWriter //TODO: filter records by partition.
+            .partitionBy(partition.keys.toSeq: _*)
+            .saveAsTable(s"$schemaName.$tableName")
         case _ => settings.dataFrameWriter.saveAsTable(s"$schemaName.$tableName")
       }
     }
