@@ -5,7 +5,7 @@ import enki._
 import enki.writer.DataFrameWriterSettings._
 import org.apache.spark.sql.{DataFrameWriter => _, _}
 
-class DataFrameWriterConfigurator[T] extends DataFrameWriter.Handler[State[DataFrameWriterSettings[T], ?]] {
+class DataFrameWriterConfigurator[T] extends DataFrameWriterBase.Handler[State[DataFrameWriterSettings[T], ?]] {
   override protected[this] def mode(saveMode: SaveMode): State[DataFrameWriterSettings[T], Unit] =
     State.modify((dataFrameWriterLens[T] ~ overwrite[T]).modify(_) { case (writer, overwrite) =>
       (

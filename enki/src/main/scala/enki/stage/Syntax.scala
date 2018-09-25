@@ -3,7 +3,7 @@ package enki.stage
 import cats.free.FreeApplicative
 import cats.free.FreeApplicative._
 import enki._
-import enki.writer.DataFrameWriter
+import enki.writer.DataFrameWriterBase
 import freestyle.free.FreeS
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._

@@ -2,7 +2,7 @@ package enki.stage
 
 import cats.data.State
 import enki._
-import enki.writer.{DataFrameWriter, DataFrameWriterSettings}
+import enki.writer.{DataFrameWriterBase, DataFrameWriterSettings}
 import freestyle.free._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
@@ -43,7 +43,8 @@ trait WriteTableAction extends TableAction {
   //TODO: Временное решение. После перехода на freestyle этот метод будет в интерпретаторе.
   //TODO:
   private[enki] def write[T](writerSettings: FreeS.Par[DataFrameWriter.Op, Unit], dataset: Dataset[T]): Unit =
-    imply(new DataFrameWriterConfigurator[T]()) {
+    imply(new DataFrameWriterConfigurator[T](), new ArgumentsToOpts[Set[Unit]](_ => Set(()))) {
+
       val state = writerSettings.interpret[State[DataFrameWriterSettings[T], ?]]
       val settings = state.runS(DataFrameWriterSettings(dataset.write)).value
       val session = dataset.sparkSession

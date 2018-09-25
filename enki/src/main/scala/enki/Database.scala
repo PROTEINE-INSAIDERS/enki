@@ -20,7 +20,12 @@ trait Database {
 
   def encoderStyle: EncoderStyle = EncoderStyle.Spark
 
+  protected def test[F[_]](implicit a: enki.Arguments[F], w: enki.DataFrameWriter[F]): a.FS[Unit] = {
+    ???
+  }
+
   protected def writerSettings[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] = {
+   // val aaaa = writer.partition(Map()) *> arguments.int("")
     ().pure[writer.FS]
   }
 

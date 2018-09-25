@@ -145,24 +145,6 @@ trait GraphModule {
     def empty: ActionGraph = ActionGraph(Graph.empty[String, DiEdge], Map.empty[String, ActionNode])
   }
 
-  object ActionGraph {
-    /**
-      * Create action graph with single stage.
-      */
-    def apply(stageName: String, stage: Stage[_]): ActionGraph = {
-      ActionGraph(Graph[String, DiEdge](stageName), Map(stageName -> StageNode(stage)))
-    }
-
-    /**
-      * Create action graph with single subgraph.
-      */
-    def apply(stageName: String, subGraph: ActionGraph): ActionGraph = {
-      ActionGraph(Graph[String, DiEdge](stageName), Map(stageName -> GraphNode(subGraph)))
-    }
-
-    def empty: ActionGraph = ActionGraph(Graph.empty[String, DiEdge], Map.empty[String, ActionNode])
-  }
-
   implicit val actionGraphMonoid: Monoid[ActionGraph] = new Monoid[ActionGraph] {
     override def empty: ActionGraph = ActionGraph.empty
 

@@ -9,7 +9,8 @@ package object enki
     with application.Aliases
     with application.Implicits
     with writer.Aliases
-    with Extensions {
+    with Extensions
+    with arguments.Aliases {
   type SparkAction[A] = Environment => A
 
   /**
