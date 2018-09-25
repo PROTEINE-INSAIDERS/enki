@@ -1,7 +1,11 @@
 package enki.stage
 
-import enki.{ParameterValue, _}
+import cats.data.State
+import enki._
+import enki.writer.{DataFrameWriter, DataFrameWriterSettings}
+import freestyle.free._
 import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
 sealed trait StageAction[T]
@@ -34,12 +38,42 @@ final case class ReadDatasetAction[T](
                                        strict: Boolean
                                      ) extends StageAction[Dataset[T]] with ReadTableAction
 
-trait WriteTableAction extends TableAction
+trait WriteTableAction extends TableAction {
+
+  //TODO: Временное решение. После перехода на freestyle этот метод будет в интерпретаторе.
+  //TODO:
+  private[enki] def write[T](writerSettings: FreeS.Par[DataFrameWriter.Op, Unit], dataset: Dataset[T]): Unit =
+    imply(new DataFrameWriterConfigurator[T]()) {
+      val state = writerSettings.interpret[State[DataFrameWriterSettings[T], ?]]
+      val settings = state.runS(DataFrameWriterSettings(dataset.write)).value
+      val session = dataset.sparkSession
+      (session.catalog.tableExists(schemaName, tableName), settings.partition) match {
+        case (true, Some(partition)) if partition.nonEmpty =>
+          dataset
+            .where(partition map (p => dataset(p._1) === lit(p._2)) reduce (_ and _))
+            .drop(partition.keys.toSeq: _*)
+            .createTempView(s"tmp_$tableName")
+          try {
+            val partitionStr = partition.map(a => s"${a._1} = '${a._2}'").mkString(", ")
+            session.sql(s"insert ${if (settings.overwrite) "overwrite" else ""} table $schemaName.$tableName partition($partitionStr) select * from tmp_$tableName")
+            ()
+          } finally {
+            session.catalog.dropTempView(s"tmp_$tableName")
+            ()
+          }
+        case (false, Some(partition)) if partition.nonEmpty =>
+          settings.dataFrameWriter //TODO: filter records by partition.
+            .partitionBy(partition.keys.toSeq: _*)
+            .saveAsTable(s"$schemaName.$tableName")
+        case _ => settings.dataFrameWriter.saveAsTable(s"$schemaName.$tableName")
+      }
+    }
+}
 
 final case class WriteDataFrameAction(
                                        schemaName: String,
                                        tableName: String,
-                                       saveMode: Option[SaveMode]
+                                       writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                                      ) extends StageAction[DataFrame => Unit] with WriteTableAction
 
 final case class WriteDatasetAction[T](
@@ -47,7 +81,7 @@ final case class WriteDatasetAction[T](
                                         tableName: String,
                                         encoder: Encoder[T],
                                         strict: Boolean,
-                                        saveMode: Option[SaveMode]
+                                        writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                                       ) extends StageAction[Dataset[T] => Unit] with WriteTableAction
 
 sealed trait ArgumentAction {
@@ -57,7 +91,7 @@ sealed trait ArgumentAction {
 
   def dataType: DataType
 
-  private [enki] def defaultStringValue: Option[String]
+  private[enki] def defaultStringValue: Option[String]
 }
 
 private[enki] sealed trait ArgumentActionBase[T] extends StageAction[T] with ArgumentAction {
@@ -84,7 +118,7 @@ private[enki] sealed trait ArgumentActionBase[T] extends StageAction[T] with Arg
 }
 
 final case class StringArgumentAction(name: String, description: String, defaultValue: Option[String])
-  extends ArgumentActionBase[String]  {
+  extends ArgumentActionBase[String] {
   override def dataType: DataType = StringType
 
   override def fromParameter(parameterValue: ParameterValue): String =
@@ -92,7 +126,7 @@ final case class StringArgumentAction(name: String, description: String, default
 }
 
 final case class IntegerArgumentAction(name: String, description: String, defaultValue: Option[Int])
-  extends ArgumentActionBase[Int]   {
+  extends ArgumentActionBase[Int] {
   override def dataType: DataType = IntegerType
 
   override def fromParameter(parameterValue: ParameterValue): Int =

@@ -5,9 +5,12 @@ import cats.data._
 import cats.free.Free._
 import cats.free._
 import cats.implicits._
+import freestyle.free._
 import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
+
+import scala.collection.mutable
 
 /**
   * Monadic program builder designed to be used with for-comprehensions.
@@ -24,7 +27,7 @@ trait ProgramModule {
                                            schemaName: String,
                                            tableName: String,
                                            stage: enki.Stage[DataFrame],
-                                           saveMode: Option[SaveMode]
+                                           writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                                          ) extends ProgramAction[Stage[DataFrame]]
 
   final case class PersistDatasetAction[T](
@@ -33,7 +36,7 @@ trait ProgramModule {
                                             stage: enki.Stage[Dataset[T]],
                                             encoder: Encoder[T],
                                             strict: Boolean,
-                                            saveMode: Option[SaveMode]
+                                            writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                                           ) extends ProgramAction[Stage[Dataset[T]]]
 
   type Program[A] = Free[ProgramAction, A]
@@ -44,13 +47,13 @@ trait ProgramModule {
                         schemaName: String,
                         tableName: String,
                         stage: enki.Stage[DataFrame],
-                        saveMode: Option[SaveMode]
+                        writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                       ): Program[Stage[DataFrame]] =
     liftF[ProgramAction, Stage[DataFrame]](PersistDataFrameAction(
       schemaName,
       tableName,
       stage,
-      saveMode))
+      writerSettings))
 
   def persistDataset[T](
                          schemaName: String,
@@ -58,7 +61,7 @@ trait ProgramModule {
                          stage: Stage[Dataset[T]],
                          encoder: Encoder[T],
                          strict: Boolean,
-                         saveMode: Option[SaveMode]
+                         writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
                        ): Program[Stage[Dataset[T]]] =
     liftF[ProgramAction, Stage[Dataset[T]]](PersistDatasetAction[T](
       schemaName,
@@ -66,14 +69,14 @@ trait ProgramModule {
       stage,
       encoder,
       strict,
-      saveMode))
+      writerSettings))
 
   type StageWriter[A] = Writer[List[(String, Stage[_])], A]
 
   val programSplitter: ProgramAction ~> StageWriter = λ[ProgramAction ~> StageWriter] {
     case p: PersistDatasetAction[t] => {
       val stageName = s"${p.schemaName}.${p.tableName}"
-      val stage = p.stage ap writeDataset[t](p.schemaName, p.tableName, p.encoder, p.strict, p.saveMode)
+      val stage = p.stage ap writeDataset[t](p.schemaName, p.tableName, p.encoder, p.strict, p.writerSettings)
       for {
         _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
       } yield {
@@ -82,7 +85,7 @@ trait ProgramModule {
     }
     case p: PersistDataFrameAction => {
       val stageName = s"${p.schemaName}.${p.tableName}"
-      val stage = p.stage ap writeDataFrame(p.schemaName, p.tableName, p.saveMode)
+      val stage = p.stage ap writeDataFrame(p.schemaName, p.tableName, p.writerSettings)
       for {
         _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
       } yield {
@@ -95,11 +98,21 @@ trait ProgramModule {
     val (stages, lastStage) = p.foldMap(programSplitter).run
 
     val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) } //TODO: стейджи, не содержащие write action попадают в граф, что, возможно, не верно.
-
-    val createdIn = allStages.flatMap { case (name, stage) =>
-      stageWrites(stage, Set(_)).map(w => (s"${w.schemaName}.${w.tableName}", name))
-    }.toMap
-
+    val createdIn = mutable.Map[String, String]()
+    allStages.foreach { case (stageName, stage) =>
+      stageWrites(stage, Set(_)).foreach { w =>
+        val qualifiedName = s"${w.schemaName}.${w.tableName}"
+        createdIn.get(qualifiedName) match {
+          case None => createdIn += qualifiedName -> stageName
+          case Some(stageName1) =>
+            //TODO: Сейчас расстановка зависимостей выполняется в зависимости от имён генерируемых таблиц.
+            // это не единственный вариант, и не самый верный с точки зрения представления программы в виде
+            // монады. Такой подход следует использовать в случае direct sql execution, но для программы
+            // следует полагаться на явную вставку зависимостей programSplitter-ом (добавить явные засисимостияв stage?)
+            throw new Exception(s"Table $qualifiedName written both in $stageName1 and $stageName.")
+        }
+      }
+    }
     allStages
       .foldMap { case (name, stage) =>
         //TODO: разрешение зависимостей будет встроено в API графа.

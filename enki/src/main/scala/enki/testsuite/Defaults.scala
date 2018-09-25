@@ -61,4 +61,5 @@ trait Defaults {
   implicit class EnkiSessionDefaultsExtension(session: SparkSession) {
     def createDataset[T: Default : Encoder](f: T => Seq[T]): Dataset[T] = session.createDataset[T](f(default[T]))
   }
+
 }

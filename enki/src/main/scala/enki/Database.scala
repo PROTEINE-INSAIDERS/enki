@@ -1,5 +1,8 @@
 package enki
 
+import cats.implicits._
+import freestyle.free.FreeS
+import freestyle.free.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
 import org.apache.spark.sql.types._
@@ -17,11 +20,9 @@ trait Database {
 
   def encoderStyle: EncoderStyle = EncoderStyle.Spark
 
-  //TODO: у нас имеются несколько уровней настройки параметров сохранения: таблица <- база данных <- параметры спарка по-умолчанию.
-  // на каждом из уровней должна быть возможность перегрузить настройки, либо унаследовать их. Возможно для этого
-  // подойдёт HList. Если настройка присутсвует в HList-e, берем её, иначе наследуем (HList обеспечивает строгую типизацию
-  // по сравнению со словарём, с другой стороны иных преимуществ он не даёт).
-  protected def saveMode: Option[SaveMode] = None
+  protected def writerSettings[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] = {
+    ().pure[writer.FS]
+  }
 
   def schema: String
 
@@ -49,16 +50,16 @@ trait Database {
     }
 
   final def write[T: Encoder](tableName: String, strict: Boolean = false): Stage[Dataset[T] => Unit] =
-    enki.writeDataset(schema, tableName, implicitly, strict, saveMode)
+    enki.writeDataset(schema, tableName, implicitly, strict, writerSettings)
 
   final def write(tableName: String): Stage[DataFrame => Unit] =
-    enki.writeDataFrame(schema, tableName, saveMode)
+    enki.writeDataFrame(schema, tableName, writerSettings)
 
   final def gwrite[T: TypeTag](tableName: String): Stage[Dataset[T] => Unit] =
     if (typeOf[T] == typeOf[Row]) {
-      enki.writeDataFrame(schema, tableName, saveMode).asInstanceOf[Stage[Dataset[T] => Unit]]
+      enki.writeDataFrame(schema, tableName, writerSettings).asInstanceOf[Stage[Dataset[T] => Unit]]
     } else {
-      enki.writeDataset(schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false, saveMode)
+      enki.writeDataset(schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false, writerSettings)
     }
 
   final def arg[T: TypeTag](name: String, description: String = "", defaultValue: Option[T] = None): Stage[T] = {
@@ -73,18 +74,23 @@ trait Database {
 
   /* program builder */
 
-  final def persist[T: Encoder](tableName: String, stage: Stage[Dataset[T]], strict: Boolean = false): Program[Stage[Dataset[T]]] =
-    enki.persistDataset(schema, tableName, stage, implicitly, strict, saveMode)
+  final def persist[T: Encoder](
+                                 tableName: String,
+                                 stage: Stage[Dataset[T]],
+                                 strict: Boolean = false,
+                                 writerSettings: FreeS.Par[DataFrameWriter.Op, Unit] = ().pure[FreeS.Par[DataFrameWriter.Op, ?]]
+                               ): Program[Stage[Dataset[T]]] =
+    enki.persistDataset(schema, tableName, stage, implicitly, strict, this.writerSettings *> writerSettings)
 
   final def persist(tableName: String, stage: Stage[DataFrame]): Program[Stage[DataFrame]] =
-    enki.persistDataFrame(schema, tableName, stage, saveMode)
+    enki.persistDataFrame(schema, tableName, stage, writerSettings)
 
   final def gpersist[T: TypeTag](tableName: String, stage: Stage[Dataset[T]]): Program[Stage[Dataset[T]]] =
     if (typeOf[T] == typeOf[Row])
       enki
-        .persistDataFrame(schema, tableName, stage.asInstanceOf[Stage[DataFrame]], saveMode)
+        .persistDataFrame(schema, tableName, stage.asInstanceOf[Stage[DataFrame]], writerSettings)
         .asInstanceOf[Program[Stage[Dataset[T]]]]
     else {
-      enki.persistDataset(schema, tableName, stage, implicits.selectEncoder(ExpressionEncoder()), strict = false, saveMode)
+      enki.persistDataset(schema, tableName, stage, implicits.selectEncoder(ExpressionEncoder()), strict = false, writerSettings)
     }
 }

@@ -1,5 +1,4 @@
-package enki
-package timestamp
+package enki.timestamp
 
 import java.sql._
 import java.time._

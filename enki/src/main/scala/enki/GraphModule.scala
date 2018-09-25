@@ -21,6 +21,8 @@ trait GraphModule {
 
     def writes[M: Monoid](f: WriteTableAction => M): M = analyze(stageWrites(_, f))
 
+    def mapStages(f: Stage ~> Stage): ActionNode
+
     def externalReads[M: Monoid](f: ReadTableAction => M): M = {
       val writeTables = writes(w => Set((w.schemaName, w.tableName)))
       reads(r => if (writeTables.contains((r.schemaName, r.tableName))) {
@@ -33,10 +35,14 @@ trait GraphModule {
 
   final case class StageNode(stage: Stage[_]) extends ActionNode {
     override def analyze[M: Monoid](f: Stage[_] => M): M = f(stage)
+
+    override def mapStages(f: Stage ~> Stage): ActionNode = StageNode(f(stage))
   }
 
   final case class GraphNode(graph: ActionGraph) extends ActionNode {
     override def analyze[M: Monoid](f: Stage[_] => M): M = graph.analyze(f)
+
+    override def mapStages(f: Stage ~> Stage): ActionNode = GraphNode(graph.copy(actions = graph.actions.mapValues(node => node.mapStages(f))))
   }
 
   //TODO: возможно граф зависимостей нужно строить не в процессе сборки графа, а выводить из actions по запросу.
@@ -119,6 +125,24 @@ trait GraphModule {
       validate()
       linearized.foreach { stageName => runAction(stageName, compiler, environment) }
     }
+  }
+
+  object ActionGraph {
+    /**
+      * Create action graph with single stage.
+      */
+    def apply(stageName: String, stage: Stage[_]): ActionGraph = {
+      ActionGraph(Graph[String, DiEdge](stageName), Map(stageName -> StageNode(stage)))
+    }
+
+    /**
+      * Create action graph with single subgraph.
+      */
+    def apply(stageName: String, subGraph: ActionGraph): ActionGraph = {
+      ActionGraph(Graph[String, DiEdge](stageName), Map(stageName -> GraphNode(subGraph)))
+    }
+
+    def empty: ActionGraph = ActionGraph(Graph.empty[String, DiEdge], Map.empty[String, ActionNode])
   }
 
   object ActionGraph {

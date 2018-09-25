@@ -28,23 +28,17 @@ trait Compilers {
     }
 
     case action: WriteDataFrameAction => _: Environment =>
-      dataFrame: DataFrame => {
-        val writer = dataFrame.write
-        action.saveMode.foreach(writer.mode)
-        writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
-      }
+      dataFrame: DataFrame => action.write(action.writerSettings, dataFrame)
 
     case action: WriteDatasetAction[t] => _: Environment =>
-      dataset: Dataset[t] => {
-        val resticted = if (action.strict) {
-          dataset.select(action.encoder.schema.map(f => dataset(f.name)): _*)
+      dataset: Dataset[t] =>
+        if (action.strict) {
+          action.write(
+            action.writerSettings,
+            dataset.select(action.encoder.schema.map(f => dataset(f.name)): _*).as[t](action.encoder))
         } else {
-          dataset
+          action.write(action.writerSettings, dataset)
         }
-        val writer = resticted.as[t](action.encoder).write //TODO: возможно в некоторых случаях этот каст лишний.
-        action.saveMode.foreach(writer.mode)
-        writer.saveAsTable(s"${action.schemaName}.${action.tableName}")
-      }
 
     case arg: StringArgumentAction => env: Environment => arg.fromParameterMap(env.parameters)
 

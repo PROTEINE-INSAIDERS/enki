@@ -20,8 +20,8 @@ class TutorialMain extends EnkiMain with UserDatabase with SourceDatabase with E
     stageCompiler
   }
 
-  override def resume1(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = {
-    super.resume1(action).map { f =>
+  override def resume(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = {
+    super.resume(action).map { f =>
       session =>
         compiler =>
           createEmptySources(actionGraph, session) // intercepting enki commands to create sample tables

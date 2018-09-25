@@ -1,6 +1,6 @@
 package enki.stage
 
-import enki.{Environment, ParameterValue, stage}
+import enki._
 
 trait Aliases {
   type StageAction[T] = stage.StageAction[T]
