@@ -7,7 +7,8 @@ class GraphTest extends EnkiTestSuite {
     }
 
     "find stage by name" in {
-      ActionGraph("test" , emptyStage).getOpt("test") shouldBe Some(StageNode(emptyStage))
+    //  ActionGraph("test" , emptyStage).getOpt("test") shouldBe Some(StageNode(emptyStage))
+      ???
     }
 
     "find graph by name" in {

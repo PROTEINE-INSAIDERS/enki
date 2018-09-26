@@ -3,18 +3,18 @@ package enki.stage
 import cats.free.FreeApplicative
 import cats.free.FreeApplicative._
 import enki._
-import enki.writer.DataFrameWriterBase
+import enki.writer.DataFrameWriter
 import freestyle.free.FreeS
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
-
+/*
 trait Syntax {
   type Stage[A] = FreeApplicative[StageAction, A]
 
-  def dataFrame(rows: Seq[Row], schema: StructType): Stage[DataFrame] =
+  def dataFrame(rows: Seq[Row], schema: StructType): FreeS.Par[Stage.Op, DataFrame] =
     lift[StageAction, DataFrame](DataFrameAction(rows, schema))
 
-  def dataset[T](data: Seq[T], encoder: Encoder[T]): Stage[Dataset[T]] =
+  def dataset[T](data: Seq[T], encoder: Encoder[T]): FreeS.Par[Stage.Op, Dataset[T]] =
     lift[StageAction, Dataset[T]](DatasetAction(data, encoder))
 
   def emptyStage: Stage[Unit] = pure(())
@@ -22,7 +22,7 @@ trait Syntax {
   def readDataFrame(
                      schemaName: String,
                      tableName: String
-                   ): Stage[DataFrame] =
+                   ): FreeS.Par[Stage.Op, DataFrame] =
     lift[StageAction, DataFrame](ReadDataFrameAction(schemaName, tableName))
 
   def readDataset[T](
@@ -30,7 +30,7 @@ trait Syntax {
                       tableName: String,
                       encoder: Encoder[T],
                       strict: Boolean
-                    ): Stage[Dataset[T]] =
+                    ): FreeS.Par[Stage.Op, Dataset[T]] =
     lift[StageAction, Dataset[T]](ReadDatasetAction(schemaName, tableName, encoder, strict))
 
   def writeDataFrame(
@@ -55,3 +55,4 @@ trait Syntax {
   def stringArgument(name: String, description: String, defaultValue: Option[String]): Stage[String] =
     lift[StageAction, String](StringArgumentAction(name, description, defaultValue))
 }
+*/

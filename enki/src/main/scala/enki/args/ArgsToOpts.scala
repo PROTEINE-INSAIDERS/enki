@@ -1,11 +1,11 @@
-package enki.arguments
+package enki.args
 
 import cats._
 import cats.data._
 import com.monovore.decline._
 import enki._
 
-class ArgumentsToOpts[M: Monoid](f: Opts[(String, ParameterValue)] => M) extends Arguments.Handler[Const[M, ?]] {
+class ArgsToOpts[M: Monoid](f: Opts[(String, ParameterValue)] => M) extends Args.Handler[Const[M, ?]] {
 
   private def option[A: Argument](
                                    name: String,

@@ -4,7 +4,7 @@ import cats.implicits._
 import enki._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-
+/*
 case class PurchasesReport(
                             purchase_id: Long,
                             client_id: Long,
@@ -74,3 +74,4 @@ trait UserDatabase extends Database {
     session.sql(s"create database $schema")
   }
 }
+*/

@@ -9,19 +9,23 @@ import scala.collection.JavaConversions._
 
 case class DecimalPrecisionTestData(@decimalPrecision(38, 12) a: Option[BigDecimal])
 
-class StageTest extends EnkiTestSuite with Database {
+class StageTest extends EnkiTestSuite with Database[Stage.Op, simpleProgram.ProgramM.Op] {
+
+  override  val stage: enki.Stage[Stage.Op] = Stage[Stage.Op]
+  override val program: enki.Program1[Stage.Op, enki.simpleProgram.ProgramM.Op] = simpleProgram.ProgramM[simpleProgram.ProgramM.Op]
+
 
   import implicits._
 
   override def schema: String = "default"
 
-  override def writerSettings[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] = writer.mode(SaveMode.Overwrite)
+ // override def writerSettings[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] = writer.mode(SaveMode.Overwrite)
 
   override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
   "ReadAction" should {
     "handle non-default decimal's scale and precision" in {
-
+      /*
       val schema = StructType(Array(StructField(name = "a", dataType = DecimalType(38, 12))))
 
       sparkSession.sqlContext.createDataFrame(Seq(Row(BigDecimal(10))), schema).write.mode(SaveMode.Overwrite).saveAsTable("default.DecimalPrecisionTestData")
@@ -42,13 +46,18 @@ class StageTest extends EnkiTestSuite with Database {
         Row(1, "test1", true),
         Row(2, "test2", false)
       )
+      */
+      ???
     }
   }
 
   "DatasetAction" should {
     "handle non-default decimal's scale and precision" in {
+      ???
+      /*
       val a = dataset[DecimalPrecisionTestData](Seq(DecimalPrecisionTestData(a = BigDecimal(10))))
       sparkSession.run(a).collect() shouldBe Array(DecimalPrecisionTestData(a = BigDecimal(10)))
+      */
     }
   }
 }

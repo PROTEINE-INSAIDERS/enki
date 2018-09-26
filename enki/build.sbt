@@ -71,7 +71,7 @@ libraryDependencies ++= Seq(
 //  "com.slamdata" %% "matryoshka-core" % "0.18.3" , // матрёшка для тестирования рекурсивных схем по stage - дереву (вытянет за собой scalaz)
 //  "io.higherkindness" %% "droste-core" % "0.4.0" , // рекурсивные схемы для котов
   "io.frees" %% "frees-core"               % "0.8.2",
-//  "io.frees" %% "frees-effects"            % "0.8.2",
+  "io.frees" %% "frees-effects"            % "0.8.2",
 //  "io.frees" %% "frees-cache"              % "0.8.2",
   compilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full),
   compilerPlugin("org.spire-math" % "kind-projector" % kindProjectorVersion cross CrossVersion.binary), // красная лямбда

@@ -1,12 +1,47 @@
 package enki
 package stage
 
-import cats.data.State
 import freestyle.free._
 import org.apache.spark.sql._
-import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
+@free trait Stage {
+  def dataFrame(
+                 rows: Seq[Row],
+                 schema: StructType
+               ): FS[DataFrame]
+
+  def dataset[T](
+                  data: Seq[T],
+                  encoder: Encoder[T]
+                ): FS[Dataset[T]]
+
+  def readDataFrame(
+                     schemaName: String,
+                     tableName: String
+                   ): FS[DataFrame]
+
+  def readDataset[T](
+                      schemaName: String,
+                      tableName: String,
+                      encoder: Encoder[T],
+                      strict: Boolean
+                    ): FS[Dataset[T]]
+
+  def writeDataFrame(
+                      schemaName: String,
+                      tableName: String
+                    ): FS[WriterSettings[Row] => DataFrame => Unit]
+
+  def writeDataset[T](
+                       schemaName: String,
+                       tableName: String,
+                       encoder: Encoder[T],
+                       strict: Boolean
+                     ): FS[WriterSettings[T] => Dataset[T] => Unit]
+}
+
+/*
 sealed trait StageAction[T]
 
 final case class DataFrameAction(rows: Seq[Row], schema: StructType) extends StageAction[DataFrame]
@@ -132,3 +167,4 @@ final case class IntegerArgumentAction(name: String, description: String, defaul
   override def fromParameter(parameterValue: ParameterValue): Int =
     fromParameter({ case IntegerValue(int) => int }, parameterValue)
 }
+*/

@@ -26,30 +26,30 @@ trait ProgramModule {
   final case class PersistDataFrameAction(
                                            schemaName: String,
                                            tableName: String,
-                                           stage: enki.Stage[DataFrame],
+                                           stage: FreeS.Par[Stage.Op, DataFrame],
                                            writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
-                                         ) extends ProgramAction[Stage[DataFrame]]
+                                         ) extends ProgramAction[FreeS.Par[Stage.Op, DataFrame]]
 
   final case class PersistDatasetAction[T](
                                             schemaName: String,
                                             tableName: String,
-                                            stage: enki.Stage[Dataset[T]],
+                                            stage: FreeS.Par[Stage.Op, Dataset[T]],
                                             encoder: Encoder[T],
                                             strict: Boolean,
                                             writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
-                                          ) extends ProgramAction[Stage[Dataset[T]]]
+                                          ) extends ProgramAction[FreeS.Par[Stage.Op, Dataset[T]]]
 
   type Program[A] = Free[ProgramAction, A]
 
-  def emptyProgram: Program[Stage[Unit]] = pure(emptyStage)
+  def emptyProgram: Program[FreeS.Par[Stage.Op, Unit]] = ??? // pure(emptyStage)
 
   def persistDataFrame(
                         schemaName: String,
                         tableName: String,
-                        stage: enki.Stage[DataFrame],
+                        stage: FreeS.Par[Stage.Op, DataFrame],
                         writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
-                      ): Program[Stage[DataFrame]] =
-    liftF[ProgramAction, Stage[DataFrame]](PersistDataFrameAction(
+                      ): Program[FreeS.Par[Stage.Op, DataFrame]] =
+    liftF[ProgramAction, FreeS.Par[Stage.Op, DataFrame]](PersistDataFrameAction(
       schemaName,
       tableName,
       stage,
@@ -58,12 +58,12 @@ trait ProgramModule {
   def persistDataset[T](
                          schemaName: String,
                          tableName: String,
-                         stage: Stage[Dataset[T]],
+                         stage: FreeS.Par[Stage.Op, Dataset[T]],
                          encoder: Encoder[T],
                          strict: Boolean,
                          writerSettings: FreeS.Par[DataFrameWriter.Op, Unit]
-                       ): Program[Stage[Dataset[T]]] =
-    liftF[ProgramAction, Stage[Dataset[T]]](PersistDatasetAction[T](
+                       ): Program[FreeS.Par[Stage.Op, Dataset[T]]] =
+    liftF[ProgramAction, FreeS.Par[Stage.Op, Dataset[T]]](PersistDatasetAction[T](
       schemaName,
       tableName,
       stage,
@@ -71,14 +71,15 @@ trait ProgramModule {
       strict,
       writerSettings))
 
-  type StageWriter[A] = Writer[List[(String, Stage[_])], A]
+  type StageWriter[A] = Writer[List[(String, FreeS.Par[Stage.Op, _])], A]
 
   val programSplitter: ProgramAction ~> StageWriter = λ[ProgramAction ~> StageWriter] {
+    /*
     case p: PersistDatasetAction[t] => {
       val stageName = s"${p.schemaName}.${p.tableName}"
       val stage = p.stage ap writeDataset[t](p.schemaName, p.tableName, p.encoder, p.strict, p.writerSettings)
       for {
-        _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
+        _ <- Writer.tell[List[(String, FreeS.Par[Stage.Op, _])]](List((stageName, stage)))
       } yield {
         readDataset[t](p.schemaName, p.tableName, p.encoder, p.strict)
       }
@@ -87,14 +88,18 @@ trait ProgramModule {
       val stageName = s"${p.schemaName}.${p.tableName}"
       val stage = p.stage ap writeDataFrame(p.schemaName, p.tableName, p.writerSettings)
       for {
-        _ <- Writer.tell[List[(String, Stage[_])]](List((stageName, stage)))
+        _ <- Writer.tell[List[(String, FreeS.Par[Stage.Op, _])]](List((stageName, stage)))
       } yield {
         readDataFrame(p.schemaName, p.tableName)
       }
     }
+    */
+    case _ => ???
   }
 
-  def buildActionGraph[T](rootName: String, p: Program[Stage[T]]): ActionGraph = {
+  def buildActionGraph[T](rootName: String, p: Program[FreeS.Par[Stage.Op, _]]): ActionGraph = {
+    ???
+    /*
     val (stages, lastStage) = p.foldMap(programSplitter).run
 
     val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) } //TODO: стейджи, не содержащие write action попадают в граф, что, возможно, не верно.
@@ -122,5 +127,6 @@ trait ProgramModule {
         else
           ActionGraph(Graph(dependencies.toSeq.map(name ~> _): _*), Map(name -> StageNode(stage)))
       }
+      */
   }
 }

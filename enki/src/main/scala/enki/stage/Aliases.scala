@@ -1,8 +1,13 @@
-package enki.stage
-
-import enki._
+package enki
+package stage
 
 trait Aliases {
+  type Stage[F[_]] = stage.Stage[F]
+  val Stage: stage.Stage.type = stage.Stage
+
+  type StageCompiler = stage.StageCompiler
+  
+  /*
   type StageAction[T] = stage.StageAction[T]
 
   type DataFrameAction = stage.DataFrameAction
@@ -36,4 +41,5 @@ trait Aliases {
 
   type IntegerArgumentAction = stage.IntegerArgumentAction
   val IntegerArgumentAction: stage.IntegerArgumentAction.type = stage.IntegerArgumentAction
+  */
 }

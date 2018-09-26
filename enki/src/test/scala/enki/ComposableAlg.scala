@@ -27,9 +27,9 @@ object ComposableAlg {
     override protected[this] def m2(): Id[String => Unit] = println(_)
   }
 
-  def p1[F[_]](implicit c: Combined[F]): Par[F, Unit] = {
-    import c.a1._
-    import c.a2._
+  def p1[F[_]](implicit a1: Alg1[F], a2: Alg2[F]): Par[F, Unit] = {
+    import a1._
+    import a2._
 
     m1("test").ap(m2())
   }

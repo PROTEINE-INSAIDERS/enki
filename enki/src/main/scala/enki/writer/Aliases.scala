@@ -5,11 +5,13 @@ import enki._
 import org.apache.spark.{sql => spark}
 
 trait Aliases {
-  type DataFrameWriterState[T, A] = State[spark.DataFrameWriter[T], A]
+  type WriterState[T, A] = State[spark.DataFrameWriter[T], A]
 
-  type DataFrameWriterSettingHandler[T] = writer.DataFrameWriterSettingHandler[T]
-  type DataFrameWriter[F[_]] = writer.DataFrameWriterBase[F]
-  val DataFrameWriter: writer.DataFrameWriterBase.type = writer.DataFrameWriterBase
-  type DataFrameWriterSettings[T] = writer.DataFrameWriterSettings[T]
-  val DataFrameWriterSettings: writer.DataFrameWriterSettings.type = writer.DataFrameWriterSettings
+  type WriterSettingBuilder[T] = writer.WriterSettingBuilder[T]
+
+  type DataFrameWriter[F[_]] = writer.DataFrameWriter[F]
+
+  val DataFrameWriter: writer.DataFrameWriter.type = writer.DataFrameWriter
+  type WriterSettings[T] = writer.WriterSettings[T]
+  val WriterSettings: writer.WriterSettings.type = writer.WriterSettings
 }

@@ -1,8 +1,8 @@
-package enki.arguments
+package enki.args
 
 import freestyle.free._
 
-@free trait Arguments {
+@free trait Args {
   def string(name: String, description: String = "", defaultValue: Option[String] = None): FS[String]
 
   def int(name: String, description: String = "", defaultValue: Option[Int] = None): FS[Int]

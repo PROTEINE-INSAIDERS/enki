@@ -14,6 +14,7 @@ import scala.util.Try
 //TODO: factor out Environment as only parametrized entity (should compiles be parametrized?)
 trait EnkiMain {
   protected def actionParams(node: ActionNode): Opts[Map[String, ParameterValue]] = {
+    /*
     val arguments = node.analyze(stageArguments(_, Set(_)))
     val argumentMap = mutable.Map[String, ArgumentAction]()
     arguments.foreach { arg =>
@@ -41,12 +42,14 @@ trait EnkiMain {
         }
       }
     }.map(_.toMap)
+    */
+    ???
   }
 
   protected def actionGraph: ActionGraph
 
   protected def session: Opts[SparkSession]
-
+/*
   protected def compiler: Opts[StageAction ~> SparkAction]
 
   protected def resume(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = Opts {
@@ -99,8 +102,8 @@ trait EnkiMain {
   protected def runAllCommand: Opts[Unit] = Opts.subcommand(name = "runAll", help = "Execute all actions.") {
     runAll <*> session <*> compiler
   }
-
-  def main: Opts[Unit] = listCommand orElse resumeCommand orElse runCommand orElse runAllCommand
+*/
+  def main: Opts[Unit] = ??? // listCommand orElse resumeCommand orElse runCommand orElse runAllCommand
 }
 
 object EnkiMain {
@@ -115,7 +118,7 @@ object EnkiMain {
 
       override protected def session: Opts[SparkSession] = Opts(s)
 
-      override protected def compiler: Opts[enki.StageAction ~> SparkAction] = Opts(stageCompiler)
+    //  override protected def compiler: Opts[enki.StageAction ~> SparkAction] = Opts(stageCompiler)
     }
   }
 }

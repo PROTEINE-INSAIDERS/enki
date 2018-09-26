@@ -7,6 +7,8 @@ import org.apache.spark.sql._
 class WriteTableActionTest extends EnkiTestSuite {
   "write" should {
     "be able to overwrite partition" in {
+      ???
+      /*
       import sparkSession.implicits._
 
       def part1[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] =
@@ -31,6 +33,7 @@ class WriteTableActionTest extends EnkiTestSuite {
       writeTableAction.write(part2, ds.where($"_1" === "b"))
 
       sparkSession.table("test.test").as[(String, String)].collect().sortBy(_._1) shouldBe Array(("a", "a"), ("b", "b"))
+      */
     }
   }
 }

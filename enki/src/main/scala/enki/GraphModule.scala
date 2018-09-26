@@ -7,6 +7,7 @@ import scalax.collection.GraphEdge._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+import freestyle.free._
 
 //TODO: Try cata to build dependency graph in form of annotations.
 
@@ -15,34 +16,37 @@ final case class ActionFailedException(action: String, cause: Throwable) extends
 trait GraphModule {
 
   sealed trait ActionNode {
-    def analyze[M: Monoid](f: Stage[_] => M): M
+    def analyze[M: Monoid](f: FreeS.Par[Stage.Op, _] => M): M = ???
 
-    def reads[M: Monoid](f: ReadTableAction => M): M = analyze(stageReads(_, f))
+    def reads[M: Monoid](f: Unit => M): M = ??? //  analyze(stageReads(_, f))
 
-    def writes[M: Monoid](f: WriteTableAction => M): M = analyze(stageWrites(_, f))
+    def writes[M: Monoid](f: Unit => M): M = ??? // analyze(stageWrites(_, f))
 
-    def mapStages(f: Stage ~> Stage): ActionNode
+  //  def mapStages(f: Stage ~> Stage): ActionNode
 
-    def externalReads[M: Monoid](f: ReadTableAction => M): M = {
+    def externalReads[M: Monoid](f: Unit => M): M = {
+      ???
+      /*
       val writeTables = writes(w => Set((w.schemaName, w.tableName)))
       reads(r => if (writeTables.contains((r.schemaName, r.tableName))) {
         implicitly[Monoid[M]].empty
       } else {
         f(r)
       })
+      */
     }
   }
 
-  final case class StageNode(stage: Stage[_]) extends ActionNode {
-    override def analyze[M: Monoid](f: Stage[_] => M): M = f(stage)
+  final case class StageNode(stage: FreeS.Par[Stage.Op, _]) extends ActionNode {
+//    override def analyze[M: Monoid](f: FreeS.Par[Stage.Op, _] => M): M = f(stage)
 
-    override def mapStages(f: Stage ~> Stage): ActionNode = StageNode(f(stage))
+  //  override def mapStages(f: Stage ~> Stage): ActionNode = ??? //  StageNode(f(stage))
   }
 
   final case class GraphNode(graph: ActionGraph) extends ActionNode {
-    override def analyze[M: Monoid](f: Stage[_] => M): M = graph.analyze(f)
+  //  override def analyze[M: Monoid](f: FreeS.Par[Stage.Op, _] => M): M = graph.analyze(f)
 
-    override def mapStages(f: Stage ~> Stage): ActionNode = GraphNode(graph.copy(actions = graph.actions.mapValues(node => node.mapStages(f))))
+  //  override def mapStages(f: Stage ~> Stage): ActionNode = GraphNode(graph.copy(actions = graph.actions.mapValues(node => node.mapStages(f))))
   }
 
   //TODO: возможно граф зависимостей нужно строить не в процессе сборки графа, а выводить из actions по запросу.
@@ -85,14 +89,19 @@ trait GraphModule {
       subGraphs.foreach(_.validate())
     }
 
-    def resume(action: String, compiler: StageAction ~> SparkAction, environment: Environment): Unit = {
+    def resume(action: String, compiler: Unit, environment: Environment): Unit = {
+      ???
+      /*
       checkActionExists(action)
       linearized.dropWhile(_ != action).foreach { stageName =>
         runAction(stageName, compiler, environment)
       }
+      */
     }
 
-    def runAction(name: String, compiler: StageAction ~> SparkAction, environment: Environment): Unit = {
+    def runAction(name: String, compiler: Unit, environment: Environment): Unit = {
+      ???
+      /*
       try {
         //TODO: stack descriptions
         environment.session.sparkContext.setJobDescription(name)
@@ -107,13 +116,17 @@ trait GraphModule {
       } finally {
         environment.session.sparkContext.setJobDescription(null)
       }
+      */
     }
 
-    def analyze[M: Monoid](f: Stage[_] => M): M = {
+    def analyze[M: Monoid](f: FreeS.Par[Stage, _] => M): M = {
+      ???
+      /*
       actions.values.toList.foldMap {
         case StageNode(s) => f(s)
         case GraphNode(g) => g.analyze(f)
       }
+      */
     }
 
     def linearized: Seq[String] = graph.topologicalSort.fold(
@@ -121,9 +134,12 @@ trait GraphModule {
       order => order.toList.reverse.map(_.value)
     )
 
-    def runAll(compiler: StageAction ~> SparkAction, environment: Environment): Unit = {
+    def runAll(compiler: Unit , environment: Environment): Unit = {
+      ???
+      /*
       validate()
       linearized.foreach { stageName => runAction(stageName, compiler, environment) }
+      */
     }
   }
 
@@ -131,8 +147,9 @@ trait GraphModule {
     /**
       * Create action graph with single stage.
       */
-    def apply(stageName: String, stage: Stage[_]): ActionGraph = {
-      ActionGraph(Graph[String, DiEdge](stageName), Map(stageName -> StageNode(stage)))
+    def apply(stageName: String, stage: FreeS.Par[Stage, _]): ActionGraph = {
+      ???
+    //  ActionGraph(Graph[String, DiEdge](stageName), Map(stageName -> StageNode(stage)))
     }
 
     /**
