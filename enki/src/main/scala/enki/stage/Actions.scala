@@ -1,8 +1,7 @@
-package enki.stage
+package enki
+package stage
 
 import cats.data.State
-import enki._
-import enki.writer.{DataFrameWriterBase, DataFrameWriterSettings}
 import freestyle.free._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
@@ -43,16 +42,16 @@ trait WriteTableAction extends TableAction {
   //TODO: Временное решение. После перехода на freestyle этот метод будет в интерпретаторе.
   //TODO:
   private[enki] def write[T](writerSettings: FreeS.Par[DataFrameWriter.Op, Unit], dataset: Dataset[T]): Unit =
-    imply(new DataFrameWriterConfigurator[T](), new ArgumentsToOpts[Set[Unit]](_ => Set(()))) {
+    imply(new DataFrameWriterSettingHandler[T]()) {
 
       val state = writerSettings.interpret[State[DataFrameWriterSettings[T], ?]]
-      val settings = state.runS(DataFrameWriterSettings(dataset.write)).value
+      val settings = state.runS(DataFrameWriterSettings()).value
       val session = dataset.sparkSession
       (session.catalog.tableExists(schemaName, tableName), settings.partition) match {
-        case (true, Some(partition)) if partition.nonEmpty =>
+        case (true, partition) if partition.nonEmpty =>
           dataset
             .where(partition map (p => dataset(p._1) === lit(p._2)) reduce (_ and _))
-            .drop(partition.keys.toSeq: _*)
+            .drop(partition.map(_._1): _*)
             .createTempView(s"tmp_$tableName")
           try {
             val partitionStr = partition.map(a => s"${a._1} = '${a._2}'").mkString(", ")
@@ -62,11 +61,11 @@ trait WriteTableAction extends TableAction {
             session.catalog.dropTempView(s"tmp_$tableName")
             ()
           }
-        case (false, Some(partition)) if partition.nonEmpty =>
-          settings.dataFrameWriter //TODO: filter records by partition.
-            .partitionBy(partition.keys.toSeq: _*)
+        case (false, partition) if partition.nonEmpty =>
+          settings.configure(dataset.write) //TODO: filter records by partition.
+            .partitionBy(partition.map(_._1): _*)
             .saveAsTable(s"$schemaName.$tableName")
-        case _ => settings.dataFrameWriter.saveAsTable(s"$schemaName.$tableName")
+        case _ => settings.configure(dataset.write).saveAsTable(s"$schemaName.$tableName")
       }
     }
 }

@@ -10,10 +10,10 @@ class WriteTableActionTest extends EnkiTestSuite {
       import sparkSession.implicits._
 
       def part1[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] =
-        writer.partition(Map("_1" -> "a")) *> writer.mode(SaveMode.Overwrite)
+        writer.partition(Seq("_1" -> "a")) *> writer.mode(SaveMode.Overwrite)
 
       def part2[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] =
-        writer.partition(Map("_1" -> "b")) *> writer.mode(SaveMode.Overwrite)
+        writer.partition(Seq("_1" -> "b")) *> writer.mode(SaveMode.Overwrite)
 
 
       val ds = sparkSession.createDataset(Seq(("a", "a"), ("b", "b")))
