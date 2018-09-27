@@ -8,7 +8,7 @@ import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
 
-trait StageCompiler extends Stage.Handler[Reader[Environment, ?]] {
+trait StageCompiler extends StageAlg.Handler[Reader[Environment, ?]] {
   private[enki] def write[T](
                               schemaName: String,
                               tableName: String,

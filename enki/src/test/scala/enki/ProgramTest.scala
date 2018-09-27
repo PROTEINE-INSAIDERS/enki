@@ -4,11 +4,11 @@ import cats.implicits._
 import org.apache.spark.sql._
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.GraphPredef._
-
+/*
 class ProgramTest extends EnkiTestSuite with Database[Stage.Op, simpleProgram.ProgramM.Op] {
 
-  override val stage = Stage[Stage.Op]
-  override val program: enki.Program1[Stage.Op, enki.simpleProgram.ProgramM.Op] = simpleProgram.ProgramM[simpleProgram.ProgramM.Op]
+  override val s = Stage[Stage.Op]
+  override val p: enki.Program1[Stage.Op, enki.simpleProgram.ProgramM.Op] = simpleProgram.ProgramM[simpleProgram.ProgramM.Op]
 
   import implicits._
 
@@ -50,3 +50,4 @@ class ProgramTest extends EnkiTestSuite with Database[Stage.Op, simpleProgram.Pr
     }
   }
 }
+*/

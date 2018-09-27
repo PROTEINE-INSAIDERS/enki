@@ -5,7 +5,7 @@ import freestyle.free._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
-@free trait Stage {
+@free trait StageAlg {
   def dataFrame(
                  rows: Seq[Row],
                  schema: StructType

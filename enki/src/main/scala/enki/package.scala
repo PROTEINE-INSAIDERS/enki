@@ -1,5 +1,8 @@
 import enki.ds.Extensions
+import enki.program.ActionGraphBuilder
 
+//TODO: deprecated: now enki parametrized by operation types and should be instanized by user.
+// default instance provided in enki.default.
 package object enki
   extends AllModules
     with stage.Aliases
@@ -11,7 +14,8 @@ package object enki
     with writer.Aliases
     with Extensions
     with program.Aliases
-    with args.Aliases {
+    with args.Aliases
+{
   type SparkAction[A] = Environment => A
 
   /**

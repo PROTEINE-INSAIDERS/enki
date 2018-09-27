@@ -2,7 +2,7 @@ package enki
 
 trait AllModules
   extends GraphModule
-    with ProgramModule
+  //  with ProgramModule
     with DataFrameModule
     with MetadataModule
     with SessionModule

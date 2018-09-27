@@ -6,13 +6,13 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
-
+/*
 case class DecimalPrecisionTestData(@decimalPrecision(38, 12) a: Option[BigDecimal])
 
 class StageTest extends EnkiTestSuite with Database[Stage.Op, simpleProgram.ProgramM.Op] {
 
-  override  val stage: enki.Stage[Stage.Op] = Stage[Stage.Op]
-  override val program: enki.Program1[Stage.Op, enki.simpleProgram.ProgramM.Op] = simpleProgram.ProgramM[simpleProgram.ProgramM.Op]
+  override  val s: enki.Stage[Stage.Op] = Stage[Stage.Op]
+  override val p: enki.Program1[Stage.Op, enki.simpleProgram.ProgramM.Op] = simpleProgram.ProgramM[simpleProgram.ProgramM.Op]
 
 
   import implicits._
@@ -61,4 +61,4 @@ class StageTest extends EnkiTestSuite with Database[Stage.Op, simpleProgram.Prog
     }
   }
 }
-
+*/

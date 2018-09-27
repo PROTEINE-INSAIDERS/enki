@@ -1,6 +1,6 @@
 import java.sql.Timestamp
 
-import enki._
+import enki.default._
 import org.apache.spark.sql._
 
 case class Client(
@@ -21,19 +21,18 @@ case class Purchase(
                      @decimalPrecision(precision = 19, scale = 4) price: BigDecimal
                    )
 
-trait SourceDatabase[StageAlg[_], ProgramAlg[_]] extends Database[StageAlg, ProgramAlg] {
+trait SourceDatabase extends Database {
 
   import implicits._
-  import stage._
 
   override def schema: String = "source_db"
 
   // Changing encoder style to Enki to enable annotation processing.
   override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
-  def clients: FS[Dataset[Client]] = read[Client]("client")
+  def clients: Stage[Dataset[Client]] = read[Client]("client")
 
-  def products: FS[Dataset[Product]] = read[Product]("product")
+  def products: Stage[Dataset[Product]] = read[Product]("product")
 
-  def purchases: FS[Dataset[Purchase]] = read[Purchase]("purchase", strict = true)
+  def purchases: Stage[Dataset[Purchase]] = read[Purchase]("purchase", strict = true)
 }

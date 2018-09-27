@@ -1,35 +1,42 @@
 
 import com.monovore.decline._
-import enki._
+import enki.default._
 import enki.testsuite.EnkiSuite
 import freestyle.free._
 import org.apache.spark.sql._
 
-@module trait StagesWithArguments {
-  val stage: Stage
-  val args: Args
+
+class Aaa (implicit val aaa: enki.Args[StageOp])
+
+object Test {
+  def main(args: Array[String]): Unit = {
+    val a = new Aaa()
+    println(a.aaa)
+  }
 }
 
 object Main extends CommandApp(
   name = "tutorial",
   header = "Enki tutorial",
-  main = new TutorialMain[StagesWithArguments.Op, TutorialMain.tutorProgram.ProgramM.Op])
+  main = {
+    new TutorialMain()(
+      implicitly,
+      implicitly,
+      implicitly)
+  })
 
-object TutorialMain {
-  val tutorProgram = new ProgramWrapper[StagesWithArguments.Op]
-}
-
-class TutorialMain[StageAlg[_], ProgramAlg[_]](
-                                                implicit val args: enki.Args[StageAlg],
-                                                implicit val stage: enki.Stage[StageAlg],
-                                                implicit val program: enki.Program1[StageAlg, ProgramAlg]
-                                              )
+class TutorialMain(
+                    implicit val args: enki.Args[StageOp],
+                    implicit val stageAlg: enki.Stage[StageOp], //TODO: это убрать бы надо..
+                    implicit val p: enki.Program1[StageOp, ProgramOp]
+                  )
   extends EnkiMain
     // with UserDatabase
-    with SourceDatabase[StageAlg, ProgramAlg]
+    with SourceDatabase
+    with UserDatabase
     with EnkiSuite {
 
-  override def actionGraph: enki.ActionGraph = buildActionGraph("root", ???)
+  override def actionGraph: enki.ActionGraph = buildActionGraph("root", createReports)
 
   override def session: Opts[SparkSession] = Opts {
     SparkSession.builder().master(s"local").getOrCreate()
@@ -66,5 +73,5 @@ class TutorialMain[StageAlg[_], ProgramAlg[_]](
             f(session)(compiler)
       }
     }
-    */
+  */
 }
