@@ -6,7 +6,13 @@ trait Aliases {
   val Stage: stage.StageAlg.type = stage.StageAlg
 
   type StageCompiler = stage.StageCompiler
-  
+
+  type ReadTableAction = stage.ReadTableAction
+
+  type ReadDatasetAction[A] = stage.ReadDatasetAction[A]
+
+  type WriteTableAction = stage.WriteTableAction
+
   /*
   type StageAction[T] = stage.StageAction[T]
 

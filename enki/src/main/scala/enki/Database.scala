@@ -16,7 +16,7 @@ trait Database[ProgramOp[_], StageOp[_]] {
   def encoderStyle: EncoderStyle = EncoderStyle.Spark
 
   protected implicit val stageAlg: Stage[StageOp]
-  protected implicit val p: Program1[StageOp, ProgramOp]
+  protected implicit val programAlg: Program1[StageOp, ProgramOp]
 
   /**
     * Since using SparkImplicits and SparkSession.implicits at once will lead to ambiguity SparkImplicits not imported
@@ -78,21 +78,21 @@ trait Database[ProgramOp[_], StageOp[_]] {
                                  dataset: Par[StageOp, Dataset[T]],
                                  strict: Boolean = false
                                ): Par[ProgramOp, Par[StageOp, Dataset[T]]] =
-    p.persistDataset(schema, tableName, dataset, implicitly, strict, this.writerSettings)
+    programAlg.persistDataset(schema, tableName, dataset, implicitly, strict, this.writerSettings)
 
   final def persist(
                      tableName: String,
                      dataframe: Par[StageOp, DataFrame]
                    ): Par[ProgramOp, Par[StageOp, DataFrame]] =
-    p.persistDataFrame(schema, tableName, dataframe, writerSettings)
+    programAlg.persistDataFrame(schema, tableName, dataframe, writerSettings)
 
 
   final def gpersist[T: TypeTag](tableName: String, dataset: Par[StageOp, Dataset[T]]): Par[ProgramOp, Par[StageOp, Dataset[T]]] =
     if (typeOf[T] == typeOf[Row])
-      p
+      programAlg
         .persistDataFrame(schema, tableName, dataset.asInstanceOf[Par[StageOp, DataFrame]], writerSettings)
         .asInstanceOf[Par[ProgramOp, Par[StageOp, Dataset[T]]]]
     else {
-      p.persistDataset[T](schema, tableName, dataset, implicits.selectEncoder(ExpressionEncoder()), strict = false, writerSettings)
+      programAlg.persistDataset[T](schema, tableName, dataset, implicits.selectEncoder(ExpressionEncoder()), strict = false, writerSettings)
     }
 }

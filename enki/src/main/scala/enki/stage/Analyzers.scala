@@ -1,47 +1,48 @@
-package enki.stage
+package enki
+package stage
 
 import cats._
 import cats.implicits._
-import enki._
-import freestyle.free.FreeS
 
 trait Analyzers {
-  def stageArguments[M: Monoid](stage: FreeS.Par[Stage.Op, _], f: Unit => M): M = {
-    /*
-    stage.analyze(λ[StageAction ~> λ[α => M]] {
-      case r: ArgumentAction => f(r)
-      case _ => implicitly[Monoid[M]].empty
+  self: Enki =>
+
+  //TODO: перенести в пакет к аргументам.
+  def stageArguments[M: Monoid](
+                                 stage: Stage[_],
+                                 f: ArgumentAction => M
+                               ): M = {
+    analyzeArgs(stage, λ[Args.Op ~> λ[α => M]] {
+      case Args.StringOp(name, description, defaultValue) => f(StringArgumentAction(name, description, defaultValue))
+      case Args.IntOp(name, description, defaultValue) => f(IntegerArgumentAction(name, description, defaultValue))
     })
-    */
-    ???
   }
 
-  def stageReads[M: Monoid](stage: FreeS.Par[Stage.Op, _], f: Unit => M): M = {
-    /*
-    stage.analyze(λ[StageAction ~> λ[α => M]] {
-      case r: ReadTableAction => f(r)
-      case _ => implicitly[Monoid[M]].empty
+  def stageReads[M: Monoid](
+                             stage: Stage[_],
+                             f: ReadTableAction => M
+                           ): M = {
+    analyzeStages(stage, λ[StageAlg.Op ~> λ[α => M]] {
+      case StageAlg.ReadDataFrameOp(schemaName, tableName) => f(ReadDataFrameAction(schemaName, tableName))
+      case StageAlg.ReadDatasetOp(schemaName, tableName, encoder, strict) => f(ReadDatasetAction(schemaName, tableName, encoder, strict))
+      case _ => Monoid.empty[M]
     })
-    */
-    ???
   }
 
-  def stageWrites[M: Monoid](stage: FreeS.Par[Stage.Op, _], f: Unit => M): M = {
-    /*
-    stage.analyze(λ[StageAction ~> λ[α => M]] {
-      case w: WriteTableAction => f(w)
-      case _ => implicitly[Monoid[M]].empty
+  def stageWrites[M: Monoid](
+                              stage: Stage[_],
+                              f: WriteTableAction => M
+                            ): M = {
+    analyzeStages(stage, λ[StageAlg.Op ~> λ[α => M]] {
+      case StageAlg.WriteDataFrameOp(schemaName, tableName) => f(WriteDataFrameAction(schemaName, tableName))
+      case StageAlg.WriteDatasetOp(schemaName, tableName, encoder, strict) => f(WriteDatasetAction(schemaName, tableName, encoder, strict))
+      case _ => Monoid.empty[M]
     })
-    */
-    ???
   }
 
-  def stageNonEmpty(stage: FreeS.Par[Stage.Op, _]): Boolean = {
-    /*
-    stage.analyze(λ[StageAction ~> λ[α => Option[Unit]]] {
+  def stageNonEmpty(stage: Stage[_]): Boolean = {
+    stage.analyze(λ[StageOp ~> λ[α => Option[Unit]]] {
       case _ => Some(())
     }).nonEmpty
-    */
-    ???
   }
 }

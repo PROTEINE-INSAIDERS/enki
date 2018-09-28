@@ -1,9 +1,13 @@
 package enki
 
 import cats._
+import cats.arrow.FunctionK
+import cats.data.{Writer, _}
+import cats.implicits._
+import enki.Combined.Op
 import freestyle.free.FreeS.Par
 import freestyle.free._
-import freestyle.free.implicits._
+import iota.CopK
 
 @free trait Alg1 {
   def m1(str: String): FS[String]
@@ -13,7 +17,8 @@ trait Alg2[FF$147[_]] extends _root_.freestyle.free.internal.EffectLike[FF$147] 
   def m2(): FS[String => Unit]
 }
 
-@_root_.java.lang.SuppressWarnings(_root_.scala.Array("org.wartremover.warts.Any", "org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw")) object Alg2 {
+@_root_.java.lang.SuppressWarnings(_root_.scala.Array("org.wartremover.warts.Any", "org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw"))
+object Alg2 {
 
   sealed trait Op[_] extends _root_.scala.Product with _root_.java.io.Serializable {
     val FSAlgebraIndex148: _root_.scala.Int
@@ -50,9 +55,22 @@ trait Alg2[FF$147[_]] extends _root_.freestyle.free.internal.EffectLike[FF$147] 
   def instance(implicit ev: Alg2[Op]): Alg2[Op] = ev
 }
 
-@module trait Combined[FF$311[_]] extends _root_.freestyle.free.internal.EffectLike[FF$311] {
+trait Combined[FF$311[_]] extends _root_.freestyle.free.internal.EffectLike[FF$311] {
   val a1: Alg1[FF$311]
   val a2: Alg2[FF$311]
+}
+
+object Combined {
+  type OpTypes = _root_.iota.TListK.Op.Concat[Alg1.OpTypes, Alg2.OpTypes]
+  type Op[AA$68] = _root_.iota.CopK[OpTypes, AA$68]
+
+  class To[GG$67[_]](implicit val a1: Alg1[GG$67], val a2: Alg2[GG$67]) extends Combined[GG$67] {}
+
+  implicit def to[GG$67[_]](implicit a1: Alg1[GG$67], a2: Alg2[GG$67]): To[GG$67] = new To[GG$67]()
+
+  def apply[FF$311[_]](implicit ev$69: Combined[FF$311]): Combined[FF$311] = ev$69
+
+  def instance(implicit ev: Combined[Op]): Combined[Op] = ev
 }
 
 object ComposableAlg {
@@ -72,6 +90,18 @@ object ComposableAlg {
   }
 
   def main(args: Array[String]): Unit = {
-    val p = p1[Combined.Op].interpret[Id]
+
+
+    val A1 = CopK.Inject[Alg1.Op, Combined.Op]
+
+    val p = p1[Combined.Op].analyze(λ[Combined.Op ~> λ[α => List[String]]] {
+      case A1(a) =>
+        println(a)
+        List.empty[String]
+      case _ =>
+        List.empty
+    })
+    println(p)
+    // interpret[Const[Unit, ?]]
   }
 }

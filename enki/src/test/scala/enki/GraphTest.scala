@@ -1,5 +1,7 @@
 package enki
 
+import enki.default._
+
 class GraphTest extends EnkiTestSuite {
   "getOpt" should {
     "return None if stage not found" in {

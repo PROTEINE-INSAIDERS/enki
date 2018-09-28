@@ -1,28 +1,29 @@
 package enki
 package program
 
+import cats.implicits._
 import freestyle.free.FreeS._
 import freestyle.free._
+import scalax.collection.Graph
+import scalax.collection.GraphPredef._
+
+import scala.collection._
+
 
 trait ActionGraphBuilder {
-  self: Enki =>
+  self: Enki with GraphModule =>
   // сплиттер нужно передавать как параметр, т.к. программа может содержать кастомные шаги.
   def buildActionGraph(
                         rootName: String,
-                        p: FreeS[ProgramOp, Par[StageOp, Unit]]
+                        p: Program[Par[StageOp, Unit]]
                       ): ActionGraph = {
-    // implicit val splitter: FSHandler[ProgramAlg, StageWriter] = new ProgramSplitter[ProgramAlg]()
-
-
-    //  val int = p.interpret[Id]
-    ???
-    /*
-    val (stages, lastStage) = p.foldMap(programSplitter).run
+    val (stages, lastStage) = p.interpret[StageWriter[StageOp, ?]].run // foldMap(programSplitter).run
 
     val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) } //TODO: стейджи, не содержащие write action попадают в граф, что, возможно, не верно.
     val createdIn = mutable.Map[String, String]()
+
     allStages.foreach { case (stageName, stage) =>
-      stageWrites(stage, Set(_)).foreach { w =>
+      stageWrites(stage, immutable.Set(_)).foreach { w =>
         val qualifiedName = s"${w.schemaName}.${w.tableName}"
         createdIn.get(qualifiedName) match {
           case None => createdIn += qualifiedName -> stageName
@@ -35,15 +36,16 @@ trait ActionGraphBuilder {
         }
       }
     }
+
     allStages
       .foldMap { case (name, stage) =>
         //TODO: разрешение зависимостей будет встроено в API графа.
-        val dependencies = stageReads(stage, Set(_)).flatMap { r => createdIn.get(s"${r.schemaName}.${r.tableName}") }
+        val dependencies = stageReads(stage, immutable.Set(_)).flatMap { r => createdIn.get(s"${r.schemaName}.${r.tableName}") }
         if (dependencies.isEmpty)
           ActionGraph(name, stage)
-        else
-          ActionGraph(Graph(dependencies.toSeq.map(name ~> _): _*), Map(name -> StageNode(stage)))
+        else {
+          new ActionGraph(Graph(dependencies.toSeq.map(name ~> _): _*), immutable.Map(name -> StageNode(stage)))
+        }
       }
-      */
   }
 }

@@ -8,9 +8,6 @@ package object enki
     with stage.Aliases
     // with stage.Syntax
     with stage.Compilers
-    with stage.Analyzers
-    with application.Aliases
-    with application.Implicits
     with writer.Aliases
     with Extensions
     with program.Aliases
