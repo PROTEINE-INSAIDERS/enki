@@ -1,5 +1,7 @@
 package enki
 
+import cats._
+import cats.implicits._
 import enki.default._
 
 class GraphTest extends EnkiTestSuite {
@@ -9,8 +11,8 @@ class GraphTest extends EnkiTestSuite {
     }
 
     "find stage by name" in {
-    //  ActionGraph("test" , emptyStage).getOpt("test") shouldBe Some(StageNode(emptyStage))
-      ???
+      val emptyStage = ().pure[Stage]
+      ActionGraph("test" , emptyStage ).getOpt("test") shouldBe Some(StageNode(emptyStage))
     }
 
     "find graph by name" in {

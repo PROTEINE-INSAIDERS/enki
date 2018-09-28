@@ -1,14 +1,12 @@
 import java.sql.Timestamp
 
-import cats.free.Free
 import cats.implicits._
 import enki.default._
 import freestyle.free.FreeS.Par
-import org.apache.spark.sql._
-import org.apache.spark.sql.functions._
 import freestyle.free._
 import freestyle.free.implicits._
-import freestyle.free.FreeS._
+import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
 
 case class PurchasesReport(
                             purchase_id: Long,

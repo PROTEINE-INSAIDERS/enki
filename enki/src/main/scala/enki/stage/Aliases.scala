@@ -2,8 +2,8 @@ package enki
 package stage
 
 trait Aliases {
-  type Stage[F[_]] = stage.StageAlg[F]
-  val Stage: stage.StageAlg.type = stage.StageAlg
+  type StageAlg[F[_]] = stage.StageAlg[F]
+  val StageAlg: stage.StageAlg.type = stage.StageAlg
 
   type StageCompiler = stage.StageCompiler
 

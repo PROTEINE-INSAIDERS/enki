@@ -15,7 +15,7 @@ trait Database[ProgramOp[_], StageOp[_]] {
 
   def encoderStyle: EncoderStyle = EncoderStyle.Spark
 
-  protected implicit val stageAlg: Stage[StageOp]
+  protected implicit val stageAlg: StageAlg[StageOp]
   protected implicit val programAlg: Program1[StageOp, ProgramOp]
 
   /**

@@ -5,6 +5,7 @@ import cats.data.State
 import enki.writer.WriterSettings._
 import org.apache.spark.sql.{DataFrameWriter => _, _}
 
+//TODO: Можно отказаться от Handler-a реализовав паттерн Builder прямо на WriterSettings.
 class WriterSettingBuilder[T] extends DataFrameWriter.Handler[State[WriterSettings[T], ?]] {
   override protected[this] def mode(saveMode: SaveMode): State[WriterSettings[T], Unit] =
     State.modify((configureLens[T] ~ overwriteLens[T]).modify(_) { case (configure, _) =>
