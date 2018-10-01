@@ -1,6 +1,8 @@
 import java.sql.Timestamp
 
+import enki.StagesWithArgs.Op
 import enki.default._
+import freestyle.free.FreeS.Par
 import org.apache.spark.sql._
 
 case class Client(

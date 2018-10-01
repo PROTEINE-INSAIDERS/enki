@@ -53,3 +53,11 @@ final case class IntegerArgumentAction(name: String, description: String, defaul
   override def fromParameter(parameterValue: ParameterValue): Int =
     fromParameter({ case IntegerValue(int) => int }, parameterValue)
 }
+
+final case class BooleanArgumentAction(name: String, description: String, defaultValue: Option[Boolean])
+  extends ArgumentActionBase[Boolean] {
+  override def dataType: DataType = BooleanType
+
+  override def fromParameter(parameterValue: ParameterValue): Boolean =
+    fromParameter({ case BooleanValue(bool) => bool }, parameterValue)
+}

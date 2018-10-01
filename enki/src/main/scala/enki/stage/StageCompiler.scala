@@ -8,11 +8,11 @@ import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
 
-trait StageCompiler extends StageAlg.Handler[Reader[Environment, ?]] {
+trait DefaultStageCompiler extends StageAlg.Handler[EnkiMonad] {
   private[enki] def write[T](
                               schemaName: String,
                               tableName: String,
-                              writerSettings: WriterSettings[T],
+                              writerSettings: WriterSettings,
                               dataset: Dataset[T]
                             ): Unit = {
     val session = dataset.sparkSession
@@ -79,7 +79,7 @@ trait StageCompiler extends StageAlg.Handler[Reader[Environment, ?]] {
   override protected[this] def writeDataFrame(
                                                schemaName: String,
                                                tableName: String
-                                             ): Reader[Environment, WriterSettings[Row] => DataFrame => Unit] = Reader { env =>
+                                             ): Reader[Environment, WriterSettings => DataFrame => Unit] = Reader { env =>
     writerSettings => dataFrame => write[Row](schemaName, tableName, writerSettings, dataFrame)
   }
 
@@ -88,7 +88,7 @@ trait StageCompiler extends StageAlg.Handler[Reader[Environment, ?]] {
                                                 tableName: String,
                                                 encoder: Encoder[T],
                                                 strict: Boolean
-                                              ): Reader[Environment, WriterSettings[T] => Dataset[T] => Unit] = Reader { env =>
+                                              ): Reader[Environment, WriterSettings => Dataset[T] => Unit] = Reader { env =>
     writerSettings =>
       dataset =>
         if (strict) {

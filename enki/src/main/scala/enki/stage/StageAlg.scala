@@ -15,9 +15,9 @@ trait StageAlg[FF$334[_]] extends _root_.freestyle.free.internal.EffectLike[FF$3
   def readDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): FS[Dataset[T]]
 
   //TODO: Settings, помещенные сюда становятся невидимыми для интерпретатора, а мы, возможно, захотим их менять.
-  def writeDataFrame(schemaName: String, tableName: String): FS[WriterSettings[Row] => DataFrame => Unit]
+  def writeDataFrame(schemaName: String, tableName: String): FS[WriterSettings => DataFrame => Unit]
 
-  def writeDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): FS[WriterSettings[T] => Dataset[T] => Unit]
+  def writeDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): FS[WriterSettings => Dataset[T] => Unit]
 }
 
 @_root_.java.lang.SuppressWarnings(_root_.scala.Array("org.wartremover.warts.Any", "org.wartremover.warts.AsInstanceOf", "org.wartremover.warts.Throw")) object StageAlg {
@@ -42,11 +42,11 @@ trait StageAlg[FF$334[_]] extends _root_.freestyle.free.internal.EffectLike[FF$3
     override val FSAlgebraIndex344: _root_.scala.Int = 3
   }
 
-  final case class WriteDataFrameOp(val schemaName: String, val tableName: String) extends _root_.scala.AnyRef with Op[WriterSettings[Row] => DataFrame => Unit] {
+  final case class WriteDataFrameOp(val schemaName: String, val tableName: String) extends _root_.scala.AnyRef with Op[WriterSettings => DataFrame => Unit] {
     override val FSAlgebraIndex344: _root_.scala.Int = 4
   }
 
-  final case class WriteDatasetOp[T](val schemaName: String, val tableName: String, val encoder: Encoder[T], val strict: Boolean) extends _root_.scala.AnyRef with Op[WriterSettings[T] => Dataset[T] => Unit] {
+  final case class WriteDatasetOp[T](val schemaName: String, val tableName: String, val encoder: Encoder[T], val strict: Boolean) extends _root_.scala.AnyRef with Op[WriterSettings => Dataset[T] => Unit] {
     override val FSAlgebraIndex344: _root_.scala.Int = 5
   }
 
@@ -61,9 +61,9 @@ trait StageAlg[FF$334[_]] extends _root_.freestyle.free.internal.EffectLike[FF$3
 
     protected[this] def readDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): MM$358[Dataset[T]]
 
-    protected[this] def writeDataFrame(schemaName: String, tableName: String): MM$358[WriterSettings[Row] => DataFrame => Unit]
+    protected[this] def writeDataFrame(schemaName: String, tableName: String): MM$358[WriterSettings => DataFrame => Unit]
 
-    protected[this] def writeDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): MM$358[WriterSettings[T] => Dataset[T] => Unit]
+    protected[this] def writeDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): MM$358[WriterSettings => Dataset[T] => Unit]
 
     type PP$337
     type PP$340
@@ -104,9 +104,9 @@ trait StageAlg[FF$334[_]] extends _root_.freestyle.free.internal.EffectLike[FF$3
 
     override def readDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): FS[Dataset[T]] = toInj351(ReadDatasetOp[T](schemaName, tableName, encoder, strict))
 
-    override def writeDataFrame(schemaName: String, tableName: String): FS[WriterSettings[Row] => DataFrame => Unit] = toInj351(WriteDataFrameOp(schemaName, tableName))
+    override def writeDataFrame(schemaName: String, tableName: String): FS[WriterSettings => DataFrame => Unit] = toInj351(WriteDataFrameOp(schemaName, tableName))
 
-    override def writeDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): FS[WriterSettings[T] => Dataset[T] => Unit] = toInj351(WriteDatasetOp[T](schemaName, tableName, encoder, strict))
+    override def writeDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): FS[WriterSettings => Dataset[T] => Unit] = toInj351(WriteDatasetOp[T](schemaName, tableName, encoder, strict))
   }
 
   implicit def to[LL$349[_]](implicit ii$350: _root_.freestyle.free.InjK[Op, LL$349]): To[LL$349] = new To[LL$349]

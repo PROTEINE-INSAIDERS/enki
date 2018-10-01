@@ -14,7 +14,7 @@ final class ProgramWrapper[StageOp[_]] {
                           schemaName: String,
                           tableName: String,
                           dataFrame: Par[StageOp, DataFrame],
-                          writerSettings: Par[StageOp, WriterSettings[Row]]
+                          writerSettings: Par[StageOp, WriterSettings]
                         ): FS[Par[StageOp, DataFrame]]
 
     def persistDataset[T](
@@ -23,7 +23,7 @@ final class ProgramWrapper[StageOp[_]] {
                            dataset: Par[StageOp, Dataset[T]],
                            encoder: Encoder[T],
                            strict: Boolean,
-                           writerSettings: Par[StageOp, WriterSettings[T]]
+                           writerSettings: Par[StageOp, WriterSettings]
                          ): FS[Par[StageOp, Dataset[T]]]
   }
 
@@ -32,7 +32,7 @@ final class ProgramWrapper[StageOp[_]] {
                                                    schemaName: String,
                                                    tableName: String,
                                                    dataframe: Par[StageOp, DataFrame],
-                                                   writerSettings: Par[StageOp, WriterSettings[Row]]
+                                                   writerSettings: Par[StageOp, WriterSettings]
                                                  ): StageWriter[StageOp, Par[StageOp, DataFrame]] = {
       val stageName = s"$schemaName.$tableName"
       val stage = stager.writeDataFrame(schemaName, tableName) <*> writerSettings <*> dataframe
@@ -49,7 +49,7 @@ final class ProgramWrapper[StageOp[_]] {
                                                     dataset: Par[StageOp, Dataset[T]],
                                                     encoder: Encoder[T],
                                                     strict: Boolean,
-                                                    writerSettings: Par[StageOp, WriterSettings[T]]
+                                                    writerSettings: Par[StageOp, WriterSettings]
                                                   ): StageWriter[StageOp, Par[StageOp, Dataset[T]]] = {
       val stageName = s"$schemaName.$tableName"
       val stage = stager.writeDataset[T](schemaName, tableName, encoder, strict) <*> writerSettings <*> dataset
@@ -60,5 +60,4 @@ final class ProgramWrapper[StageOp[_]] {
       }
     }
   }
-
 }

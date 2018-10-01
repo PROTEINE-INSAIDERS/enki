@@ -24,7 +24,10 @@ class ArgsCompiler extends Args.Handler[Reader[Environment, ?]] {
       fromParameter({ case IntegerValue(int) => int }, parameterValue, IntegerType).asInstanceOf[T]
     } else if (typeOf[T] == typeOf[String]) {
       fromParameter({ case StringValue(str) => str }, parameterValue, StringType).asInstanceOf[T]
-    } else {
+    } else if (typeOf[T] == typeOf[Boolean]) {
+      fromParameter({ case BooleanValue(bool) => bool }, parameterValue, BooleanType).asInstanceOf[T]
+    }
+    else {
       throw new Exception(s"Argument type ${typeOf[T]} not supported.")
     }
   }
@@ -41,11 +44,11 @@ class ArgsCompiler extends Args.Handler[Reader[Environment, ?]] {
     }
   }
 
-  override protected[this] def string(
-                                       name: String,
-                                       description: String,
-                                       defaultValue: Option[String]): Reader[Environment, String] = Reader { env =>
-    fromParameterMap[String](env.parameters, name, defaultValue)
+  override protected[this] def bool(
+                                     name: String,
+                                     description: String,
+                                     defaultValue: Option[Boolean]): Reader[Environment, Boolean] = Reader { env =>
+    fromParameterMap[Boolean](env.parameters, name, defaultValue)
   }
 
   override protected[this] def int(
@@ -54,5 +57,12 @@ class ArgsCompiler extends Args.Handler[Reader[Environment, ?]] {
                                     defaultValue: Option[Int]
                                   ): Reader[Environment, Int] = Reader { env =>
     fromParameterMap[Int](env.parameters, name, defaultValue)
+  }
+
+  override protected[this] def string(
+                                       name: String,
+                                       description: String,
+                                       defaultValue: Option[String]): Reader[Environment, String] = Reader { env =>
+    fromParameterMap[String](env.parameters, name, defaultValue)
   }
 }

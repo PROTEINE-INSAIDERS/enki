@@ -1,12 +1,13 @@
 package enki
 
-import enki.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 
 import scala.beans.BeanProperty
 
 class DatasetTest extends EnkiTestSuite {
+  import sparkSession.implicits._
+
   "typedCol" should {
     "resolve column by field accessor" in {
       val ds = sparkSession.emptyDataset[(Int, String)]

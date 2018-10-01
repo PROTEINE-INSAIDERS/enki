@@ -13,3 +13,7 @@ final case class StringValue(value: String) extends ParameterValue {
 final case class IntegerValue(value: Int) extends ParameterValue {
   override def dataType: DataType = IntegerType
 }
+
+final case class BooleanValue(value: Boolean) extends ParameterValue {
+  override def dataType: DataType = BooleanType
+}

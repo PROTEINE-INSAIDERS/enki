@@ -1,7 +1,7 @@
 package enki
 
-trait Aliases {
-  type EncoderStyle = enki.EncoderStyle
-  val EncoderStyle: enki.EncoderStyle.type = enki.EncoderStyle
+import cats.data._
 
+trait Aliases {
+  type EnkiMonad[A] = Reader[Environment, A]
 }

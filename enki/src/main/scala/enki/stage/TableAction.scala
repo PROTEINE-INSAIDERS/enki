@@ -32,7 +32,7 @@ trait WriteTableAction extends TableAction
 final case class WriteDataFrameAction(
                                        schemaName: String,
                                        tableName: String// ,
-                                       // writerSettings: WriterSettings[Row]
+                                       // writerSettings: WriterSettings
                                      ) extends WriteTableAction
 
 final case class WriteDatasetAction[T](
@@ -40,5 +40,5 @@ final case class WriteDatasetAction[T](
                                         tableName: String,
                                         encoder: Encoder[T],
                                         strict: Boolean// ,
-                                     //   writerSettings: WriterSettings[T]
+                                     //   writerSettings: WriterSettings
                                       ) extends WriteTableAction

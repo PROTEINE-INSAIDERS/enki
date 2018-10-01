@@ -12,9 +12,10 @@ trait Analyzers {
                                  stage: Stage[_],
                                  f: ArgumentAction => M
                                ): M = {
-    analyzeArgs(stage, λ[Args.Op ~> λ[α => M]] {
-      case Args.StringOp(name, description, defaultValue) => f(StringArgumentAction(name, description, defaultValue))
-      case Args.IntOp(name, description, defaultValue) => f(IntegerArgumentAction(name, description, defaultValue))
+    analyzeArgs(stage, λ[ArgsAlg.Op ~> λ[α => M]] {
+      case ArgsAlg.StringOp(name, description, defaultValue) => f(StringArgumentAction(name, description, defaultValue))
+      case ArgsAlg.IntOp(name, description, defaultValue) => f(IntegerArgumentAction(name, description, defaultValue))
+      case ArgsAlg.BoolOp(name, description, defaultValue) => f(BooleanArgumentAction(name, description, defaultValue))
     })
   }
 

@@ -1,12 +1,11 @@
 package enki
 
-import enki.implicits._
 import org.apache.spark.sql.Row
 
 class DataFrameTest extends EnkiTestSuite {
-  "diff" should {
-    sparkSession.implicits
+  import sparkSession.implicits._
 
+  "diff" should {
     "format" in {
       val a = sparkSession.createDataset(Seq((1, "a", 0.0), (2, "b", 0.0), (3, "c", 0.0))).toDF()
       val b = sparkSession.createDataset(Seq((2, "x", 0.0), (3, "c", 0.0), (4, "d", 0.0))).toDF()

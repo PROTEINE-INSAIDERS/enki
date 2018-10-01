@@ -2,7 +2,6 @@ package enki
 
 import cats.implicits._
 import freestyle.free.FreeS._
-import freestyle.free._
 import freestyle.free.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders._
@@ -15,8 +14,9 @@ trait Database[ProgramOp[_], StageOp[_]] {
 
   def encoderStyle: EncoderStyle = EncoderStyle.Spark
 
-  protected implicit val stageAlg: StageAlg[StageOp]
-  protected implicit val programAlg: Program1[StageOp, ProgramOp]
+  protected val argsAlg: ArgsAlg[StageOp]
+  protected val stageAlg: StageAlg[StageOp]
+  protected val programAlg: Program1[StageOp, ProgramOp]
 
   /**
     * Since using SparkImplicits and SparkSession.implicits at once will lead to ambiguity SparkImplicits not imported
@@ -26,7 +26,7 @@ trait Database[ProgramOp[_], StageOp[_]] {
     override def encoderStyle: EncoderStyle = Database.this.encoderStyle
   }
 
-  protected def writerSettings[T]: Par[StageOp, WriterSettings[T]] = WriterSettings[T]().pure[Par[StageOp, ?]]
+  protected def writerSettings: stageAlg.FS[WriterSettings] = WriterSettings().pure[stageAlg.FS]
 
   /* syntactic sugar */
 
@@ -57,19 +57,33 @@ trait Database[ProgramOp[_], StageOp[_]] {
     }
 
   final def write(tableName: String): Par[StageOp, DataFrame => Unit] = {
-    writerSettings[Row].ap(stageAlg.writeDataFrame(schema, tableName))
+    writerSettings.ap(stageAlg.writeDataFrame(schema, tableName))
   }
 
   final def write[T: Encoder](tableName: String, strict: Boolean = false): Par[StageOp, Dataset[T] => Unit] = {
-    writerSettings[T].ap(stageAlg.writeDataset[T](schema, tableName, implicitly, strict))
+    writerSettings.ap(stageAlg.writeDataset[T](schema, tableName, implicitly, strict))
   }
 
   final def gwrite[T: TypeTag](tableName: String): Par[StageOp, Dataset[T] => Unit] =
     if (typeOf[T] == typeOf[Row]) {
-      writerSettings[Row].ap(stageAlg.writeDataFrame(schema, tableName)).asInstanceOf[Par[StageOp, Dataset[T] => Unit]]
+      writerSettings.ap(stageAlg.writeDataFrame(schema, tableName)).asInstanceOf[Par[StageOp, Dataset[T] => Unit]]
     } else {
-      writerSettings[T].ap(stageAlg.writeDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false))
+      writerSettings.ap(stageAlg.writeDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false))
     }
+
+  /* arguments */
+
+  final def arg[T: TypeTag](name: String, description: String = "", defaultValue: Option[T] = None): argsAlg.FS[T] = {
+    if (typeOf[T] == typeOf[Boolean]) {
+      argsAlg.bool(name, description, defaultValue.asInstanceOf[Option[Boolean]]).asInstanceOf[argsAlg.FS[T]]
+    } else if (typeOf[T] == typeOf[Int]) {
+      argsAlg.int(name, description, defaultValue.asInstanceOf[Option[Int]]).asInstanceOf[argsAlg.FS[T]]
+    } else if (typeOf[T] == typeOf[String]) {
+      argsAlg.string(name, description, defaultValue.asInstanceOf[Option[String]]).asInstanceOf[argsAlg.FS[T]]
+    } else {
+      throw new Exception(s"Argument of type ${typeOf[T]} not supported.")
+    }
+  }
 
   /* program builder */
 
