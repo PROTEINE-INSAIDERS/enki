@@ -2,7 +2,6 @@
 import com.monovore.decline._
 import enki.default._
 import enki.testsuite.EnkiSuite
-import freestyle.free._
 import org.apache.spark.sql._
 
 object Main extends CommandApp(

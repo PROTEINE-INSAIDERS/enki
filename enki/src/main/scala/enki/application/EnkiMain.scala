@@ -54,7 +54,7 @@ trait ApplicationModule {
 
     protected def session: Opts[SparkSession]
 
-    protected def compiler: Opts[StageCompiler] = Opts(stageCompiler)
+    protected def compiler: Opts[StageCompiler] = Opts(implicits.stageCompiler)
 
     protected def resume(action: String): Opts[SparkSession => StageCompiler => Unit] = Opts {
       (params: Map[String, ParameterValue]) =>

@@ -41,6 +41,7 @@ trait Analyzers {
     })
   }
 
+  //TODO: implement analysers atop of compilers.
   def stageNonEmpty(stage: Stage[_]): Boolean = {
     stage.analyze(λ[StageOp ~> λ[α => Option[Unit]]] {
       case _ => Some(())

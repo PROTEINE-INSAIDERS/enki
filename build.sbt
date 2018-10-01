@@ -3,7 +3,7 @@ val scalaGraphVersion = "1.12.5"
 
 resolvers += Resolver.url("scoverage-bintray", url("https://dl.bintray.com/sksamuel/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
-lazy val enki = project in file("enki")
+lazy val enki = (project in file("enki"))
 
 lazy val tutorial = (project in file("demos/tutorial")).dependsOn(enki)
   .settings(
@@ -20,4 +20,5 @@ lazy val tutorial = (project in file("demos/tutorial")).dependsOn(enki)
 lazy val root = (project in file("."))
   .aggregate(enki, tutorial)
 
-
+sources in (Compile,doc) := Seq.empty
+publishArtifact in (Compile, packageDoc) := false

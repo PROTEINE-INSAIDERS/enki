@@ -7,6 +7,7 @@ import org.apache.spark.sql._
 import scala.collection.JavaConversions._
 
 trait Compilers {
+
   /*
   def stageCompiler: StageAction ~> SparkAction = λ[StageAction ~> SparkAction] {
     case action: DataFrameAction => env: Environment =>

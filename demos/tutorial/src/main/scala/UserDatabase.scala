@@ -1,6 +1,5 @@
 import java.sql.Timestamp
 
-import cats._
 import cats.implicits._
 import enki.default._
 import freestyle.free.FreeS.Par
@@ -38,7 +37,7 @@ trait UserDatabase extends Database {
   override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
   override def writerSettings: Stage[WriterSettings] =
-    (super.writerSettings, arg("overwrite", "Overwrite existent data.",  defaultValue = Some(true))) mapN { (settings, overwrite) =>
+    (super.writerSettings, arg("overwrite", "Overwrite existent data.", defaultValue = Some(true))) mapN { (settings, overwrite) =>
       settings
     }
 

@@ -12,6 +12,9 @@ import scala.collection._
 
 trait ActionGraphBuilder {
   self: Enki with GraphModule =>
+
+  import implicits._
+
   // сплиттер нужно передавать как параметр, т.к. программа может содержать кастомные шаги.
   def buildActionGraph(
                         rootName: String,
