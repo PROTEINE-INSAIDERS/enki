@@ -15,9 +15,8 @@ case class WriterSettings(
     overwrite = if (saveMode == SaveMode.Overwrite) true else false
   )
 
-  def addPartition(name: String, value: String): WriterSettings = {
-    copy(partition = partition :+ (name -> value))
-  }
+
+  def setPartition(partition: (String, String)*): WriterSettings = copy(partition = partition)
 }
 
 object WriterSettings {

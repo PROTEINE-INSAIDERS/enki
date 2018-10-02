@@ -6,7 +6,7 @@ import org.apache.spark.sql.types._
 
 import scala.reflect.runtime.universe._
 
-class ArgsCompiler extends Args.Handler[Reader[Environment, ?]] {
+class ArgsCompiler extends Args.Handler[EnkiMonad] {
 
   private def fromParameter[T](
                                 extractor: PartialFunction[ParameterValue, T],

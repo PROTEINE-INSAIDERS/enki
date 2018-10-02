@@ -6,7 +6,8 @@ import com.monovore.decline._
 import enki._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
-
+import freestyle.free._
+import freestyle.free.implicits._
 import scala.collection.mutable
 import scala.util.Try
 
@@ -54,7 +55,7 @@ trait ApplicationModule {
 
     protected def session: Opts[SparkSession]
 
-    protected def compiler: Opts[StageCompiler] = Opts(implicits.stageCompiler)
+    protected def compiler: Opts[StageCompiler] = Opts(stageCompiler)
 
     protected def resume(action: String): Opts[SparkSession => StageCompiler => Unit] = Opts {
       (params: Map[String, ParameterValue]) =>

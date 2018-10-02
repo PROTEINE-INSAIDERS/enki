@@ -1,5 +1,6 @@
 package enki
 
+import cats._
 import cats.implicits._
 import enki.default._
 import freestyle.free.FreeS._
@@ -20,7 +21,7 @@ class ProgramTest extends EnkiTestSuite with enki.default.Database {
 
   "buildActionGraph" should {
     "detect dependencies" in {
-      val p: FreeS[ProgramOp, Par[StageOp, Unit]] = for {
+      val p = for {
         a <- persist("a", dataset(Seq(1)))
         b <- persist("b", a)
         c <- persist("c", a)

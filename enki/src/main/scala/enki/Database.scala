@@ -35,36 +35,36 @@ trait Database[ProgramOp[_], StageOp[_]] {
   final def dataFrame(
                        rows: Seq[Row],
                        schema: StructType
-                     ): Par[StageOp, DataFrame] =
+                     ): stageAlg.FS[DataFrame] =
     stageAlg.dataFrame(rows, schema)
 
   // s.dataFrame(rows, schema)
 
-  final def dataset[T: Encoder](data: Seq[T]): Par[StageOp, Dataset[T]] =
+  final def dataset[T: Encoder](data: Seq[T]): stageAlg.FS[Dataset[T]] =
     stageAlg.dataset(data, implicitly)
 
-  final def read(tableName: String): Par[StageOp, DataFrame] =
+  final def read(tableName: String): stageAlg.FS[DataFrame] =
     stageAlg.readDataFrame(schema, tableName)
 
-  final def read[T: Encoder](tableName: String, strict: Boolean = false): Par[StageOp, Dataset[T]] =
+  final def read[T: Encoder](tableName: String, strict: Boolean = false): stageAlg.FS[Dataset[T]] =
     stageAlg.readDataset(schema, tableName, implicitly, strict)
 
-  final def gread[T: TypeTag](tableName: String): Par[StageOp, Dataset[T]] =
+  final def gread[T: TypeTag](tableName: String): stageAlg.FS[Dataset[T]] =
     if (typeOf[T] == typeOf[Row]) {
-      stageAlg.readDataFrame(schema, tableName).asInstanceOf[Par[StageOp, Dataset[T]]]
+      stageAlg.readDataFrame(schema, tableName).asInstanceOf[stageAlg.FS[Dataset[T]]]
     } else {
       stageAlg.readDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false)
     }
 
-  final def write(tableName: String): Par[StageOp, DataFrame => Unit] = {
+  final def write(tableName: String): stageAlg.FS[DataFrame => Unit] = {
     writerSettings.ap(stageAlg.writeDataFrame(schema, tableName))
   }
 
-  final def write[T: Encoder](tableName: String, strict: Boolean = false): Par[StageOp, Dataset[T] => Unit] = {
+  final def write[T: Encoder](tableName: String, strict: Boolean = false): stageAlg.FS[Dataset[T] => Unit] = {
     writerSettings.ap(stageAlg.writeDataset[T](schema, tableName, implicitly, strict))
   }
 
-  final def gwrite[T: TypeTag](tableName: String): Par[StageOp, Dataset[T] => Unit] =
+  final def gwrite[T: TypeTag](tableName: String): stageAlg.FS[Dataset[T] => Unit] =
     if (typeOf[T] == typeOf[Row]) {
       writerSettings.ap(stageAlg.writeDataFrame(schema, tableName)).asInstanceOf[Par[StageOp, Dataset[T] => Unit]]
     } else {
@@ -91,17 +91,20 @@ trait Database[ProgramOp[_], StageOp[_]] {
                                  tableName: String,
                                  dataset: Par[StageOp, Dataset[T]],
                                  strict: Boolean = false
-                               ): Par[ProgramOp, Par[StageOp, Dataset[T]]] =
+                               ): programAlg.FS[stageAlg.FS[Dataset[T]]] =
     programAlg.persistDataset(schema, tableName, dataset, implicitly, strict, this.writerSettings)
 
   final def persist(
                      tableName: String,
                      dataframe: Par[StageOp, DataFrame]
-                   ): Par[ProgramOp, Par[StageOp, DataFrame]] =
+                   ): programAlg.FS[stageAlg.FS[DataFrame]] =
     programAlg.persistDataFrame(schema, tableName, dataframe, writerSettings)
 
 
-  final def gpersist[T: TypeTag](tableName: String, dataset: Par[StageOp, Dataset[T]]): Par[ProgramOp, Par[StageOp, Dataset[T]]] =
+  final def gpersist[T: TypeTag](
+                                  tableName: String,
+                                  dataset: Par[StageOp, Dataset[T]]
+                                ): programAlg.FS[stageAlg.FS[Dataset[T]]] =
     if (typeOf[T] == typeOf[Row])
       programAlg
         .persistDataFrame(schema, tableName, dataset.asInstanceOf[Par[StageOp, DataFrame]], writerSettings)

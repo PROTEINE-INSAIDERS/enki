@@ -18,7 +18,7 @@ trait ActionGraphBuilder {
   // сплиттер нужно передавать как параметр, т.к. программа может содержать кастомные шаги.
   def buildActionGraph(
                         rootName: String,
-                        p: Program[Par[StageOp, Unit]]
+                        p: ProgramS[Stage[Unit]]
                       ): ActionGraph = {
     val (stages, lastStage) = p.interpret[StageWriter[StageOp, ?]].run // foldMap(programSplitter).run
 

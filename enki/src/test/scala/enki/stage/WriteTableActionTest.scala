@@ -21,11 +21,11 @@ class WriteTableActionTest extends EnkiTestSuite {
 
       val ws1 = WriterSettings()
         .setMode(SaveMode.Overwrite)
-        .addPartition("_1", "a")
+        .setPartition("_1" -> "a")
 
       val ws2 = WriterSettings()
         .setMode(SaveMode.Overwrite)
-        .addPartition("_1", "b")
+        .setPartition("_1" -> "b")
 
       val dc = new DefaultStageCompiler() {}
 

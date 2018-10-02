@@ -2,7 +2,6 @@ import java.sql.Timestamp
 
 import cats.implicits._
 import enki.default._
-import freestyle.free.FreeS.Par
 import freestyle.free._
 import freestyle.free.implicits._
 import org.apache.spark.sql._
@@ -68,15 +67,15 @@ trait UserDatabase extends Database {
         sum(purchasesReport $ (_.price)) as "total_sum"
       ).as[ProductsByClientReport]
 
-  def createReports: FreeS[ProgramOp, Par[StageOp, Unit]] = for {
-    purchasesReport <- persist[PurchasesReport](
-      "purchases_report",
-      (clients, products, purchases) mapN this.purchasesReport)
+  def persistPurchasesReport: Program[Stage[Dataset[PurchasesReport]]] =
+    persist[PurchasesReport]("purchases_report", (clients, products, purchases) mapN this.purchasesReport)
 
+  def createReports: ProgramS[Stage[Unit]] = for {
+    purchasesReport <- persistPurchasesReport
     _ <- persist(
       "products_by_client_report",
       purchasesReport map this.productByClientReport)
-  } yield ().pure[Par[StageOp, ?]]
+  } yield ().pure[Stage]
 
   def createDatabase(session: SparkSession): Unit = {
     session.sql(s"create database $schema")

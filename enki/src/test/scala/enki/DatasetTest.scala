@@ -1,5 +1,6 @@
 package enki
 
+import enki.default._
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 

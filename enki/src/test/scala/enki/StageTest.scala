@@ -1,9 +1,7 @@
 package enki
 
-import cats._
 import cats.implicits._
 import enki.default._
-import enki.default.implicits._
 import freestyle.free._
 import freestyle.free.implicits._
 import org.apache.spark.sql._
@@ -14,6 +12,7 @@ import scala.collection.JavaConversions._
 case class DecimalPrecisionTestData(@decimalPrecision(38, 12) a: Option[BigDecimal])
 
 class StageTest extends EnkiTestSuite with enki.default.Database {
+
   import implicits._
 
   override def schema: String = "default"

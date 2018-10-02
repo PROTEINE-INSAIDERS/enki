@@ -4,7 +4,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 import freestyle.free._
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphEdge._
 
@@ -22,13 +22,15 @@ trait GraphModule {
   def createEmptySources(graph: ActionGraph, session: SparkSession): Unit = {
     sources(graph).foreach {
       case action: ReadDatasetAction[t] =>
-        if (!session.catalog.databaseExists(action.schemaName)) session.sql(s"create database ${action.schemaName}")
-        session.emptyDataset[t](action.encoder).write.saveAsTable(action.toString)
+        session.sql(s"create database if not exists ${action.schemaName}")
+        session.emptyDataset[t](action.encoder).write.mode(SaveMode.Ignore).saveAsTable(action.toString)
 
       case _ => throw new UnsupportedOperationException("Can not create empty table from DataFrame.")
     }
   }
 
+  //TODO: разные ReadTableAction для одной и той же таблицы могут различаться, т.к. могут использовать разные
+  // экземпляры энкодеров.
   def sources: ActionGraph => Set[ReadTableAction] = graph => {
     val readers = graph.analyze(action => stageReads(action, action => Set((action.toString, action))))
     val writers = graph.analyze(action => stageWrites(action, action => Set(action.toString)))

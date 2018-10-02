@@ -1,9 +1,9 @@
 package enki
 
 import cats._
-import freestyle.free.FreeS._
 import freestyle.free._
 import freestyle.free.implicits._
+import freestyle.free.internal.EffectLike
 import iota._
 
 /**
@@ -11,6 +11,7 @@ import iota._
   */
 trait Enki
   extends enki.Exports
+    with DataFrameModule
     with enki.stage.Aliases
     with enki.application.ApplicationModule
     with enki.args.Aliases
@@ -22,17 +23,17 @@ trait Enki
   type StageOp[A]
   type ProgramOp[A]
 
-  type Stage[A] = Par[StageOp, A]
-  type Program[A] = FreeS[ProgramOp, A]
+  val stageAlg: EffectLike[StageOp]
+  val programAlg: EffectLike[ProgramOp]
 
+  type Stage[A] = stageAlg.FS[A]
+  type Program[A] = programAlg.FS[A]
+  type ProgramS[A] = FreeS[ProgramOp, A]
   type StageCompiler = FSHandler[StageOp, EnkiMonad]
 
-  trait EnkiImplicits{
-    implicit val programSplitter: FSHandler[ProgramOp, StageWriter[StageOp, ?]]
-    implicit val stageCompiler: StageCompiler
-  }
-
-  val implicits: EnkiImplicits
+  /* implicits */
+  implicit val programSplitter: FSHandler[ProgramOp, StageWriter[StageOp, ?]] // сплиттер возможно тоже не должен быть имплицитным.
+  val stageCompiler: StageCompiler // не должен быть имплицитным, т.к. начинает конфликтовать с имплицитами из freestyle.free.implicits._
 
   def analyzeArgs[M: Monoid](s: Stage[_], f: ArgsAlg.Op ~> λ[α => M]): M
 
@@ -57,14 +58,14 @@ object default extends Enki {
   override type StageOp[A] = StagesWithArgs.Op[A]
   override type ProgramOp[A] = programWrapper.ProgramM.Op[A]
 
-  final class DefaultImplicits extends EnkiImplicits {
-    implicit val stageOnlyCompiler: FSHandler[StageAlg.Op, EnkiMonad] = new enki.stage.DefaultStageCompiler {}
-    implicit val argsOnlyCompiler = new ArgsCompiler {}
-    override val programSplitter: FSHandler[ProgramOp, StageWriter[StageOp, ?]] = new programWrapper.ProgramSplitter()
-    override val stageCompiler: StageCompiler = implicitly
-  }
+  override val stageAlg: enki.StagesWithArgs[StageOp] = implicitly
+  override val programAlg: enki.Program1[StageOp, ProgramOp] = implicitly
 
-  override val implicits: DefaultImplicits = new DefaultImplicits()
+  implicit val defaultStageCompiler: FSHandler[StageAlg.Op, EnkiMonad] = new enki.stage.DefaultStageCompiler {}
+  implicit val defaultArgsCompiler: FSHandler[ArgsAlg.Op, EnkiMonad] = new ArgsCompiler {}
+  override implicit val programSplitter: FSHandler[ProgramOp, StageWriter[StageOp, ?]] = new programWrapper.ProgramSplitter()
+
+  override val stageCompiler: StageCompiler = implicitly
 
   trait Database extends enki.Database[ProgramOp, StageOp] {
     override val programAlg: enki.Program1[StageOp, ProgramOp] = implicitly

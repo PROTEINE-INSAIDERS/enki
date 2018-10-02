@@ -15,4 +15,6 @@ trait Aliases {
 
   type WriterSettings = stage.WriterSettings
   val WriterSettings: stage.WriterSettings.type = stage.WriterSettings
+
+  type TableNameMapper = stage.TableNameMapper
 }
