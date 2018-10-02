@@ -10,7 +10,6 @@ import org.apache.spark.sql._
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.GraphPredef._
 
-
 class ProgramTest extends EnkiTestSuite with enki.default.Database {
 
   import implicits._

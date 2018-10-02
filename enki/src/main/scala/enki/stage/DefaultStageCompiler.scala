@@ -75,7 +75,6 @@ trait DefaultStageCompiler extends StageAlg.Handler[EnkiMonad] {
     restricted.as[T](encoder)
   }
 
-
   override protected[this] def writeDataFrame(
                                                schemaName: String,
                                                tableName: String
