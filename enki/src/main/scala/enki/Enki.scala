@@ -18,7 +18,8 @@ trait Enki
     with enki.ds.Extensions
     with enki.GraphModule
     with enki.program.ActionGraphBuilder
-    with enki.stage.Analyzers {
+    with enki.stage.Analyzers
+    with enki.sql.Functions {
   type StageOp[A]
   type ProgramOp[A]
 
