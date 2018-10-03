@@ -8,7 +8,7 @@ trait EnkiTestSuite extends WordSpec with Matchers with EnkiSuite {
 
   override protected def createSparkSession(): SparkSession = {
     val session = super.createSparkSession()
-   // session.sparkContext.setLogLevel("ERROR")
+    session.sparkContext.setLogLevel("ERROR")
     session
   }
 }

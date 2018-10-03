@@ -16,7 +16,6 @@ trait Enki
     with enki.application.ApplicationModule
     with enki.args.Aliases
     with enki.ds.Extensions
-    with MetadataModule
     with enki.GraphModule
     with enki.program.ActionGraphBuilder
     with enki.stage.Analyzers {

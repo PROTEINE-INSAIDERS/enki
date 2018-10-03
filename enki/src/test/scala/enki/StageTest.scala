@@ -6,6 +6,7 @@ import freestyle.free._
 import freestyle.free.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
+import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.JavaConversions._
 
@@ -14,6 +15,11 @@ case class DecimalPrecisionTestData(@decimalPrecision(38, 12) a: Option[BigDecim
 class StageTest extends EnkiTestSuite with enki.default.Database {
 
   import implicits._
+
+  "test" in {
+    val e1  = implicitly[Encoder[DecimalPrecisionTestData]]
+    println(e1 )
+  }
 
   override def schema: String = "default"
 
