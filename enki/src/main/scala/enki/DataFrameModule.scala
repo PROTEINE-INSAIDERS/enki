@@ -1,10 +1,12 @@
 package enki
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.expressions.Window._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
 trait DataFrameModule {
+
   private val diffStatusColName = "diff_status"
   private val addedStatus = "added"
   private val removedStatus = "removed"
@@ -49,7 +51,6 @@ trait DataFrameModule {
       .join(r, keyColumns.map { c => l(c) === r(c) }.reduce(_ and _), "outer")
       .select(columns.map(c => colDiff(c).as(c)): _*)
       .withColumn(diffStatusColName, coalesce(columns.map(c => col(s"$c.$diffStatusColName")): _*))
-    // .select(rowStatus.as(diffStatusColName) +: columns.map(c => colDiff(c).as(c)): _*)
   }
 
   /**
@@ -76,8 +77,11 @@ trait DataFrameModule {
     dataFrame.select(dataFrame.columns.map(colName => coalesce(dataFrame(colName), lit(value)).as(colName)): _*)
   }
 
-  def nonUnique(data: DataFrame, cols: Seq[Column]): DataFrame = {
-    data.groupBy(cols: _*).count().where(col("count") > 1).select(cols: _*)
+  def nonUniq(data: DataFrame, cols: Seq[Column]): DataFrame = {
+    data
+      .withColumn("__count", count("*").over(partitionBy(cols: _*)))
+      .where(col("__count") > 1)
+      .drop("__count")
   }
 
   implicit class DataFrameExtensions(dataFrame: DataFrame) {
@@ -95,7 +99,7 @@ trait DataFrameModule {
     }
 
     def nonUniq(col: Column*): DataFrame = {
-      DataFrameModule.this.nonUnique(dataFrame, col)
+      DataFrameModule.this.nonUniq(dataFrame, col)
     }
   }
 

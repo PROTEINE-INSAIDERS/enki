@@ -84,3 +84,6 @@ project/plugins/project/
 .cache
 .lib/
 
+
+# Spark
+spark-warehouse/
