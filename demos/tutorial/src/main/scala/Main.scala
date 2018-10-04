@@ -1,6 +1,6 @@
-import cats._
+
 import com.monovore.decline._
-import enki._
+import enki.default._
 import enki.testsuite.EnkiSuite
 import org.apache.spark.sql._
 
@@ -9,18 +9,20 @@ object Main extends CommandApp(
   header = "Enki tutorial",
   main = new TutorialMain())
 
-class TutorialMain extends EnkiMain with UserDatabase with SourceDatabase with EnkiSuite {
-  override def actionGraph: enki.ActionGraph = buildActionGraph("root", program)
+class TutorialMain
+  extends EnkiMain
+    // with UserDatabase
+    with SourceDatabase
+    with UserDatabase
+    with EnkiSuite {
+
+  override def actionGraph: ActionGraph = buildActionGraph("root", createReports)
 
   override def session: Opts[SparkSession] = Opts {
     SparkSession.builder().master(s"local").getOrCreate()
   }
 
-  override def compiler: Opts[~>[enki.StageAction, SparkAction]] = Opts {
-    stageCompiler
-  }
-
-  override def resume(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = {
+  override def resume(action: String): Opts[SparkSession => StageCompiler => Unit] = {
     super.resume(action).map { f =>
       session =>
         compiler =>
@@ -29,7 +31,7 @@ class TutorialMain extends EnkiMain with UserDatabase with SourceDatabase with E
     }
   }
 
-  override def run(action: String): Opts[SparkSession => StageAction ~> SparkAction => Unit] = {
+  override def run(action: String): Opts[SparkSession => StageCompiler => Unit] = {
     super.run(action).map { f =>
       session =>
         compiler =>
@@ -38,7 +40,7 @@ class TutorialMain extends EnkiMain with UserDatabase with SourceDatabase with E
     }
   }
 
-  override def runAll: Opts[SparkSession => StageAction ~> SparkAction => Unit] = {
+  override def runAll: Opts[SparkSession => StageCompiler => Unit] = {
     super.runAll.map { f =>
       session =>
         compiler =>

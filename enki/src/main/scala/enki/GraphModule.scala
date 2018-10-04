@@ -1,7 +1,10 @@
 package enki
 
 import cats._
+import cats.data._
 import cats.implicits._
+import freestyle.free._
+import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphEdge._
 
@@ -13,6 +16,26 @@ import scala.util.control.NonFatal
 final case class ActionFailedException(action: String, cause: Throwable) extends Exception(s"Action $action failed.", cause)
 
 trait GraphModule {
+  self: Enki =>
+
+  //TODO: перенести в более подходящий модуль
+  def createEmptySources(graph: ActionGraph, session: SparkSession): Unit = {
+    sources(graph).foreach {
+      case action: ReadDatasetAction[t] =>
+        session.sql(s"create database if not exists ${action.schemaName}")
+        session.emptyDataset[t](action.encoder).write.mode(SaveMode.Ignore).saveAsTable(action.toString)
+
+      case _ => throw new UnsupportedOperationException("Can not create empty table from DataFrame.")
+    }
+  }
+
+  //TODO: разные ReadTableAction для одной и той же таблицы могут различаться, т.к. могут использовать разные
+  // экземпляры энкодеров.
+  def sources: ActionGraph => Set[ReadTableAction] = graph => {
+    val readers = graph.analyze(action => stageReads(action, action => Set((action.toString, action))))
+    val writers = graph.analyze(action => stageWrites(action, action => Set(action.toString)))
+    readers.filter { case (name, _) => !writers.contains(name) }.map { case (_, action) => action }
+  }
 
   sealed trait ActionNode {
     def analyze[M: Monoid](f: Stage[_] => M): M
@@ -26,7 +49,7 @@ trait GraphModule {
     def externalReads[M: Monoid](f: ReadTableAction => M): M = {
       val writeTables = writes(w => Set((w.schemaName, w.tableName)))
       reads(r => if (writeTables.contains((r.schemaName, r.tableName))) {
-        implicitly[Monoid[M]].empty
+        Monoid.empty[M]
       } else {
         f(r)
       })
@@ -85,31 +108,32 @@ trait GraphModule {
       subGraphs.foreach(_.validate())
     }
 
-    def resume(action: String, compiler: StageAction ~> SparkAction, environment: Environment): Unit = {
+    def resume(action: String, compiler: StageCompiler, environment: Environment): Unit = {
       checkActionExists(action)
       linearized.dropWhile(_ != action).foreach { stageName =>
         runAction(stageName, compiler, environment)
       }
     }
 
-    def runAction(name: String, compiler: StageAction ~> SparkAction, environment: Environment): Unit = {
+    def runAction(name: String, compiler: StageCompiler, environment: Environment): Unit = {
       try {
         //TODO: stack descriptions
         environment.session.sparkContext.setJobDescription(name)
         this (name) match {
           case GraphNode(g) => g.runAll(compiler, environment)
           case StageNode(a) =>
-            a.foldMap(compiler).apply(environment)
+            a.foldMap(compiler).run(environment)
             ()
         }
       } catch {
-        case NonFatal(e) => throw new ActionFailedException(name, e)
+        case NonFatal(e) => throw ActionFailedException(name, e)
       } finally {
         environment.session.sparkContext.setJobDescription(null)
       }
     }
 
     def analyze[M: Monoid](f: Stage[_] => M): M = {
+
       actions.values.toList.foldMap {
         case StageNode(s) => f(s)
         case GraphNode(g) => g.analyze(f)
@@ -121,7 +145,7 @@ trait GraphModule {
       order => order.toList.reverse.map(_.value)
     )
 
-    def runAll(compiler: StageAction ~> SparkAction, environment: Environment): Unit = {
+    def runAll(compiler: StageCompiler, environment: Environment): Unit = {
       validate()
       linearized.foreach { stageName => runAction(stageName, compiler, environment) }
     }

@@ -1,19 +1,15 @@
-import enki.ds.Extensions
 
+
+/**
+  * Enki static type aliases
+  */
 package object enki
   extends AllModules
     with stage.Aliases
-    with stage.Syntax
+    // with stage.Syntax
     with stage.Compilers
-    with stage.Analyzers
-    with application.Aliases
-    with application.Implicits
-    with writer.Aliases
-    with Extensions {
-  type SparkAction[A] = Environment => A
+    with program.Aliases
+    with args.Aliases
+    with Aliases {
 
-  /**
-    * Since using SparkImplicits and SparkSession.implicits at once will lead to ambiguity, SparkImplicits not imported by default.
-    */
-  val implicits: SparkImplicits = new SparkImplicits {}
 }

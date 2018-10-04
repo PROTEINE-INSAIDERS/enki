@@ -58,15 +58,15 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats-core" % catsVersion, // коты
-  "org.typelevel" %% "cats-free" % catsVersion, // свободные монадки и апликативные функторы для Stage
+ // "org.typelevel" %% "cats-core" % catsVersion, // коты
+//  "org.typelevel" %% "cats-free" % catsVersion, // свободные монадки и апликативные функторы для Stage
   "org.scala-graph" %% "graph-core" % scalaGraphVersion, // граф для представления зависимостей
   "com.monovore" %% "decline" % declineVersion, // парсер командной строки для EnkiApp
   "com.chuusai" %% "shapeless" % shapelessVersion, // HLIST для генерации дефолтных данных (в enki.test)
   "com.propensive" %% "contextual" % contextualVersion, // интерполятор для enki.test
   "org.apache.spark" %% "spark-core" % sparkVersion % Provided, // Спарк
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided, // Спарк SQL
-  "org.scalatest" %% "scalatest" % scalaTestVersion % "test", // тестирование
+  "org.scalatest" %% "scalatest" % scalaTestVersion % Test, // тестирование
 
 //  "com.slamdata" %% "matryoshka-core" % "0.18.3" , // матрёшка для тестирования рекурсивных схем по stage - дереву (вытянет за собой scalaz)
 //  "io.higherkindness" %% "droste-core" % "0.4.0" , // рекурсивные схемы для котов

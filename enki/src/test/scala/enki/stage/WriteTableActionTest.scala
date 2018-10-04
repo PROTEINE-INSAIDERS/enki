@@ -1,20 +1,13 @@
 package enki.stage
 
-import cats.implicits._
-import enki._
+import enki.EnkiTestSuite
+import enki.default._
 import org.apache.spark.sql._
 
 class WriteTableActionTest extends EnkiTestSuite {
   "write" should {
     "be able to overwrite partition" in {
       import sparkSession.implicits._
-
-      def part1[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] =
-        writer.partition(Map("_1" -> "a")) *> writer.mode(SaveMode.Overwrite)
-
-      def part2[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] =
-        writer.partition(Map("_1" -> "b")) *> writer.mode(SaveMode.Overwrite)
-
 
       val ds = sparkSession.createDataset(Seq(("a", "a"), ("b", "b")))
 
@@ -26,9 +19,19 @@ class WriteTableActionTest extends EnkiTestSuite {
         override def tableName: String = "test"
       }
 
-      writeTableAction.write(part1, ds.where($"_1" === "a"))
-      writeTableAction.write(part2, ds.where($"_1" === "b"))
-      writeTableAction.write(part2, ds.where($"_1" === "b"))
+      val ws1 = WriterSettings()
+        .setMode(SaveMode.Overwrite)
+        .setPartition("_1" -> "a")
+
+      val ws2 = WriterSettings()
+        .setMode(SaveMode.Overwrite)
+        .setPartition("_1" -> "b")
+
+      val dc = new DefaultStageCompiler() {}
+
+      dc.write("test", "test", ws1, ds.where($"_1" === "a"))
+      dc.write("test", "test", ws2, ds.where($"_1" === "b"))
+      dc.write("test", "test", ws2, ds.where($"_1" === "b"))
 
       sparkSession.table("test.test").as[(String, String)].collect().sortBy(_._1) shouldBe Array(("a", "a"), ("b", "b"))
     }

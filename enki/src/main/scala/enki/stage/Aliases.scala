@@ -1,39 +1,20 @@
-package enki.stage
-
-import enki._
+package enki
+package stage
 
 trait Aliases {
-  type StageAction[T] = stage.StageAction[T]
+  type StageAlg[F[_]] = stage.StageAlg[F]
+  val StageAlg: stage.StageAlg.type = stage.StageAlg
 
-  type DataFrameAction = stage.DataFrameAction
-  val DataFrameAction: stage.DataFrameAction.type = stage.DataFrameAction
-
-  type DatasetAction[T] = stage.DatasetAction[T]
-  val DatasetAction: stage.DatasetAction.type = stage.DatasetAction
-
-  type TableAction = stage.TableAction
+  type DefaultStageCompiler = stage.DefaultStageCompiler
 
   type ReadTableAction = stage.ReadTableAction
 
-  type ReadDataFrameAction = stage.ReadDataFrameAction
-  val ReadDataFrameAction: stage.ReadDataFrameAction.type = stage.ReadDataFrameAction
-
-  type ReadDatasetAction[T] = stage.ReadDatasetAction[T]
-  val ReadDatasetAction: stage.ReadDatasetAction.type = stage.ReadDatasetAction
+  type ReadDatasetAction[A] = stage.ReadDatasetAction[A]
 
   type WriteTableAction = stage.WriteTableAction
 
-  type WriteDataFrameAction = stage.WriteDataFrameAction
-  val WriteDataFrameAction: stage.WriteDataFrameAction.type = stage.WriteDataFrameAction
+  type WriterSettings = stage.WriterSettings
+  val WriterSettings: stage.WriterSettings.type = stage.WriterSettings
 
-  type WriteDatasetAction[T] = stage.WriteDatasetAction[T]
-  val WriteDatasetAction: stage.WriteDatasetAction.type = stage.WriteDatasetAction
-
-  type ArgumentAction = stage.ArgumentAction
-
-  type StringArgumentAction = stage.StringArgumentAction
-  val StringArgumentAction: stage.StringArgumentAction.type = stage.StringArgumentAction
-
-  type IntegerArgumentAction = stage.IntegerArgumentAction
-  val IntegerArgumentAction: stage.IntegerArgumentAction.type = stage.IntegerArgumentAction
+  type TableNameMapper = stage.TableNameMapper
 }

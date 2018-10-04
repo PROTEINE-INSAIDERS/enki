@@ -1,21 +1,26 @@
 package enki
 
+import cats._
 import cats.implicits._
+import enki.default._
+import freestyle.free.FreeS._
+import freestyle.free._
+import freestyle.free.implicits._
 import org.apache.spark.sql._
 import scalax.collection.GraphEdge.DiEdge
 import scalax.collection.GraphPredef._
 
-class ProgramTest extends EnkiTestSuite with Database {
+class ProgramTest extends EnkiTestSuite with enki.default.Database {
 
   import implicits._
 
   override def schema: String = "default"
 
-  override def writerSettings[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] = writer.mode(SaveMode.Overwrite)
+  override def writerSettings: Stage[enki.WriterSettings] = WriterSettings().setMode(SaveMode.Overwrite).pure[Stage]
 
   "buildActionGraph" should {
     "detect dependencies" in {
-      val p: Program[Stage[Unit]] = for {
+      val p = for {
         a <- persist("a", dataset(Seq(1)))
         b <- persist("b", a)
         c <- persist("c", a)
@@ -32,7 +37,7 @@ class ProgramTest extends EnkiTestSuite with Database {
     }
 
     "ignore empty stages" in {
-      val p: Program[Stage[Unit]] = for {
+      val p: FreeS[ProgramOp, Par[StageOp, Unit]] = for {
         a <- persist("a", dataset(Seq(1)))
       } yield ().pure[Stage]
 

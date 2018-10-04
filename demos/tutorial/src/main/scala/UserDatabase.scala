@@ -1,7 +1,9 @@
 import java.sql.Timestamp
 
 import cats.implicits._
-import enki._
+import enki.default._
+import freestyle.free._
+import freestyle.free.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
@@ -33,6 +35,11 @@ trait UserDatabase extends Database {
   // Changing encoder style to Enki to enable annotation processing.
   override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
+  override def writerSettings: Stage[WriterSettings] =
+    (super.writerSettings, arg("overwrite", "Overwrite existent data.", defaultValue = Some(true))) mapN { (settings, overwrite) =>
+      settings
+    }
+
   def purchasesReport(clients: Dataset[Client],
                       products: Dataset[Product],
                       purchases: Dataset[Purchase]): Dataset[PurchasesReport] =
@@ -60,11 +67,11 @@ trait UserDatabase extends Database {
         sum(purchasesReport $ (_.price)) as "total_sum"
       ).as[ProductsByClientReport]
 
-  def program: Program[Stage[Unit]] = for {
-    purchasesReport <- persist[PurchasesReport](
-      "purchases_report",
-      (clients, products, purchases) mapN this.purchasesReport)
+  def persistPurchasesReport: Program[Stage[Dataset[PurchasesReport]]] =
+    persist[PurchasesReport]("purchases_report", (clients, products, purchases) mapN this.purchasesReport)
 
+  def createReports: ProgramS[Stage[Unit]] = for {
+    purchasesReport <- persistPurchasesReport
     _ <- persist(
       "products_by_client_report",
       purchasesReport map this.productByClientReport)

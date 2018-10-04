@@ -1,15 +1,23 @@
 package enki
 
 import cats.implicits._
-import freestyle.free.FreeS
+import freestyle.free.FreeS._
 import freestyle.free.implicits._
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.types._
 
 import scala.reflect.runtime.universe._
 
-trait Database {
+trait Database[ProgramOp[_], StageOp[_]] {
+  def schema: String
+
+  def encoderStyle: EncoderStyle = EncoderStyle.Spark
+
+  protected val argsAlg: ArgsAlg[StageOp]
+  protected val stageAlg: StageAlg[StageOp]
+  protected val programAlg: Program1[StageOp, ProgramOp]
+
   /**
     * Since using SparkImplicits and SparkSession.implicits at once will lead to ambiguity SparkImplicits not imported
     * by default.
@@ -18,57 +26,62 @@ trait Database {
     override def encoderStyle: EncoderStyle = Database.this.encoderStyle
   }
 
-  def encoderStyle: EncoderStyle = EncoderStyle.Spark
-
-  protected def writerSettings[F[_]](implicit writer: enki.DataFrameWriter[F]): writer.FS[Unit] = {
-    ().pure[writer.FS]
-  }
-
-  def schema: String
+  protected def writerSettings: stageAlg.FS[WriterSettings] = WriterSettings().pure[stageAlg.FS]
 
   /* syntactic sugar */
 
   /* stages */
 
-  final def dataFrame(rows: Seq[Row], schema: StructType): Stage[DataFrame] =
-    enki.dataFrame(rows, schema)
+  final def dataFrame(
+                       rows: Seq[Row],
+                       schema: StructType
+                     ): stageAlg.FS[DataFrame] =
+    stageAlg.dataFrame(rows, schema)
 
-  final def dataset[T: Encoder](data: Seq[T]): Stage[Dataset[T]] =
-    enki.dataset(data, implicitly)
+  // s.dataFrame(rows, schema)
 
-  final def read[T: Encoder](tableName: String, strict: Boolean = false): Stage[Dataset[T]] =
-    enki.readDataset(schema, tableName, implicitly, strict)
+  final def dataset[T: Encoder](data: Seq[T]): stageAlg.FS[Dataset[T]] =
+    stageAlg.dataset(data, implicitly)
 
-  final def read(tableName: String): Stage[DataFrame] =
-    enki.readDataFrame(schema, tableName)
+  final def read(tableName: String): stageAlg.FS[DataFrame] =
+    stageAlg.readDataFrame(schema, tableName)
 
-  final def gread[T: TypeTag](tableName: String): Stage[Dataset[T]] =
+  final def read[T: Encoder](tableName: String, strict: Boolean = false): stageAlg.FS[Dataset[T]] =
+    stageAlg.readDataset(schema, tableName, implicitly, strict)
+
+  final def gread[T: TypeTag](tableName: String): stageAlg.FS[Dataset[T]] =
     if (typeOf[T] == typeOf[Row]) {
-      enki.readDataFrame(schema, tableName).asInstanceOf[Stage[Dataset[T]]]
+      stageAlg.readDataFrame(schema, tableName).asInstanceOf[stageAlg.FS[Dataset[T]]]
     } else {
-      enki.readDataset(schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false)
+      stageAlg.readDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false)
     }
 
-  final def write[T: Encoder](tableName: String, strict: Boolean = false): Stage[Dataset[T] => Unit] =
-    enki.writeDataset(schema, tableName, implicitly, strict, writerSettings)
+  final def write(tableName: String): stageAlg.FS[DataFrame => Unit] = {
+    writerSettings.ap(stageAlg.writeDataFrame(schema, tableName))
+  }
 
-  final def write(tableName: String): Stage[DataFrame => Unit] =
-    enki.writeDataFrame(schema, tableName, writerSettings)
+  final def write[T: Encoder](tableName: String, strict: Boolean = false): stageAlg.FS[Dataset[T] => Unit] = {
+    writerSettings.ap(stageAlg.writeDataset[T](schema, tableName, implicitly, strict))
+  }
 
-  final def gwrite[T: TypeTag](tableName: String): Stage[Dataset[T] => Unit] =
+  final def gwrite[T: TypeTag](tableName: String): stageAlg.FS[Dataset[T] => Unit] =
     if (typeOf[T] == typeOf[Row]) {
-      enki.writeDataFrame(schema, tableName, writerSettings).asInstanceOf[Stage[Dataset[T] => Unit]]
+      writerSettings.ap(stageAlg.writeDataFrame(schema, tableName)).asInstanceOf[Par[StageOp, Dataset[T] => Unit]]
     } else {
-      enki.writeDataset(schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false, writerSettings)
+      writerSettings.ap(stageAlg.writeDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false))
     }
 
-  final def arg[T: TypeTag](name: String, description: String = "", defaultValue: Option[T] = None): Stage[T] = {
-    if (typeOf[T] == typeOf[Int]) {
-      enki.integerArgument(name, description, defaultValue.asInstanceOf[Option[Int]]).asInstanceOf[Stage[T]]
+  /* arguments */
+
+  final def arg[T: TypeTag](name: String, description: String = "", defaultValue: Option[T] = None): argsAlg.FS[T] = {
+    if (typeOf[T] == typeOf[Boolean]) {
+      argsAlg.bool(name, description, defaultValue.asInstanceOf[Option[Boolean]]).asInstanceOf[argsAlg.FS[T]]
+    } else if (typeOf[T] == typeOf[Int]) {
+      argsAlg.int(name, description, defaultValue.asInstanceOf[Option[Int]]).asInstanceOf[argsAlg.FS[T]]
     } else if (typeOf[T] == typeOf[String]) {
-      enki.stringArgument(name, description, defaultValue.asInstanceOf[Option[String]]).asInstanceOf[Stage[T]]
+      argsAlg.string(name, description, defaultValue.asInstanceOf[Option[String]]).asInstanceOf[argsAlg.FS[T]]
     } else {
-      throw new Exception(s"Arguments of type ${typeOf[T]} not supported.")
+      throw new Exception(s"Argument of type ${typeOf[T]} not supported.")
     }
   }
 
@@ -76,21 +89,27 @@ trait Database {
 
   final def persist[T: Encoder](
                                  tableName: String,
-                                 stage: Stage[Dataset[T]],
-                                 strict: Boolean = false,
-                                 writerSettings: FreeS.Par[DataFrameWriter.Op, Unit] = ().pure[FreeS.Par[DataFrameWriter.Op, ?]]
-                               ): Program[Stage[Dataset[T]]] =
-    enki.persistDataset(schema, tableName, stage, implicitly, strict, this.writerSettings *> writerSettings)
+                                 dataset: Par[StageOp, Dataset[T]],
+                                 strict: Boolean = false
+                               ): programAlg.FS[stageAlg.FS[Dataset[T]]] =
+    programAlg.persistDataset(schema, tableName, dataset, implicitly, strict, this.writerSettings)
 
-  final def persist(tableName: String, stage: Stage[DataFrame]): Program[Stage[DataFrame]] =
-    enki.persistDataFrame(schema, tableName, stage, writerSettings)
+  final def persist(
+                     tableName: String,
+                     dataframe: Par[StageOp, DataFrame]
+                   ): programAlg.FS[stageAlg.FS[DataFrame]] =
+    programAlg.persistDataFrame(schema, tableName, dataframe, writerSettings)
 
-  final def gpersist[T: TypeTag](tableName: String, stage: Stage[Dataset[T]]): Program[Stage[Dataset[T]]] =
+
+  final def gpersist[T: TypeTag](
+                                  tableName: String,
+                                  dataset: Par[StageOp, Dataset[T]]
+                                ): programAlg.FS[stageAlg.FS[Dataset[T]]] =
     if (typeOf[T] == typeOf[Row])
-      enki
-        .persistDataFrame(schema, tableName, stage.asInstanceOf[Stage[DataFrame]], writerSettings)
-        .asInstanceOf[Program[Stage[Dataset[T]]]]
+      programAlg
+        .persistDataFrame(schema, tableName, dataset.asInstanceOf[Par[StageOp, DataFrame]], writerSettings)
+        .asInstanceOf[Par[ProgramOp, Par[StageOp, Dataset[T]]]]
     else {
-      enki.persistDataset(schema, tableName, stage, implicits.selectEncoder(ExpressionEncoder()), strict = false, writerSettings)
+      programAlg.persistDataset[T](schema, tableName, dataset, implicits.selectEncoder(ExpressionEncoder()), strict = false, writerSettings)
     }
 }
