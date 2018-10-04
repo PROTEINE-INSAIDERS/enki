@@ -1,0 +1,9 @@
+<coordinator-app name="coordinatorName" frequency="${coord:days(1)}" start="2017-06-18T12:50Z" end="2018-06-18T12:15Z" timezone="Europe/London" xmlns="uri:oozie:coordinator:0.5">
+      <action>
+        <workflow>
+          <app-path>
+            hdfs://customPath/
+          </app-path>
+        </workflow>
+      </action>
+    </coordinator-app>
