@@ -7,7 +7,7 @@ import contextual._
 
 import scala.util.control.NonFatal
 
-package object timestamp extends TimestampModule {
+package object timestamp extends Extensions {
 
   object TimestampInterpolator extends Interpolator {
     type Output = Timestamp

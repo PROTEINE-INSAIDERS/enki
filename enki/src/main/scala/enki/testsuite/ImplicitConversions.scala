@@ -1,6 +1,7 @@
-package enki.tests
+package enki.testsuite
 
 import cats._
+import enki._
 
 trait ImplicitConversions {
   implicit def enkiImplicitly[A, B](x: A)(implicit I: Inject[A, B]): B = I(x)

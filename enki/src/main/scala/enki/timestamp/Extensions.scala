@@ -1,11 +1,10 @@
-package enki
-package timestamp
+package enki.timestamp
 
 import java.sql._
 import java.time._
 import java.time.temporal.ChronoUnit._
 
-trait TimestampModule {
+trait Extensions {
 
   implicit class TimestampExtensions(timestamp: Timestamp) {
     private def adjust(f: LocalDateTime => LocalDateTime): Timestamp = Timestamp.valueOf(f(timestamp.toLocalDateTime))

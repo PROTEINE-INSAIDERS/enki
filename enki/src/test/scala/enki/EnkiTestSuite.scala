@@ -1,9 +1,11 @@
 package enki
 
-import enki.tests._
+import enki.testsuite._
 import org.apache.spark.sql.SparkSession
+import org.scalatest.{Matchers, WordSpec}
 
-trait SilentEnkiSuite extends EnkiSuite {
+trait EnkiTestSuite extends WordSpec with Matchers with EnkiSuite {
+
   override protected def createSparkSession(): SparkSession = {
     val session = super.createSparkSession()
     session.sparkContext.setLogLevel("ERROR")

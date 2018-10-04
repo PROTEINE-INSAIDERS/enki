@@ -1,14 +1,13 @@
 package enki
 
-import enki.tests.EnkiSuite
 import org.apache.spark.sql.Row
-import org.scalatest.{Matchers, WordSpec}
+import enki.default._
 
-class DataFrameTest extends WordSpec with Matchers with SilentEnkiSuite {
+class DataFrameTest extends EnkiTestSuite {
+  import sparkSession.implicits._
+
   "diff" should {
     "format" in {
-      import sparkSession.implicits._
-
       val a = sparkSession.createDataset(Seq((1, "a", 0.0), (2, "b", 0.0), (3, "c", 0.0))).toDF()
       val b = sparkSession.createDataset(Seq((2, "x", 0.0), (3, "c", 0.0), (4, "d", 0.0))).toDF()
 
@@ -26,8 +25,6 @@ class DataFrameTest extends WordSpec with Matchers with SilentEnkiSuite {
 
   "fillna" should {
     "support datasets" in {
-      import sparkSession.implicits._
-
       val ds = sparkSession.createDataset(Seq(
         ("a", Some(10)),
         ("b", None)
