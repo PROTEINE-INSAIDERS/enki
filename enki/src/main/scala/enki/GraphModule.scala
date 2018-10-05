@@ -108,14 +108,14 @@ trait GraphModule {
       subGraphs.foreach(_.validate())
     }
 
-    def resume(action: String, compiler: StageCompiler, environment: Environment): Unit = {
+    def resume(action: String, compiler: StageHandler, environment: Environment): Unit = {
       checkActionExists(action)
       linearized.dropWhile(_ != action).foreach { stageName =>
         runAction(stageName, compiler, environment)
       }
     }
 
-    def runAction(name: String, compiler: StageCompiler, environment: Environment): Unit = {
+    def runAction(name: String, compiler: StageHandler, environment: Environment): Unit = {
       try {
         //TODO: stack descriptions
         environment.session.sparkContext.setJobDescription(name)
@@ -145,7 +145,7 @@ trait GraphModule {
       order => order.toList.reverse.map(_.value)
     )
 
-    def runAll(compiler: StageCompiler, environment: Environment): Unit = {
+    def runAll(compiler: StageHandler, environment: Environment): Unit = {
       validate()
       linearized.foreach { stageName => runAction(stageName, compiler, environment) }
     }

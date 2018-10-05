@@ -11,9 +11,8 @@ import freestyle.free.implicits._
 import scala.collection.mutable
 import scala.util.Try
 
-trait ApplicationModule {
+trait EnkiMainWrapper {
   self: Enki =>
-
 
   //TODO: factor out Environment as only parametrized entity (should compiles be parametrized?)
   trait EnkiMain {
@@ -33,6 +32,8 @@ trait ApplicationModule {
               throw new Exception(s"Argument ${arg.name} is already added with different default value.")
         }
       }
+
+      //TODO: replace with argsToOpts
 
       argumentMap.values.toList.traverse { (arg: ArgumentAction) =>
         val opt = Opts.option[String](long = arg.name, help = arg.description)
@@ -55,26 +56,26 @@ trait ApplicationModule {
 
     protected def session: Opts[SparkSession]
 
-    protected def compiler: Opts[StageCompiler] = Opts(stageCompiler)
+    protected def compiler: Opts[StageHandler] = Opts(stageHandler)
 
-    protected def resume(action: String): Opts[SparkSession => StageCompiler => Unit] = Opts {
+    protected def resume(action: String): Opts[SparkSession => StageHandler => Unit] = Opts {
       (params: Map[String, ParameterValue]) =>
         (session: SparkSession) =>
-          (compiler: StageCompiler) =>
+          (compiler: StageHandler) =>
             actionGraph.resume(action, compiler, Environment(session, params))
     } <*> actionParams(actionGraph(action))
 
-    protected def run(action: String): Opts[SparkSession => StageCompiler => Unit] = Opts {
+    protected def run(action: String): Opts[SparkSession => StageHandler => Unit] = Opts {
       (params: Map[String, ParameterValue]) =>
         (session: SparkSession) =>
-          (compiler: StageCompiler) =>
+          (compiler: StageHandler) =>
             actionGraph.runAction(action, compiler, Environment(session, params))
     } <*> actionParams(actionGraph(action))
 
-    protected def runAll: Opts[SparkSession => StageCompiler => Unit] = Opts {
+    protected def runAll: Opts[SparkSession => StageHandler => Unit] = Opts {
       (params: Map[String, ParameterValue]) =>
         (session: SparkSession) =>
-          (compiler: StageCompiler) =>
+          (compiler: StageHandler) =>
             actionGraph.runAll(compiler, Environment(session, params))
     } <*> actionParams(GraphNode(actionGraph))
 

@@ -22,7 +22,7 @@ class TutorialMain
     SparkSession.builder().master(s"local").getOrCreate()
   }
 
-  override def resume(action: String): Opts[SparkSession => StageCompiler => Unit] = {
+  override def resume(action: String): Opts[SparkSession => StageHandler => Unit] = {
     super.resume(action).map { f =>
       session =>
         compiler =>
@@ -31,7 +31,7 @@ class TutorialMain
     }
   }
 
-  override def run(action: String): Opts[SparkSession => StageCompiler => Unit] = {
+  override def run(action: String): Opts[SparkSession => StageHandler => Unit] = {
     super.run(action).map { f =>
       session =>
         compiler =>
@@ -40,7 +40,7 @@ class TutorialMain
     }
   }
 
-  override def runAll: Opts[SparkSession => StageCompiler => Unit] = {
+  override def runAll: Opts[SparkSession => StageHandler => Unit] = {
     super.runAll.map { f =>
       session =>
         compiler =>

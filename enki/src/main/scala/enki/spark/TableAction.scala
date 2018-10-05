@@ -1,5 +1,5 @@
 package enki
-package stage
+package spark
 
 import org.apache.spark.sql._
 

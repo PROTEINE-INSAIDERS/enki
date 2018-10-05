@@ -8,8 +8,9 @@ import freestyle.free.FreeS._
 import freestyle.free._
 import org.apache.spark.sql._
 
-final class ProgramWrapper[StageOp[_]] {
-  @free abstract class ProgramM {
+final class StageOpProvider[StageOp[_]] {
+
+  @free abstract class ProgramAlg {
     def persistDataFrame(
                           schemaName: String,
                           tableName: String,
@@ -27,7 +28,7 @@ final class ProgramWrapper[StageOp[_]] {
                          ): FS[Par[StageOp, Dataset[T]]]
   }
 
-  class ProgramSplitter(implicit stager: StageAlg[StageOp]) extends ProgramM.Handler[StageWriter[StageOp, ?]] {
+  class ProgramSplitter(implicit stager: SparkAlg[StageOp]) extends ProgramAlg.Handler[StageWriter[StageOp, ?]] {
     override protected[this] def persistDataFrame(
                                                    schemaName: String,
                                                    tableName: String,

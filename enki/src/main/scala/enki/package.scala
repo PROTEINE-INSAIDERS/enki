@@ -5,11 +5,10 @@
   */
 package object enki
   extends AllModules
-    with stage.Aliases
+    with spark.Exports
     // with stage.Syntax
-    with stage.Compilers
-    with program.Aliases
-    with args.Aliases
+    with spark.Compilers
+    with program.Exports
     with Aliases {
 
 }

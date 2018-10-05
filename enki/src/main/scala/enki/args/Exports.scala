@@ -1,13 +1,13 @@
 package enki
 package args
 
-trait Aliases {
-  type ArgsAlg[F[_]] = args.Args[F]
-  val ArgsAlg: args.Args.type = args.Args
+trait Exports {
+  type ArgsAlg[F[_]]= args.ArgsAlg[F]
+  val ArgsAlg: args.ArgsAlg.type = args.ArgsAlg
 
   type ArgsToOpts[M] = args.ArgsToOpts[M]
 
-  type ArgsCompiler = args.ArgsCompiler
+  type ArgsHandler = args.ArgsHandler
 
   type ArgumentAction = args.ArgumentAction
   type StringArgumentAction = args.StringArgumentAction

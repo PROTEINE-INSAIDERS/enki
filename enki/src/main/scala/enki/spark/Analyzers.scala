@@ -1,5 +1,5 @@
 package enki
-package stage
+package spark
 
 import cats._
 import cats.implicits._
@@ -23,9 +23,9 @@ trait Analyzers {
                              stage: Stage[_],
                              f: ReadTableAction => M
                            ): M = {
-    analyzeStages(stage, λ[StageAlg.Op ~> λ[α => M]] {
-      case StageAlg.ReadDataFrameOp(schemaName, tableName) => f(ReadDataFrameAction(schemaName, tableName))
-      case StageAlg.ReadDatasetOp(schemaName, tableName, encoder, strict) => f(ReadDatasetAction(schemaName, tableName, encoder, strict))
+    analyzeStages(stage, λ[SparkAlg.Op ~> λ[α => M]] {
+      case SparkAlg.ReadDataFrameOp(schemaName, tableName) => f(ReadDataFrameAction(schemaName, tableName))
+      case SparkAlg.ReadDatasetOp(schemaName, tableName, encoder, strict) => f(ReadDatasetAction(schemaName, tableName, encoder, strict))
       case _ => Monoid.empty[M]
     })
   }
@@ -34,9 +34,9 @@ trait Analyzers {
                               stage: Stage[_],
                               f: WriteTableAction => M
                             ): M = {
-    analyzeStages(stage, λ[StageAlg.Op ~> λ[α => M]] {
-      case StageAlg.WriteDataFrameOp(schemaName, tableName) => f(WriteDataFrameAction(schemaName, tableName))
-      case StageAlg.WriteDatasetOp(schemaName, tableName, encoder, strict) => f(WriteDatasetAction(schemaName, tableName, encoder, strict))
+    analyzeStages(stage, λ[SparkAlg.Op ~> λ[α => M]] {
+      case SparkAlg.WriteDataFrameOp(schemaName, tableName) => f(WriteDataFrameAction(schemaName, tableName))
+      case SparkAlg.WriteDatasetOp(schemaName, tableName, encoder, strict) => f(WriteDatasetAction(schemaName, tableName, encoder, strict))
       case _ => Monoid.empty[M]
     })
   }

@@ -5,7 +5,7 @@ import cats.data._
 import com.monovore.decline._
 import enki._
 
-class ArgsToOpts[M: Monoid](f: Opts[(String, ParameterValue)] => M) extends Args.Handler[Const[M, ?]] {
+class ArgsToOpts[M: Monoid](f: Opts[(String, ParameterValue)] => M) extends ArgsAlg.Handler[Const[M, ?]] {
 
   private def option[A: Argument](
                                    name: String,

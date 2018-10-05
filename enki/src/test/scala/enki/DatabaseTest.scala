@@ -97,7 +97,7 @@ class DatabaseTest extends EnkiTestSuite {
 
       val ag = buildActionGraph("root", database1.test)
 
-      ag.runAll(stageCompiler, Environment(sparkSession))
+      ag.runAll(stageHandler, Environment(sparkSession))
 
       val schema = sparkSession.sql("select * from default.table1").schema
 

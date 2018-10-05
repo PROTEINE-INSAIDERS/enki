@@ -1,7 +1,7 @@
-package enki.stage
+package enki.spark
 
 import freestyle.free._
-import enki.stage.StageAlg._
+import enki.spark.SparkAlg._
 
 class TableNameMapper(f: (String, String) => (String, String)) extends FSHandler[Op, Op] {
   override def apply[A](fa: Op[A]): Op[A] = fa match {

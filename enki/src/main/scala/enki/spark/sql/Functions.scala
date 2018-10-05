@@ -1,9 +1,9 @@
-package enki.sql
+package enki.spark.sql
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
-trait Functions extends ImplicitDataTypeMappings {
+trait Functions extends DataTypeMappings {
   /**
     * Null column with type information.
     */
@@ -11,5 +11,4 @@ trait Functions extends ImplicitDataTypeMappings {
   def typedNull[T: DataTypeMapping]: Column = {
     lit(null).cast(implicitly[DataTypeMapping[T]].dataType)
   }
-
 }

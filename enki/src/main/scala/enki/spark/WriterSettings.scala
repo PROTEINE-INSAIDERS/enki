@@ -1,4 +1,4 @@
-package enki.stage
+package enki.spark
 
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.{sql => spark}

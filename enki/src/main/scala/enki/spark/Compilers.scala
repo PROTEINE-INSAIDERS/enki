@@ -1,4 +1,4 @@
-package enki.stage
+package enki.spark
 
 import cats._
 import enki._

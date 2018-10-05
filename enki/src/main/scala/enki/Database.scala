@@ -1,6 +1,7 @@
 package enki
 
 import cats.implicits._
+import enki.args.ArgsAlg
 import freestyle.free.FreeS._
 import freestyle.free.implicits._
 import org.apache.spark.sql._
@@ -9,14 +10,19 @@ import org.apache.spark.sql.types._
 
 import scala.reflect.runtime.universe._
 
-trait Database[ProgramOp[_], StageOp[_]] {
+//TODO: разбить на отдельные трейты для операций над спарком, программой и аргументами.
+trait Database {
+  val enki: Enki
+
   def schema: String
 
   def encoderStyle: EncoderStyle = EncoderStyle.Spark
 
-  protected val argsAlg: ArgsAlg[StageOp]
-  protected val stageAlg: StageAlg[StageOp]
-  protected val programAlg: Program1[StageOp, ProgramOp]
+  type ProgramOp[_]
+  type StageOp[_]
+
+  protected val stageAlg: SparkAlg[StageOp]
+  protected val programAlg: StageOpProvider[StageOp]#ProgramAlg[ProgramOp]
 
   /**
     * Since using SparkImplicits and SparkSession.implicits at once will lead to ambiguity SparkImplicits not imported
@@ -70,20 +76,6 @@ trait Database[ProgramOp[_], StageOp[_]] {
     } else {
       writerSettings.ap(stageAlg.writeDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false))
     }
-
-  /* arguments */
-
-  final def arg[T: TypeTag](name: String, description: String = "", defaultValue: Option[T] = None): argsAlg.FS[T] = {
-    if (typeOf[T] == typeOf[Boolean]) {
-      argsAlg.bool(name, description, defaultValue.asInstanceOf[Option[Boolean]]).asInstanceOf[argsAlg.FS[T]]
-    } else if (typeOf[T] == typeOf[Int]) {
-      argsAlg.int(name, description, defaultValue.asInstanceOf[Option[Int]]).asInstanceOf[argsAlg.FS[T]]
-    } else if (typeOf[T] == typeOf[String]) {
-      argsAlg.string(name, description, defaultValue.asInstanceOf[Option[String]]).asInstanceOf[argsAlg.FS[T]]
-    } else {
-      throw new Exception(s"Argument of type ${typeOf[T]} not supported.")
-    }
-  }
 
   /* program builder */
 
