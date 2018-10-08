@@ -11,7 +11,6 @@ object Main extends CommandApp(
 
 class TutorialMain
   extends EnkiMain
-    // with UserDatabase
     with SourceDatabase
     with UserDatabase
     with EnkiSuite {

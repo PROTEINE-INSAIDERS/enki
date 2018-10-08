@@ -1,31 +1,29 @@
 package enki
-package args
+package arg
 
 import cats.data._
-import org.apache.spark.sql.types._
 
 import scala.reflect.runtime.universe._
 
-class ArgsHandler extends ArgsAlg.Handler[EnkiMonad] {
+class ArgHandler extends ArgAlg.Handler[EnkiMonad] {
 
-  private def fromParameter[T](
-                                extractor: PartialFunction[ParameterValue, T],
-                                parameterValue: ParameterValue,
-                                dataType: DataType
-                              ): T = {
+  private def fromParameter[T: TypeTag](
+                                         extractor: PartialFunction[ParameterValue, T],
+                                         parameterValue: ParameterValue
+                                       ): T = {
     extractor.lift(parameterValue) match {
       case Some(value) => value
-      case None => throw new Exception(s"Invalid parameter type: required $dataType actual ${parameterValue.dataType}")
+      case None => throw new Exception(s"Invalid parameter type: required ${typeOf[T]} actual ${parameterValue.dataType}")
     }
   }
 
   private def fromParameter[T: TypeTag](parameterValue: ParameterValue): T = {
     if (typeOf[T] == typeOf[Int]) {
-      fromParameter({ case IntegerValue(int) => int }, parameterValue, IntegerType).asInstanceOf[T]
+      fromParameter({ case IntegerValue(int) => int }, parameterValue).asInstanceOf[T]
     } else if (typeOf[T] == typeOf[String]) {
-      fromParameter({ case StringValue(str) => str }, parameterValue, StringType).asInstanceOf[T]
+      fromParameter({ case StringValue(str) => str }, parameterValue).asInstanceOf[T]
     } else if (typeOf[T] == typeOf[Boolean]) {
-      fromParameter({ case BooleanValue(bool) => bool }, parameterValue, BooleanType).asInstanceOf[T]
+      fromParameter({ case BooleanValue(bool) => bool }, parameterValue).asInstanceOf[T]
     }
     else {
       throw new Exception(s"Argument type ${typeOf[T]} not supported.")
@@ -66,3 +64,5 @@ class ArgsHandler extends ArgsAlg.Handler[EnkiMonad] {
     fromParameterMap[String](env.parameters, name, defaultValue)
   }
 }
+
+object ArgHandler extends ArgHandler

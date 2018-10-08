@@ -7,18 +7,6 @@ import cats.implicits._
 trait Analyzers {
   self: Enki =>
 
-  //TODO: перенести в пакет к аргументам.
-  def stageArguments[M: Monoid](
-                                 stage: Stage[_],
-                                 f: ArgumentAction => M
-                               ): M = {
-    analyzeArgs(stage, λ[ArgsAlg.Op ~> λ[α => M]] {
-      case ArgsAlg.StringOp(name, description, defaultValue) => f(StringArgumentAction(name, description, defaultValue))
-      case ArgsAlg.IntOp(name, description, defaultValue) => f(IntegerArgumentAction(name, description, defaultValue))
-      case ArgsAlg.BoolOp(name, description, defaultValue) => f(BooleanArgumentAction(name, description, defaultValue))
-    })
-  }
-
   def stageReads[M: Monoid](
                              stage: Stage[_],
                              f: ReadTableAction => M
@@ -41,7 +29,6 @@ trait Analyzers {
     })
   }
 
-  //TODO: implement analysers atop of compilers.
   def stageNonEmpty(stage: Stage[_]): Boolean = {
     stage.analyze(λ[StageOp ~> λ[α => Option[Unit]]] {
       case _ => Some(())

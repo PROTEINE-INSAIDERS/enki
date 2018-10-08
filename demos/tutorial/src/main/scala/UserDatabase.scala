@@ -2,7 +2,7 @@ import java.sql.Timestamp
 
 import cats._
 import cats.implicits._
-import enki.args.ArgsAlg
+import enki.arg.ArgAlg
 import enki.default._
 import freestyle.free._
 import freestyle.free.implicits._

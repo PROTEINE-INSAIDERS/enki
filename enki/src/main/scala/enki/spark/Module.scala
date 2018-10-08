@@ -1,7 +1,7 @@
 package enki
 package spark
 
-trait Exports {
+trait Module {
   type SparkAlg[F[_]] = spark.SparkAlg[F]
   val SparkAlg: spark.SparkAlg.type = spark.SparkAlg
 

@@ -1,4 +1,4 @@
-package enki.ds
+package enki.spark.sql
 
 trait ColumnTypeMapping[X, Y]
 
