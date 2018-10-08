@@ -19,6 +19,8 @@ final case class ActionFailedException(action: String, cause: Throwable) extends
 trait GraphModule {
   self: Enki =>
 
+  implicit val stageApplicative: Applicative[StageMonad]
+
   //TODO: перенести в более подходящий модуль
   def createEmptySources(graph: ActionGraph, session: SparkSession): Unit = {
     sources(graph).foreach {
@@ -134,7 +136,8 @@ trait GraphModule {
         this (name) match {
           case GraphNode(g) => g.runAll(compiler, environment)
           case StageNode(a) =>
-            a.foldMap(compiler).run(environment)
+            ???
+            // a.foldMap(compiler).run(environment)
             ()
         }
       } catch {

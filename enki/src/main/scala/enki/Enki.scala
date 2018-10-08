@@ -2,12 +2,12 @@ package enki
 
 import cats._
 import cats.data._
-import cats.mtl.ApplicativeAsk
-import enki.internal._
+import cats.mtl._
+import freestyle.free.FreeS._
 import freestyle.free._
 import freestyle.free.implicits._
-import freestyle.free.internal.EffectLike
 import iota._
+import org.apache.spark.sql._
 
 /**
   * Instantiated Enki module parametrized by operation types.
@@ -22,23 +22,26 @@ trait Enki
     with enki.program.ActionGraphBuilder
     with enki.spark.Analyzers
     with enki.spark.sql.Module {
-  type StageOp[A]
+
+  // Enki arguments
+
   type ProgramOp[A]
+  type StageOp[A]
+  type StageMonad[A] //not necessary monad
 
-  val stageAlg: EffectLike[StageOp]
-  val programAlg: EffectLike[ProgramOp]
+  // Type aliases
 
-  type Stage[A] = stageAlg.FS[A]
-  type Program[A] = programAlg.FS[A]
+  type Stage[A] = Par[StageOp, A]
+  type Program[A] = Par[ProgramOp, A]
   type ProgramS[A] = FreeS[ProgramOp, A]
-  type StageHandler = FSHandler[StageOp, EnkiMonad]
+  type StageHandler = FSHandler[StageOp, StageMonad] //TODO: need to abstract over enki monad.
 
   /* implicits */
+
   implicit val programSplitter: FSHandler[ProgramOp, StageWriter[StageOp, ?]] // сплиттер возможно тоже не должен быть имплицитным.
   val stageHandler: StageHandler // не должен быть имплицитным, т.к. начинает конфликтовать с имплицитами из freestyle.free.implicits._
 
-  def analyzeArgs[M: Monoid](s: Stage[_], f: ArgAlg.Op ~> λ[α => M]): M
-
+  //TODO: remove (use analyzeIn)
   def analyzeStages[M: Monoid](s: Stage[_], f: SparkAlg.Op ~> λ[α => M]): M
 }
 
@@ -56,31 +59,48 @@ trait Enki
 object default extends Enki {
   val programWrapper = new StageOpProvider[StageOp]
 
-  override type StageOp[A] = StagesWithArgs.Op[A]
+  // override Enki parameters
+
   override type ProgramOp[A] = programWrapper.ProgramAlg.Op[A]
+  override type StageOp[A] = StagesWithArgs.Op[A]
+  override type StageMonad[A] = Reader[Environment, A]
 
-  override type ArgOp[A] = StagesWithArgs.Op[A]
+  // set module parameters
 
-  override val stageAlg: enki.StagesWithArgs[StageOp] = implicitly
-  override val programAlg: programWrapper.ProgramAlg[ProgramOp] = implicitly
+  override val stageApplicative: Applicative[Reader[Environment, ?]] = implicitly
 
-  implicit val sparkHandler: FSHandler[SparkAlg.Op, EnkiMonad] = new enki.spark.SparkHandler {}
+  override type ArgOp[A] = StageOp[A]
+  override val injectArg: ArgAlg.Op :<: StageOp = CopK.Inject[ArgAlg.Op, StageOp]
 
-  implicit val argsReader: ApplicativeAsk[EnkiMonad, Parameters] = new ApplicativeAsk[EnkiMonad, Parameters] {
-    override val applicative: Applicative[default.EnkiMonad] = implicitly
+  // stage handlers
 
-    override def ask: default.EnkiMonad[default.Parameters] = Reader { env => Parameters(env.parameters) }
+  implicit val askSession: ApplicativeAsk[StageMonad, SparkSession] = new ApplicativeAsk[StageMonad, SparkSession] {
+    override val applicative: Applicative[StageMonad] = implicitly
 
-    override def reader[A](f: default.Parameters => A): default.EnkiMonad[A] = Reader { env => f(Parameters(env.parameters)) }
+    override def ask: StageMonad[SparkSession] = Reader(_.session)
+
+    override def reader[A](f: SparkSession => A): StageMonad[A] = Reader { env => f(env.session) }
   }
 
-  implicit val argsHandler: FSHandler[ArgAlg.Op, EnkiMonad] = new ArgHandler[EnkiMonad]
+  implicit val sparkHandler: FSHandler[SparkAlg.Op, StageMonad] = new enki.spark.SparkHandler {}
 
-  override implicit val programSplitter: FSHandler[ProgramOp, StageWriter[StageOp, ?]] = new programWrapper.ProgramSplitter()
+  implicit val askArgs: ApplicativeAsk[StageMonad, Parameters] = new ApplicativeAsk[StageMonad, Parameters] {
+    override val applicative: Applicative[StageMonad] = implicitly
+
+    override def ask: StageMonad[Parameters] = Reader { env => Parameters(env.parameters) }
+
+    override def reader[A](f: Parameters => A): StageMonad[A] = Reader { env => f(Parameters(env.parameters)) }
+  }
+
+  implicit val argsHandler: FSHandler[ArgAlg.Op, StageMonad] = new ArgHandler[StageMonad]
 
   override val stageHandler: StageHandler = implicitly
 
-  override val injectArg: ArgAlg.Op :<: StageOp = CopK.Inject[ArgAlg.Op, StageOp]
+  // program handlers
+
+  override implicit val programSplitter: FSHandler[ProgramOp, StageWriter[StageOp, ?]] = new programWrapper.ProgramSplitter()
+
+  // parametrized classes
 
   trait Database extends enki.Database {
     override type ProgramOp[A] = default.this.ProgramOp[A]
@@ -89,20 +109,7 @@ object default extends Enki {
     override val enki = default
   }
 
-  def test[M: Monoid](s: Stage[_], f: ArgAlg.Op ~> λ[α => M]): Unit = {
-    implicit val in = CopK.Inject[ArgAlg.Op, StageOp]
-    val k = s.analyzeIn(f)
-
-  }
-
-  override def analyzeArgs[M: Monoid](s: Stage[_], f: ArgAlg.Op ~> λ[α => M]): M = {
-    val I = CopK.Inject[ArgAlg.Op, StageOp]
-    s.analyze(λ[StageOp ~> λ[α => M]] {
-      case I(a) => f(a)
-      case _ => Monoid.empty[M]
-    })
-  }
-
+  //TODO: remove
   override def analyzeStages[M: Monoid](s: Stage[_], f: SparkAlg.Op ~> λ[α => M]): M = {
     val I = CopK.Inject[SparkAlg.Op, StageOp]
     s.analyze(λ[StageOp ~> λ[α => M]] {

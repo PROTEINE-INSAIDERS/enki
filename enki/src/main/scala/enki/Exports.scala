@@ -1,6 +1,6 @@
 package enki
 
-trait Exports extends Aliases {
+trait Exports  {
   type EncoderStyle = enki.EncoderStyle
   val EncoderStyle: enki.EncoderStyle.type = enki.EncoderStyle
   type Environment = enki.Environment

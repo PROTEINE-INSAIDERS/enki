@@ -20,9 +20,9 @@ class Compose extends EnkiTestSuite with enki.default.Database {
 
     val program = write[(Int, Int)]("yoba") <*> sparkSession.emptyDataset[(Int, Int)].pure[Stage]
 
-    implicit val myCompiler: FSHandler[SparkAlg.Op, enki.EnkiMonad] = tableNameMapper andThen enki.sparkHandler
+    implicit val myCompiler: FSHandler[SparkAlg.Op, StageMonad] = tableNameMapper andThen enki.sparkHandler
 
-    program.interpret[EnkiMonad](implicitly, interpretIotaCopK[StageOp, EnkiMonad]).run(Environment(sparkSession))
+    program.interpret[StageMonad](implicitly, interpretIotaCopK[StageOp, StageMonad]).run(Environment(sparkSession))
     sparkSession.sql(s"show tables in $schema").show
   }
 }

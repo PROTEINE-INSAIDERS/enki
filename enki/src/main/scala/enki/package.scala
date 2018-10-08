@@ -8,6 +8,5 @@ package object enki
     with spark.Module
     // with stage.Syntax
     with program.Module
-    with Aliases {
-
+     {
 }

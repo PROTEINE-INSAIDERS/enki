@@ -5,7 +5,7 @@ trait Module {
   type SparkAlg[F[_]] = spark.SparkAlg[F]
   val SparkAlg: spark.SparkAlg.type = spark.SparkAlg
 
-  type SparkHandler = spark.SparkHandler
+  type SparkHandler[M[_]] = spark.SparkHandler[M]
 
   type ReadTableAction = spark.ReadTableAction
 

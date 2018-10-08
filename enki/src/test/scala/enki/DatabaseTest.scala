@@ -51,7 +51,7 @@ class DatabaseTest extends EnkiTestSuite {
 
       println(e)
 
-      database1.test.interpret[EnkiMonad].run(Environment(sparkSession))
+      database1.test.interpret[StageMonad].run(Environment(sparkSession))
       val res = sparkSession.sql("select * from default.table1").schema
 
       res.fields.foreach(println)
@@ -65,14 +65,14 @@ class DatabaseTest extends EnkiTestSuite {
 
         import implicits._
 
-        override def writerSettings: stageAlg.FS[enki.WriterSettings] = super.writerSettings map (_.setMode(SaveMode.Overwrite))
+        override def writerSettings: Stage[enki.WriterSettings] = super.writerSettings map (_.setMode(SaveMode.Overwrite))
 
         override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
         val test: Stage[Unit] = write[DecimalPrecisionTestData]("table1") <*> dataset[DecimalPrecisionTestData](Seq.empty)
       }
 
-      database1.test.interpret[EnkiMonad].run(Environment(sparkSession))
+      database1.test.interpret[StageMonad].run(Environment(sparkSession))
       val schema = sparkSession.sql("select * from default.table1").schema
 
       schema shouldBe StructType(Seq(StructField(name = "a", dataType = DecimalType(38, 12))))
@@ -86,7 +86,7 @@ class DatabaseTest extends EnkiTestSuite {
 
         import implicits._
 
-        override def writerSettings: stageAlg.FS[enki.WriterSettings] = super.writerSettings map (_.setMode(SaveMode.Overwrite))
+        override def writerSettings: Stage[enki.WriterSettings] = super.writerSettings map (_.setMode(SaveMode.Overwrite))
 
         override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 

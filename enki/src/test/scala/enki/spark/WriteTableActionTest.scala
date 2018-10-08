@@ -29,9 +29,9 @@ class WriteTableActionTest extends EnkiTestSuite {
 
       val dc = new SparkHandler() {}
 
-      dc.write("test", "test", ws1, ds.where($"_1" === "a"))
-      dc.write("test", "test", ws2, ds.where($"_1" === "b"))
-      dc.write("test", "test", ws2, ds.where($"_1" === "b"))
+      dc.write(sparkSession, "test", "test", ws1, ds.where($"_1" === "a"))
+      dc.write(sparkSession, "test", "test", ws2, ds.where($"_1" === "b"))
+      dc.write(sparkSession, "test", "test", ws2, ds.where($"_1" === "b"))
 
       sparkSession.table("test.test").as[(String, String)].collect().sortBy(_._1) shouldBe Array(("a", "a"), ("b", "b"))
     }
