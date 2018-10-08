@@ -1,80 +1,46 @@
-package enki.application
+package enki
+package application
 
-import cats.data._
+import cats._
 import cats.implicits._
 import com.monovore.decline._
-import enki._
+import enki.internal._
 import org.apache.spark.sql._
-import org.apache.spark.sql.types._
-import freestyle.free._
-import freestyle.free.implicits._
-import scala.collection.mutable
-import scala.util.Try
 
-trait ApplicationModule {
+trait Module {
+  //TODO: parametrize module explicictly
   self: Enki =>
 
+  implicit val injectArg: ArgAlg.Op :<: StageOp
 
-  //TODO: factor out Environment as only parametrized entity (should compiles be parametrized?)
   trait EnkiMain {
-    protected def actionParams(node: ActionNode): Opts[Map[String, ParameterValue]] = {
-
-      val arguments = node.analyze(stageArguments(_, Set(_)))
-
-      val argumentMap = mutable.Map[String, ArgumentAction]()
-
-      arguments.foreach { arg =>
-        argumentMap.get(arg.name) match {
-          case None => argumentMap += (arg.name -> arg)
-          case Some(other) =>
-            if (other.dataType != arg.dataType)
-              throw new Exception(s"Argument ${arg.name} is already added with different type.")
-            if (other.defaultStringValue != arg.defaultStringValue)
-              throw new Exception(s"Argument ${arg.name} is already added with different default value.")
-        }
-      }
-
-      argumentMap.values.toList.traverse { (arg: ArgumentAction) =>
-        val opt = Opts.option[String](long = arg.name, help = arg.description)
-        (arg.defaultStringValue match {
-          case Some(value) => opt.withDefault(value)
-          case None => opt
-        }).mapValidated { (value: String) =>
-          arg.dataType match {
-            case StringType => Validated.valid((arg.name, StringValue(value).asInstanceOf[ParameterValue]))
-            case IntegerType => Try(value.toInt).toOption match {
-              case Some(intValue) => Validated.valid((arg.name, IntegerValue(intValue).asInstanceOf[ParameterValue]))
-              case None => Validated.invalidNel(s"Unable to convert parameter's ${arg.name} value $value to integer.")
-            }
-          }
-        }
-      }.map(_.toMap)
-    }
+    protected def actionParams(node: ActionNode): Opts[Map[String, ParameterValue]] =
+      node.analyzeIn(ArgToOpts.analyzer).opts
 
     protected def actionGraph: ActionGraph
 
     protected def session: Opts[SparkSession]
 
-    protected def compiler: Opts[StageCompiler] = Opts(stageCompiler)
+    protected def compiler: Opts[StageHandler] = Opts(stageHandler)
 
-    protected def resume(action: String): Opts[SparkSession => StageCompiler => Unit] = Opts {
+    protected def resume(action: String): Opts[SparkSession => StageHandler => Unit] = Opts {
       (params: Map[String, ParameterValue]) =>
         (session: SparkSession) =>
-          (compiler: StageCompiler) =>
+          (compiler: StageHandler) =>
             actionGraph.resume(action, compiler, Environment(session, params))
     } <*> actionParams(actionGraph(action))
 
-    protected def run(action: String): Opts[SparkSession => StageCompiler => Unit] = Opts {
+    protected def run(action: String): Opts[SparkSession => StageHandler => Unit] = Opts {
       (params: Map[String, ParameterValue]) =>
         (session: SparkSession) =>
-          (compiler: StageCompiler) =>
+          (compiler: StageHandler) =>
             actionGraph.runAction(action, compiler, Environment(session, params))
     } <*> actionParams(actionGraph(action))
 
-    protected def runAll: Opts[SparkSession => StageCompiler => Unit] = Opts {
+    protected def runAll: Opts[SparkSession => StageHandler => Unit] = Opts {
       (params: Map[String, ParameterValue]) =>
         (session: SparkSession) =>
-          (compiler: StageCompiler) =>
+          (compiler: StageHandler) =>
             actionGraph.runAll(compiler, Environment(session, params))
     } <*> actionParams(GraphNode(actionGraph))
 

@@ -1,4 +1,4 @@
-package enki.stage
+package enki.spark
 
 import enki.EnkiTestSuite
 import enki.default._
@@ -27,7 +27,7 @@ class WriteTableActionTest extends EnkiTestSuite {
         .setMode(SaveMode.Overwrite)
         .setPartition("_1" -> "b")
 
-      val dc = new DefaultStageCompiler() {}
+      val dc = new SparkHandler() {}
 
       dc.write("test", "test", ws1, ds.where($"_1" === "a"))
       dc.write("test", "test", ws2, ds.where($"_1" === "b"))

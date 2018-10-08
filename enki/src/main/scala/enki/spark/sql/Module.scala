@@ -1,11 +1,12 @@
-package enki.ds
+package enki.spark.sql
 
 import enki._
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql._
 
 import scala.language.experimental.macros
 
-trait Extensions extends OptionTypeMapping {
+trait Module extends OptionTypeMapping {
 
   implicit class DatasetExtensions[T](val dataset: Dataset[T]) {
     def $[A, R](selector: T => A)
@@ -25,4 +26,11 @@ trait Extensions extends OptionTypeMapping {
     }
   }
 
+  /**
+    * Null column with type information.
+    */
+  //TODO: проверить, можно ли вместо него использовать TypedLit.
+  def typedNull[T: DataTypeMapping]: Column = {
+    lit(null).cast(implicitly[DataTypeMapping[T]].dataType)
+  }
 }

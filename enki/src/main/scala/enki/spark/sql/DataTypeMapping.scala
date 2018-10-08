@@ -1,4 +1,4 @@
-package enki.sql
+package enki.spark.sql
 
 import java.sql.Timestamp
 
@@ -8,7 +8,7 @@ trait DataTypeMapping[T] {
   def dataType: DataType
 }
 
-trait ImplicitDataTypeMappings {
+trait DataTypeMappings {
 
   implicit object BigDecimalMapping extends DataTypeMapping[BigDecimal] {
     override def dataType: DataType = DecimalType.SYSTEM_DEFAULT

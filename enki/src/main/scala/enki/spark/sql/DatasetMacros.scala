@@ -1,4 +1,4 @@
-package enki.ds
+package enki.spark.sql
 
 import org.apache.spark.sql._
 

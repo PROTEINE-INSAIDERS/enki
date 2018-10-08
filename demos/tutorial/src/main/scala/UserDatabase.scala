@@ -1,11 +1,15 @@
 import java.sql.Timestamp
 
+import cats._
 import cats.implicits._
+import enki.arg.ArgAlg
 import enki.default._
 import freestyle.free._
 import freestyle.free.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
+import scala.reflect.runtime.universe._
+
 
 case class PurchasesReport(
                             purchase_id: Long,
@@ -36,7 +40,10 @@ trait UserDatabase extends Database {
   override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
   override def writerSettings: Stage[WriterSettings] =
-    (super.writerSettings, arg("overwrite", "Overwrite existent data.", defaultValue = Some(true))) mapN { (settings, overwrite) =>
+    (
+      super.writerSettings,
+      arg("overwrite", "Overwrite existent data.", defaultValue = Some(true))
+    ) mapN { (settings, overwrite) =>
       settings
     }
 

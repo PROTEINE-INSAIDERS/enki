@@ -7,6 +7,7 @@ import freestyle.free._
 import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphEdge._
+import enki.internal._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
@@ -40,6 +41,8 @@ trait GraphModule {
   sealed trait ActionNode {
     def analyze[M: Monoid](f: Stage[_] => M): M
 
+    def analyzeIn[G[_], M: Monoid](f: G ~> λ[α => M])(implicit in: InjectK[G, StageOp]): M
+
     def reads[M: Monoid](f: ReadTableAction => M): M = analyze(stageReads(_, f))
 
     def writes[M: Monoid](f: WriteTableAction => M): M = analyze(stageWrites(_, f))
@@ -57,12 +60,21 @@ trait GraphModule {
   }
 
   final case class StageNode(stage: Stage[_]) extends ActionNode {
+    def analyzeIn[G[_], M: Monoid](f: G ~> λ[α => M])(implicit in: InjectK[G, StageOp]): M = {
+      stage.analyzeIn(f)
+    }
+
     override def analyze[M: Monoid](f: Stage[_] => M): M = f(stage)
 
     override def mapStages(f: Stage ~> Stage): ActionNode = StageNode(f(stage))
   }
 
   final case class GraphNode(graph: ActionGraph) extends ActionNode {
+    def analyzeIn[G[_], M: Monoid](f: G ~> λ[α => M])(implicit in: InjectK[G, StageOp]): M = {
+      //TODO: alleycats??
+      graph.actions.values.toList.foldMap(_.analyzeIn(f))
+    }
+
     override def analyze[M: Monoid](f: Stage[_] => M): M = graph.analyze(f)
 
     override def mapStages(f: Stage ~> Stage): ActionNode = GraphNode(graph.copy(actions = graph.actions.mapValues(node => node.mapStages(f))))
@@ -108,14 +120,14 @@ trait GraphModule {
       subGraphs.foreach(_.validate())
     }
 
-    def resume(action: String, compiler: StageCompiler, environment: Environment): Unit = {
+    def resume(action: String, compiler: StageHandler, environment: Environment): Unit = {
       checkActionExists(action)
       linearized.dropWhile(_ != action).foreach { stageName =>
         runAction(stageName, compiler, environment)
       }
     }
 
-    def runAction(name: String, compiler: StageCompiler, environment: Environment): Unit = {
+    def runAction(name: String, compiler: StageHandler, environment: Environment): Unit = {
       try {
         //TODO: stack descriptions
         environment.session.sparkContext.setJobDescription(name)
@@ -145,7 +157,7 @@ trait GraphModule {
       order => order.toList.reverse.map(_.value)
     )
 
-    def runAll(compiler: StageCompiler, environment: Environment): Unit = {
+    def runAll(compiler: StageHandler, environment: Environment): Unit = {
       validate()
       linearized.foreach { stageName => runAction(stageName, compiler, environment) }
     }

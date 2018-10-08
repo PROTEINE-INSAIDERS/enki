@@ -1,11 +1,11 @@
 package enki
-package stage
+package spark
 
 import freestyle.free._
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
-@free trait StageAlg {
+@free trait SparkAlg {
   def dataFrame(rows: Seq[Row], schema: StructType): FS[DataFrame]
 
   def dataset[T](data: Seq[T], encoder: Encoder[T]): FS[Dataset[T]]

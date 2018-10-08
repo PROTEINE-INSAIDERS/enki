@@ -1,5 +1,5 @@
 package enki
-package stage
+package spark
 
 import cats.data._
 import org.apache.spark.sql._
@@ -8,7 +8,7 @@ import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
 
-trait DefaultStageCompiler extends StageAlg.Handler[EnkiMonad] {
+trait SparkHandler extends SparkAlg.Handler[EnkiMonad] {
   private[enki] def write[T](
                               schemaName: String,
                               tableName: String,
