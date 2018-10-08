@@ -9,7 +9,6 @@ import freestyle.free._
 import org.apache.spark.sql._
 
 final class StageOpProvider[StageOp[_]] {
-
   @free abstract class ProgramAlg {
     def persistDataFrame(
                           schemaName: String,

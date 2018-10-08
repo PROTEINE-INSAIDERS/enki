@@ -9,7 +9,6 @@ import scalax.collection.GraphPredef._
 
 import scala.collection._
 
-
 trait ActionGraphBuilder {
   self: Enki with GraphModule =>
 
