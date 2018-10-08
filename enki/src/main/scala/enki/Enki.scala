@@ -2,11 +2,12 @@ package enki
 
 import cats._
 import cats.data._
+import cats.mtl.ApplicativeAsk
+import enki.internal._
 import freestyle.free._
 import freestyle.free.implicits._
 import freestyle.free.internal.EffectLike
 import iota._
-import enki.internal._
 
 /**
   * Instantiated Enki module parametrized by operation types.
@@ -64,7 +65,17 @@ object default extends Enki {
   override val programAlg: programWrapper.ProgramAlg[ProgramOp] = implicitly
 
   implicit val sparkHandler: FSHandler[SparkAlg.Op, EnkiMonad] = new enki.spark.SparkHandler {}
-  implicit val argsHandler: FSHandler[ArgAlg.Op, EnkiMonad] = new ArgHandler {}
+
+  implicit val argsReader: ApplicativeAsk[EnkiMonad, Parameters] = new ApplicativeAsk[EnkiMonad, Parameters] {
+    override val applicative: Applicative[default.EnkiMonad] = implicitly
+
+    override def ask: default.EnkiMonad[default.Parameters] = Reader { env => Parameters(env.parameters) }
+
+    override def reader[A](f: default.Parameters => A): default.EnkiMonad[A] = Reader { env => f(Parameters(env.parameters)) }
+  }
+
+  implicit val argsHandler: FSHandler[ArgAlg.Op, EnkiMonad] = new ArgHandler[EnkiMonad]
+
   override implicit val programSplitter: FSHandler[ProgramOp, StageWriter[StageOp, ?]] = new programWrapper.ProgramSplitter()
 
   override val stageHandler: StageHandler = implicitly

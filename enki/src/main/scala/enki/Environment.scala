@@ -1,5 +1,6 @@
 package enki
 
+import enki.arg.ParameterValue
 import org.apache.spark.sql.SparkSession
 
 case class Environment(session: SparkSession, parameters: Map[String, ParameterValue])

@@ -4,6 +4,7 @@ package application
 import cats._
 import cats.implicits._
 import com.monovore.decline._
+import enki.arg.ParameterValue
 import enki.internal._
 import org.apache.spark.sql._
 

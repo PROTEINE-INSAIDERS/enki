@@ -58,8 +58,9 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies ++= Seq(
- // "org.typelevel" %% "cats-core" % catsVersion, // коты
-//  "org.typelevel" %% "cats-free" % catsVersion, // свободные монадки и апликативные функторы для Stage
+  "org.typelevel" %% "cats-core" % catsVersion, // коты
+  "org.typelevel" %% "cats-free" % catsVersion, // свободные монадки и апликативные функторы для Stage
+  "org.typelevel" %% "cats-mtl-core" % "0.4.0",
   "org.scala-graph" %% "graph-core" % scalaGraphVersion, // граф для представления зависимостей
   "com.monovore" %% "decline" % declineVersion, // парсер командной строки для EnkiApp
   "com.chuusai" %% "shapeless" % shapelessVersion, // HLIST для генерации дефолтных данных (в enki.test)
