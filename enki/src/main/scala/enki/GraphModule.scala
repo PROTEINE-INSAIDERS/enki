@@ -1,13 +1,11 @@
 package enki
 
 import cats._
-import cats.data._
 import cats.implicits._
-import freestyle.free._
+import enki.internal._
 import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphEdge._
-import enki.internal._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
@@ -136,9 +134,8 @@ trait GraphModule {
         this (name) match {
           case GraphNode(g) => g.runAll(compiler, environment)
           case StageNode(a) =>
-            ???
-            // a.foldMap(compiler).run(environment)
-            ()
+            val action = a.foldMap(compiler)
+            run(action, environment)
         }
       } catch {
         case NonFatal(e) => throw ActionFailedException(name, e)

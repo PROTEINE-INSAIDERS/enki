@@ -9,20 +9,7 @@ import freestyle.free.implicits._
 import iota._
 import org.apache.spark.sql._
 
-/**
-  * Instantiated Enki module parametrized by operation types.
-  */
-trait Enki
-  extends enki.Exports
-    with DataFrameModule
-    with enki.spark.Module
-    with enki.application.Module
-    with enki.arg.Module
-    with enki.GraphModule
-    with enki.program.ActionGraphBuilder
-    with enki.spark.Analyzers
-    with enki.spark.sql.Module {
-
+trait EnkiTypes {
   // Enki arguments
 
   type ProgramOp[A]
@@ -35,6 +22,21 @@ trait Enki
   type Program[A] = Par[ProgramOp, A]
   type ProgramS[A] = FreeS[ProgramOp, A]
   type StageHandler = FSHandler[StageOp, StageMonad] //TODO: need to abstract over enki monad.
+}
+
+/**
+  * Instantiated Enki module parametrized by operation types.
+  */
+trait Enki extends EnkiTypes
+  with enki.Exports
+  with DataFrameModule
+  with enki.spark.Module
+  with enki.application.Module
+  with enki.arg.Module
+  with enki.GraphModule
+  with enki.program.ActionGraphBuilder
+  with enki.spark.Analyzers
+  with enki.spark.sql.Module {
 
   /* implicits */
 
@@ -43,6 +45,9 @@ trait Enki
 
   //TODO: remove (use analyzeIn)
   def analyzeStages[M: Monoid](s: Stage[_], f: SparkAlg.Op ~> λ[α => M]): M
+
+  //TODO: remove
+  def run(stage: StageMonad[_], env: Environment)
 }
 
 /**
@@ -58,6 +63,7 @@ trait Enki
   */
 object default extends Enki {
   val programWrapper = new StageOpProvider[StageOp]
+
 
   // override Enki parameters
 
@@ -116,5 +122,10 @@ object default extends Enki {
       case I(a) => f(a)
       case _ => Monoid.empty[M]
     })
+  }
+
+  //TODO: remove
+  override def run(stage: StageMonad[_], env: Environment) = {
+    stage.run(env)
   }
 }

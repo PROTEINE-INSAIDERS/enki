@@ -17,4 +17,5 @@ trait Module {
   val WriterSettings: spark.WriterSettings.type = spark.WriterSettings
 
   type TableNameMapper = spark.TableNameMapper
+  val TableNameMapper: spark.TableNameMapper.type = spark.TableNameMapper
 }

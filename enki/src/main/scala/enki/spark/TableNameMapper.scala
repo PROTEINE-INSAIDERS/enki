@@ -1,7 +1,7 @@
 package enki.spark
 
-import freestyle.free._
 import enki.spark.SparkAlg._
+import freestyle.free._
 
 class TableNameMapper(f: (String, String) => (String, String)) extends FSHandler[Op, Op] {
   override def apply[A](fa: Op[A]): Op[A] = fa match {
@@ -19,4 +19,8 @@ class TableNameMapper(f: (String, String) => (String, String)) extends FSHandler
       a.copy(schemaName = schema, tableName = table)
     case other => other
   }
+}
+
+object TableNameMapper {
+  def apply(f: (String, String) => (String, String)): TableNameMapper = new TableNameMapper(f)
 }
