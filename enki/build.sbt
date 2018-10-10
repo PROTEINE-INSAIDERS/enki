@@ -16,6 +16,10 @@ val declineVersion = "0.4.2"
 val kindProjectorVersion = "0.9.6"
 val shapelessVersion = "2.3.3"
 val contextualVersion = "1.1.0"
+val scalaXmlVersion = "1.1.0"
+val javaxVersion = "1.4.2"
+
+
 
 scalacOptions ++= Seq(
   "-deprecation",                      // Emit warning and location for usages of deprecated APIs.
@@ -67,6 +71,9 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion % Provided, // Спарк
   "org.apache.spark" %% "spark-sql" % sparkVersion % Provided, // Спарк SQL
   "org.scalatest" %% "scalatest" % scalaTestVersion % Test, // тестирование
+  "javax.xml.parsers" % "jaxp-api" % javaxVersion,
+  "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion,
+
 
 //  "com.slamdata" %% "matryoshka-core" % "0.18.3" , // матрёшка для тестирования рекурсивных схем по stage - дереву (вытянет за собой scalaz)
 //  "io.higherkindness" %% "droste-core" % "0.4.0" , // рекурсивные схемы для котов
@@ -75,8 +82,12 @@ libraryDependencies ++= Seq(
 //  "io.frees" %% "frees-cache"              % "0.8.2",
   compilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full),
   compilerPlugin("org.spire-math" % "kind-projector" % kindProjectorVersion cross CrossVersion.binary), // красная лямбда
-  compilerPlugin("com.github.mpilquist" %% "local-implicits" % "0.3.0")
+  compilerPlugin("com.github.mpilquist" %% "local-implicits" % "0.3.0"),
+  compilerPlugin("org.wartremover" %% "wartremover" % "2.3.5")
 )
+
+scalacOptions += "-P:wartremover:only-warn-traverser:org.wartremover.warts.Unsafe"
+
 
 licenses += ("BSD-3-Clause", url("http://opensource.org/licenses/BSD-3-Clause"))
 publishMavenStyle := true
