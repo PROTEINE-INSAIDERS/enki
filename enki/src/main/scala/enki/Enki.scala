@@ -47,7 +47,7 @@ trait Enki extends EnkiTypes
   def analyzeStages[M: Monoid](s: Stage[_], f: SparkAlg.Op ~> λ[α => M]): M
 
   //TODO: remove
-  def run(stage: StageMonad[_], env: Environment)
+  def run(stage: StageMonad[_], env: Environment): Unit
 }
 
 /**

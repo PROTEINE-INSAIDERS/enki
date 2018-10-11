@@ -5,6 +5,8 @@ import cats.implicits._
 import enki.default.{sparkHandler => _, _}
 import freestyle.free._
 import freestyle.free.implicits._
+import org.apache.spark.sql.execution.SparkSqlParser
+import org.apache.spark.sql.internal.SQLConf
 
 class Compose extends EnkiTestSuite with enki.default.Database {
 

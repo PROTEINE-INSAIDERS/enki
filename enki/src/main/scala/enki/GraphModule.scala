@@ -33,6 +33,7 @@ trait GraphModule {
   //TODO: разные ReadTableAction для одной и той же таблицы могут различаться, т.к. могут использовать разные
   // экземпляры энкодеров.
   def sources: ActionGraph => Set[ReadTableAction] = graph => {
+
     val readers = graph.analyze(action => stageReads(action, action => Set((action.toString, action))))
     val writers = graph.analyze(action => stageWrites(action, action => Set(action.toString)))
     readers.filter { case (name, _) => !writers.contains(name) }.map { case (_, action) => action }

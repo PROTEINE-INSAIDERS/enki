@@ -76,6 +76,10 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession]) extends 
     restricted.as[T](encoder)
   }
 
+  override protected[this] def sql(sqlText: String): M[DataFrame] = env.reader { session =>
+    session.sql(sqlText)
+  }
+
   override protected[this] def writeDataFrame(
                                                schemaName: String,
                                                tableName: String

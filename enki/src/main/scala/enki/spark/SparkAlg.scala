@@ -14,6 +14,8 @@ import org.apache.spark.sql.types._
 
   def readDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): FS[Dataset[T]]
 
+  def sql(sqlText: String): FS[DataFrame]
+
   def writeDataFrame(schemaName: String, tableName: String): FS[WriterSettings => DataFrame => Unit]
 
   def writeDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): FS[WriterSettings => Dataset[T] => Unit]
