@@ -9,6 +9,7 @@ import scalax.collection.GraphEdge._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+import enki.internal._
 
 //TODO: Try cata to build dependency graph in form of annotations.
 
@@ -18,6 +19,7 @@ trait GraphModule {
   self: Enki =>
 
   implicit val stageApplicative: Applicative[StageMonad]
+  implicit val injectSpark: SparkAlg.Op :<: StageOp
 
   //TODO: перенести в более подходящий модуль
   def createEmptySources(graph: ActionGraph, session: SparkSession): Unit = {
@@ -30,12 +32,13 @@ trait GraphModule {
     }
   }
 
-  //TODO: разные ReadTableAction для одной и той же таблицы могут различаться, т.к. могут использовать разные
-  // экземпляры энкодеров.
+  //TODO: разные ReadTableAction для одной и той же таблицы могут различаться, т.к. могут использовать разные экземпляры энкодеров.
   def sources: ActionGraph => Set[ReadTableAction] = graph => {
-
-    val readers = graph.analyze(action => stageReads(action, action => Set((action.toString, action))))
-    val writers = graph.analyze(action => stageWrites(action, action => Set(action.toString)))
+    val gn = GraphNode(graph)
+    val readsAnalyzer = new TableReads[Set[(String, ReadTableAction)]](a => Set((s"${a.schemaName}.${a.tableName}", a))).analyzer
+    val readers = gn.analyzeIn(readsAnalyzer)
+    val writesAnalyzer = new TableWrites[Set[String]](a => Set(s"${a.schemaName}.${a.tableName}")).analyzer
+    val writers = gn.analyzeIn(writesAnalyzer)
     readers.filter { case (name, _) => !writers.contains(name) }.map { case (_, action) => action }
   }
 
@@ -44,9 +47,15 @@ trait GraphModule {
 
     def analyzeIn[G[_], M: Monoid](f: G ~> λ[α => M])(implicit in: InjectK[G, StageOp]): M
 
-    def reads[M: Monoid](f: ReadTableAction => M): M = analyze(stageReads(_, f))
+    def reads[M: Monoid](f: ReadTableAction => M): M = {
+      val readsAnalyzer = new TableReads[M](f).analyzer
+      analyzeIn(readsAnalyzer)
+    }
 
-    def writes[M: Monoid](f: WriteTableAction => M): M = analyze(stageWrites(_, f))
+    def writes[M: Monoid](f: WriteTableAction => M): M = {
+      val writesAnalyzer = new TableWrites[M](f).analyzer
+      analyzeIn(writesAnalyzer)
+    }
 
     def mapStages(f: Stage ~> Stage): ActionNode
 

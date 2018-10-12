@@ -4,12 +4,11 @@ package spark
 import org.apache.spark.sql._
 
 //TODO: можно заменить на продукт из iota
+//TODO: но на самом деле лучше унифицировать, т.к. эти штуки всё равно используются только для анализа.
 trait TableAction {
   def schemaName: String
 
   def tableName: String
-
-  override def toString: String = s"$schemaName.$tableName"
 }
 
 trait ReadTableAction extends TableAction

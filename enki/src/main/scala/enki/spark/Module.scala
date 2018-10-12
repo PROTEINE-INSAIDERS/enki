@@ -11,6 +11,10 @@ trait Module {
 
   type ReadDatasetAction[A] = spark.ReadDatasetAction[A]
 
+  type TableReads[M] = spark.TableReads[M]
+
+  type TableWrites[M] = spark.TableWrites[M]
+
   type WriteTableAction = spark.WriteTableAction
 
   type WriterSettings = spark.WriterSettings

@@ -74,6 +74,7 @@ object default extends Enki {
   // set module parameters
 
   override val stageApplicative: Applicative[Reader[Environment, ?]] = implicitly
+  override val injectSpark: SparkAlg.Op :<:  StageOp = CopK.Inject[SparkAlg.Op, StageOp]
 
   override type ArgOp[A] = StageOp[A]
   override val injectArg: ArgAlg.Op :<: StageOp = CopK.Inject[ArgAlg.Op, StageOp]
