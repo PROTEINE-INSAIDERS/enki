@@ -10,16 +10,11 @@ import org.scalatest.{Matchers, WordSpec}
 
 import scala.collection.JavaConversions._
 
-case class DecimalPrecisionTestData(@decimalPrecision(38, 12) a: Option[BigDecimal])
+case class DecimalPrecisionTestData(@decimalPrecision(precision = 38, scale = 12) a: Option[BigDecimal])
 
 class StageTest extends EnkiTestSuite with enki.default.Database {
 
   import implicits._
-
-  "test" in {
-    val e1  = implicitly[Encoder[DecimalPrecisionTestData]]
-    println(e1 )
-  }
 
   override def schema: String = "default"
 

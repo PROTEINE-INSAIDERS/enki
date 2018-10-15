@@ -1,7 +1,6 @@
 package enki
 package spark
 
-import cats.data._
 import cats.mtl._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
@@ -57,8 +56,8 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession]) extends 
   override protected[this] def readDataFrame(
                                               schemaName: String,
                                               tableName: String
-                                            ): M[DataFrame] = env.reader { session =>
-    session.table(s"$schemaName.$tableName")
+                                            ): M[ReaderSettings => DataFrame] = env.reader { session =>
+    readerSettings => session.table(s"$schemaName.$tableName")
   }
 
   override protected[this] def readDataset[T](
@@ -66,14 +65,15 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession]) extends 
                                                tableName: String,
                                                encoder: Encoder[T],
                                                strict: Boolean
-                                             ): M[Dataset[T]] = env.reader { session =>
-    val dataframe = session.table(s"$schemaName.$tableName")
-    val restricted = if (strict) {
-      dataframe.select(encoder.schema.map(f => dataframe(f.name)): _*)
-    } else {
-      dataframe
-    }
-    restricted.as[T](encoder)
+                                             ): M[ReaderSettings => Dataset[T]] = env.reader { session =>
+    readerSettings =>
+      val dataframe = session.table(s"$schemaName.$tableName")
+      val restricted = if (strict) {
+        dataframe.select(encoder.schema.map(f => dataframe(f.name)): _*)
+      } else {
+        dataframe
+      }
+      restricted.as[T](encoder)
   }
 
   override protected[this] def sql(sqlText: String): M[DataFrame] = env.reader { session =>

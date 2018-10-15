@@ -87,3 +87,5 @@ publishArtifact in Test := false
 
 sources in (Compile,doc) := Seq.empty
 publishArtifact in (Compile, packageDoc) := false
+
+testOptions in Test += Tests.Argument("-oF")

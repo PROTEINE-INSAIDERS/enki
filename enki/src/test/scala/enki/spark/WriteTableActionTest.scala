@@ -5,6 +5,16 @@ import enki.default._
 import org.apache.spark.sql._
 
 class WriteTableActionTest extends EnkiTestSuite {
+  "tstds" should {
+    val a = sparkSession.sql("test")
+      // создание датасета примерно так
+    /*  при этом выполняем трансформацию плана.
+      val qe = sparkSession.sessionState.executePlan(logicalPlan)
+    qe.assertAnalyzed()
+    new Dataset[Row](sparkSession, qe, RowEncoder(qe.analyzed.schema))
+    */
+  }
+
   "write" should {
     "be able to overwrite partition" in {
       import sparkSession.implicits._
