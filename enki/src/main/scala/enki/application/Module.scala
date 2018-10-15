@@ -20,7 +20,7 @@ trait Module {
 
     protected def actionGraph: ActionGraph
 
-    protected def session: Opts[SparkSession]
+    protected def session: Opts[SparkSession] = Opts(SparkSession.builder().getOrCreate())
 
     protected def compiler: Opts[StageHandler] = Opts(stageHandler)
 

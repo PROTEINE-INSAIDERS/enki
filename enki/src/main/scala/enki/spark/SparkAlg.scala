@@ -6,8 +6,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
 @free trait SparkAlg {
-  //TODO: добавить def sql(sqlText: String): DataFrame
-
   def dataFrame(rows: Seq[Row], schema: StructType): FS[DataFrame]
 
   def dataset[T](data: Seq[T], encoder: Encoder[T]): FS[Dataset[T]]

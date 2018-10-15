@@ -3,6 +3,7 @@ package enki.spark
 import enki.spark.SparkAlg._
 import freestyle.free._
 
+//TODO: implement plan-level mapper
 class TableNameMapper(f: (String, String) => (String, String)) extends FSHandler[Op, Op] {
   override def apply[A](fa: Op[A]): Op[A] = fa match {
     case a: ReadDataFrameOp =>

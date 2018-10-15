@@ -65,6 +65,8 @@ trait Database {
       alg.readDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false)
     }
 
+  final def sql(sqlSting: String)(implicit alg: SparkAlg[StageOp]): alg.FS[DataFrame] = alg.sql(sqlSting)
+
   final def write(tableName: String)(implicit alg: SparkAlg[StageOp]): alg.FS[DataFrame => Unit] = {
     writerSettings.ap(alg.writeDataFrame(schema, tableName))
   }

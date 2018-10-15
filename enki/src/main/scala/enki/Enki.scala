@@ -3,6 +3,7 @@ package enki
 import cats._
 import cats.data._
 import cats.mtl._
+import enki.spark.plan.PlanAnalyzer
 import freestyle.free.FreeS._
 import freestyle.free._
 import freestyle.free.implicits._
@@ -41,6 +42,9 @@ trait Enki extends EnkiTypes
   /* implicits */
 
   implicit val programSplitter: FSHandler[ProgramOp, StageWriter[StageOp, ?]] // сплиттер возможно тоже не должен быть имплицитным.
+
+  implicit val planAnalyzer: PlanAnalyzer = new PlanAnalyzer{}
+
   val stageHandler: StageHandler // не должен быть имплицитным, т.к. начинает конфликтовать с имплицитами из freestyle.free.implicits._
 
   //TODO: remove (use analyzeIn)
