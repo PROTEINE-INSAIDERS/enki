@@ -3,6 +3,7 @@ package spark
 
 import freestyle.free._
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
 
 @free trait SparkAlg {
@@ -14,10 +15,9 @@ import org.apache.spark.sql.types._
 
   def readDataset[T](schemaName: String, tableName: String, encoder: Encoder[T], strict: Boolean): FS[ReaderSettings => Dataset[T]]
 
-  //TODO: Команда sql может содержать обращения к различным таблицам, и это можно увидеть только на уровне плана команды.
-  // для решения задач меппинга таблиц и партиционирования необходимо уметь трансформировать этот план.
-  //TODO: принимать трансформатор плана аппликативным образом. 
-  def sql(sqlText: String): FS[DataFrame]
+  def plan(plan: LogicalPlan): FS[PlanTransformer => DataFrame]
+
+  def sql(sqlText: String): FS[PlanTransformer => DataFrame]
 
   def writeDataFrame(schemaName: String, tableName: String): FS[WriterSettings => DataFrame => Unit]
 

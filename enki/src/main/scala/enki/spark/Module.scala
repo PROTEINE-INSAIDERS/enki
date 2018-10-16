@@ -12,6 +12,7 @@ trait Module {
   type ReadDatasetAction[A] = spark.ReadDatasetAction[A]
 
   type TableReads[M] = spark.TableReads[M]
+  val TableReads: spark.TableReads.type = spark.TableReads
 
   type TableWrites[M] = spark.TableWrites[M]
 
@@ -20,6 +21,6 @@ trait Module {
   type WriterSettings = spark.WriterSettings
   val WriterSettings: spark.WriterSettings.type = spark.WriterSettings
 
-  type TableNameMapper = spark.TableNameMapper
-  val TableNameMapper: spark.TableNameMapper.type = spark.TableNameMapper
+  type TableNameMapper = spark.TableMapper
+  val TableNameMapper: spark.TableMapper.type = spark.TableMapper
 }

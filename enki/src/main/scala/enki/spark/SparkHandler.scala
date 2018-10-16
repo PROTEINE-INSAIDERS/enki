@@ -2,13 +2,16 @@ package enki
 package spark
 
 import cats.mtl._
+import enki.spark.plan.PlanAnalyzer
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
 
-class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession]) extends SparkAlg.Handler[M] {
+class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnalyzer: PlanAnalyzer) extends SparkAlg.Handler[M] {
   private[enki] def write[T](
                               session: SparkSession,
                               schemaName: String,
@@ -76,8 +79,14 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession]) extends 
       restricted.as[T](encoder)
   }
 
-  override protected[this] def sql(sqlText: String): M[DataFrame] = env.reader { session =>
-    session.sql(sqlText)
+  override protected[this] def plan(logicalPlan: LogicalPlan): M[PlanTransformer => DataFrame] = env.reader { session =>
+    transformer =>
+      new Dataset[Row](session, transformer(logicalPlan), RowEncoder(logicalPlan.schema))
+  }
+
+  override protected[this] def sql(sqlText: String): M[PlanTransformer => DataFrame] = {
+    val logicalPlan = planAnalyzer.parsePlan(sqlText)
+    plan(logicalPlan)
   }
 
   override protected[this] def writeDataFrame(

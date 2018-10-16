@@ -6,15 +6,12 @@ import freestyle.free.FreeS._
 import freestyle.free.implicits._
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders._
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
 
 import scala.reflect.runtime.universe._
 
-//TODO: разбить на отдельные трейты для операций над спарком, программой и аргументами.
 //TODO: реализовать партиционирование.
-//  для реализации схем партиционирования метод persist должен принимать аргументы партиционирования, модифицировать
-//  writerSettings для writer-а и добавлять фильтр для команды чтения.
-// возможно имеет смысл сделать отдельную команду persist partition.
 trait Database {
   val enki: Enki
 
@@ -36,6 +33,8 @@ trait Database {
   protected def readerSettings: Par[StageOp, ReaderSettings] = ReaderSettings().pure[Par[StageOp, ?]]
 
   protected def writerSettings: Par[StageOp, WriterSettings] = WriterSettings().pure[Par[StageOp, ?]]
+
+  protected def planTransformer: Par[StageOp, PlanTransformer] = (identity[LogicalPlan] _).pure[Par[StageOp, ?]]
 
   /* syntactic sugar */
 
@@ -72,7 +71,9 @@ trait Database {
       alg.readDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false) <*> readerSettings
     }
 
-  final def sql(sqlSting: String)(implicit alg: SparkAlg[StageOp]): alg.FS[DataFrame] = alg.sql(sqlSting)
+  //TODO: тут можно использовать planTransformer для добавления параметров партиционирования.
+  final def sql(sqlSting: String)
+               (implicit alg: SparkAlg[StageOp]): alg.FS[DataFrame] = alg.sql(sqlSting) <*> planTransformer
 
   final def write(
                    tableName: String
@@ -116,8 +117,29 @@ trait Database {
   final def persist(
                      tableName: String,
                      dataframe: Par[StageOp, DataFrame]
-                   )(implicit alg: StageOpProvider[StageOp]#ProgramAlg[ProgramOp]): alg.FS[Par[StageOp, DataFrame]] =
-    alg.persistDataFrame(schema, tableName, dataframe, readerSettings, writerSettings)
+                   )
+                   (
+                     implicit alg: StageOpProvider[StageOp]#ProgramAlg[ProgramOp]
+                   ): alg.FS[Par[StageOp, DataFrame]] = persistPart(tableName, dataframe, Seq.empty[(String, String)].pure[Par[StageOp, ?]])
+
+  final def persistPart(
+                              tableName: String,
+                              dataframe: Par[StageOp, DataFrame],
+                              partition: Par[StageOp, Seq[(String, String)]]
+                            )
+                            (
+                              implicit alg: StageOpProvider[StageOp]#ProgramAlg[ProgramOp]
+                            ): alg.FS[Par[StageOp, DataFrame]] = {
+    val rws = (partition, readerSettings, writerSettings) mapN { (p: Seq[(String, String)], rs: ReaderSettings, ws: WriterSettings) =>
+      if (p.isEmpty) {
+        (rs, ws)
+      } else {
+        (rs.setPartition(p: _*), ws.setPartition(p: _*))
+      }
+    }
+    alg.persistDataFrame(schema, tableName, dataframe, rws.map(_._1), rws.map(_._2))
+  }
+
 
   final def gpersist[T: TypeTag](
                                   tableName: String,
