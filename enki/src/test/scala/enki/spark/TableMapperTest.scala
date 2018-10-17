@@ -6,6 +6,10 @@ import enki.default._
 import org.apache.spark.sql.catalyst.TableIdentifier
 
 class TableMapperTest extends EnkiTestSuite {
+  "test" in {
+
+  }
+
   "tableMapper" should {
     "map table names in select query" in {
       val mapper = TableMapper {

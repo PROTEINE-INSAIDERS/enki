@@ -19,7 +19,7 @@ trait GraphModule {
   self: Enki =>
 
   implicit val stageApplicative: Applicative[StageMonad]
-  implicit val injectSpark: SparkAlg.Op :<: StageOp
+  implicit val sparkInjection: SparkAlg.Op :<: StageOp
 
   //TODO: перенести в более подходящий модуль
   def createEmptySources(graph: ActionGraph, session: SparkSession): Unit = {

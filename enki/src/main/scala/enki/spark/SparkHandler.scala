@@ -41,6 +41,10 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnal
     }
   }
 
+  override protected[this] def arg(name: String): M[String] = env.reader { session =>
+    session.sessionState.conf.getConfString(name)
+  }
+
   override protected[this] def dataFrame(
                                           rows: Seq[Row],
                                           schema: StructType
@@ -81,12 +85,16 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnal
 
   override protected[this] def plan(logicalPlan: LogicalPlan): M[PlanTransformer => DataFrame] = env.reader { session =>
     transformer =>
-      new Dataset[Row](session, transformer(logicalPlan), RowEncoder(logicalPlan.schema))
+      val qe = session.sessionState.executePlan(transformer(logicalPlan))
+      qe.assertAnalyzed()
+      new Dataset[Row](session, qe.logical, RowEncoder(qe.analyzed.schema))
   }
 
-  override protected[this] def sql(sqlText: String): M[PlanTransformer => DataFrame] = {
-    val logicalPlan = planAnalyzer.parsePlan(sqlText)
-    plan(logicalPlan)
+  override protected[this] def sql(sqlText: String): M[PlanTransformer => DataFrame] = env.reader { session =>  transformer =>
+    val logicalPlan = session.sessionState.sqlParser.parsePlan(sqlText)
+    val qe = session.sessionState.executePlan(transformer(logicalPlan))
+    qe.assertAnalyzed()
+    new Dataset[Row](session, qe.logical, RowEncoder(qe.analyzed.schema))
   }
 
   override protected[this] def writeDataFrame(

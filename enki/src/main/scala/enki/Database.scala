@@ -1,5 +1,6 @@
 package enki
 
+import cats._
 import cats.implicits._
 import enki.spark.ReaderSettings
 import freestyle.free.FreeS._
@@ -39,6 +40,8 @@ trait Database {
   /* syntactic sugar */
 
   /* stages */
+
+  final def arg1(name: String)(implicit alg: SparkAlg[StageOp]): alg.FS[String] = alg.arg(name)
 
   final def dataFrame(
                        rows: Seq[Row],
