@@ -5,6 +5,8 @@ import cats.implicits._
 import enki.default.{sparkHandler => _, _}
 import freestyle.free._
 import freestyle.free.implicits._
+import org.apache.spark.sql.execution.SparkSqlParser
+import org.apache.spark.sql.internal.SQLConf
 
 class Compose extends EnkiTestSuite with enki.default.Database {
 
@@ -20,9 +22,9 @@ class Compose extends EnkiTestSuite with enki.default.Database {
 
     val program = write[(Int, Int)]("yoba") <*> sparkSession.emptyDataset[(Int, Int)].pure[Stage]
 
-    implicit val myCompiler: FSHandler[SparkAlg.Op, enki.EnkiMonad] = tableNameMapper andThen enki.sparkHandler
+    implicit val myCompiler: FSHandler[SparkAlg.Op, StageMonad] = tableNameMapper andThen enki.sparkHandler
 
-    program.interpret[EnkiMonad](implicitly, interpretIotaCopK[StageOp, EnkiMonad]).run(Environment(sparkSession))
+    program.interpret[StageMonad](implicitly, interpretIotaCopK[StageOp, StageMonad]).run(Environment(sparkSession))
     sparkSession.sql(s"show tables in $schema").show
   }
 }

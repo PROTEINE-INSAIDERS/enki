@@ -1,21 +1,24 @@
 package enki
 package spark
 
-import cats.data._
+import cats.mtl._
+import enki.spark.plan.PlanAnalyzer
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
 import scala.collection.JavaConversions._
 
-trait SparkHandler extends SparkAlg.Handler[EnkiMonad] {
+class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnalyzer: PlanAnalyzer) extends SparkAlg.Handler[M] {
   private[enki] def write[T](
+                              session: SparkSession,
                               schemaName: String,
                               tableName: String,
                               writerSettings: WriterSettings,
                               dataset: Dataset[T]
                             ): Unit = {
-    val session = dataset.sparkSession
     (session.catalog.tableExists(schemaName, tableName), writerSettings.partition) match {
       case (true, partition) if partition.nonEmpty =>
         dataset
@@ -38,26 +41,30 @@ trait SparkHandler extends SparkAlg.Handler[EnkiMonad] {
     }
   }
 
+  override protected[this] def arg(name: String): M[String] = env.reader { session =>
+    session.sessionState.conf.getConfString(name)
+  }
+
   override protected[this] def dataFrame(
                                           rows: Seq[Row],
                                           schema: StructType
-                                        ): Reader[Environment, DataFrame] = Reader { env =>
-    env.session.createDataFrame(rows, schema)
+                                        ): M[DataFrame] = env.reader { session =>
+    session.createDataFrame(rows, schema)
   }
 
 
   override protected[this] def dataset[T](
                                            data: Seq[T],
                                            encoder: Encoder[T]
-                                         ): Reader[Environment, Dataset[T]] = Reader { env =>
-    env.session.createDataset[T](data)(encoder)
+                                         ): M[Dataset[T]] = env.reader { session =>
+    session.createDataset[T](data)(encoder)
   }
 
   override protected[this] def readDataFrame(
                                               schemaName: String,
                                               tableName: String
-                                            ): Reader[Environment, DataFrame] = Reader { env =>
-    env.session.table(s"$schemaName.$tableName")
+                                            ): M[ReaderSettings => DataFrame] = env.reader { session =>
+    readerSettings => session.table(s"$schemaName.$tableName")
   }
 
   override protected[this] def readDataset[T](
@@ -65,21 +72,36 @@ trait SparkHandler extends SparkAlg.Handler[EnkiMonad] {
                                                tableName: String,
                                                encoder: Encoder[T],
                                                strict: Boolean
-                                             ): Reader[Environment, Dataset[T]] = Reader { env =>
-    val dataframe = env.session.table(s"$schemaName.$tableName")
-    val restricted = if (strict) {
-      dataframe.select(encoder.schema.map(f => dataframe(f.name)): _*)
-    } else {
-      dataframe
-    }
-    restricted.as[T](encoder)
+                                             ): M[ReaderSettings => Dataset[T]] = env.reader { session =>
+    readerSettings =>
+      val dataframe = session.table(s"$schemaName.$tableName")
+      val restricted = if (strict) {
+        dataframe.select(encoder.schema.map(f => dataframe(f.name)): _*)
+      } else {
+        dataframe
+      }
+      restricted.as[T](encoder)
+  }
+
+  override protected[this] def plan(logicalPlan: LogicalPlan): M[PlanTransformer => DataFrame] = env.reader { session =>
+    transformer =>
+      val qe = session.sessionState.executePlan(transformer(logicalPlan))
+      qe.assertAnalyzed()
+      new Dataset[Row](session, qe.logical, RowEncoder(qe.analyzed.schema))
+  }
+
+  override protected[this] def sql(sqlText: String): M[PlanTransformer => DataFrame] = env.reader { session =>  transformer =>
+    val logicalPlan = session.sessionState.sqlParser.parsePlan(sqlText)
+    val qe = session.sessionState.executePlan(transformer(logicalPlan))
+    qe.assertAnalyzed()
+    new Dataset[Row](session, qe.logical, RowEncoder(qe.analyzed.schema))
   }
 
   override protected[this] def writeDataFrame(
                                                schemaName: String,
                                                tableName: String
-                                             ): Reader[Environment, WriterSettings => DataFrame => Unit] = Reader { env =>
-    writerSettings => dataFrame => write[Row](schemaName, tableName, writerSettings, dataFrame)
+                                             ): M[WriterSettings => DataFrame => Unit] = env.reader { session =>
+    writerSettings => dataFrame => write[Row](session, schemaName, tableName, writerSettings, dataFrame)
   }
 
   override protected[this] def writeDataset[T](
@@ -87,17 +109,18 @@ trait SparkHandler extends SparkAlg.Handler[EnkiMonad] {
                                                 tableName: String,
                                                 encoder: Encoder[T],
                                                 strict: Boolean
-                                              ): Reader[Environment, WriterSettings => Dataset[T] => Unit] = Reader { env =>
+                                              ): M[WriterSettings => Dataset[T] => Unit] = env.reader { session =>
     writerSettings =>
       dataset =>
         if (strict) {
           write(
+            session,
             schemaName,
             tableName,
             writerSettings,
             dataset.select(encoder.schema.map(f => dataset(f.name)): _*).as[T](encoder))
         } else {
-          write(schemaName, tableName, writerSettings, dataset)
+          write(session, schemaName, tableName, writerSettings, dataset)
         }
   }
 }

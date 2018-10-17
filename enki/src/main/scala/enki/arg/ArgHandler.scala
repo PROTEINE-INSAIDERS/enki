@@ -1,11 +1,11 @@
 package enki
 package arg
 
-import cats.data._
+import cats.mtl._
 
 import scala.reflect.runtime.universe._
 
-class ArgHandler extends ArgAlg.Handler[EnkiMonad] {
+class ArgHandler[M[_]](implicit env: ApplicativeAsk[M, Parameters]) extends ArgAlg.Handler[M] {
 
   private def fromParameter[T: TypeTag](
                                          extractor: PartialFunction[ParameterValue, T],
@@ -17,52 +17,38 @@ class ArgHandler extends ArgAlg.Handler[EnkiMonad] {
     }
   }
 
-  private def fromParameter[T: TypeTag](parameterValue: ParameterValue): T = {
-    if (typeOf[T] == typeOf[Int]) {
-      fromParameter({ case IntegerValue(int) => int }, parameterValue).asInstanceOf[T]
-    } else if (typeOf[T] == typeOf[String]) {
-      fromParameter({ case StringValue(str) => str }, parameterValue).asInstanceOf[T]
-    } else if (typeOf[T] == typeOf[Boolean]) {
-      fromParameter({ case BooleanValue(bool) => bool }, parameterValue).asInstanceOf[T]
-    }
-    else {
-      throw new Exception(s"Argument type ${typeOf[T]} not supported.")
-    }
-  }
-
   private def fromParameterMap[T: TypeTag](
-                                            parameters: Map[String, ParameterValue],
                                             name: String,
-                                            defaultValue: Option[T]
-                                          ): T = {
-    (parameters.get(name), defaultValue) match {
-      case (Some(parameterValue), _) => fromParameter[T](parameterValue)
-      case (None, Some(value)) => value
-      case (None, None) => throw new Exception(s"Parameter `$name' not found.")
-    }
+                                            defaultValue: Option[T],
+                                            extractor: PartialFunction[ParameterValue, T]
+                                          ): M[T] = {
+    env.reader(p =>
+      (p.parameters.get(name), defaultValue) match {
+        case (Some(parameterValue), _) => fromParameter[T](extractor, parameterValue)
+        case (None, Some(value)) => value
+        case (None, None) => throw new Exception(s"Parameter `$name' not found.")
+      })
   }
 
   override protected[this] def bool(
                                      name: String,
                                      description: String,
-                                     defaultValue: Option[Boolean]): Reader[Environment, Boolean] = Reader { env =>
-    fromParameterMap[Boolean](env.parameters, name, defaultValue)
+                                     defaultValue: Option[Boolean]): M[Boolean] = {
+    fromParameterMap(name, defaultValue, { case BooleanValue(bool) => bool })
   }
 
   override protected[this] def int(
                                     name: String,
                                     description: String,
                                     defaultValue: Option[Int]
-                                  ): Reader[Environment, Int] = Reader { env =>
-    fromParameterMap[Int](env.parameters, name, defaultValue)
+                                  ): M[Int] = {
+    fromParameterMap(name, defaultValue, { case IntegerValue(int) => int })
   }
 
   override protected[this] def string(
                                        name: String,
                                        description: String,
-                                       defaultValue: Option[String]): Reader[Environment, String] = Reader { env =>
-    fromParameterMap[String](env.parameters, name, defaultValue)
+                                       defaultValue: Option[String]): M[String] = {
+    fromParameterMap(name, defaultValue, { case StringValue(str) => str })
   }
 }
-
-object ArgHandler extends ArgHandler

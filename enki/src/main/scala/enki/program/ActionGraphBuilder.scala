@@ -2,13 +2,15 @@ package enki
 package program
 
 import cats.implicits._
+import enki.actiontree._
 import freestyle.free.FreeS._
 import freestyle.free._
+import qq.droste.data.Fix
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
+import enki.internal._
 
 import scala.collection._
-
 
 trait ActionGraphBuilder {
   self: Enki with GraphModule =>
@@ -25,8 +27,10 @@ trait ActionGraphBuilder {
     val allStages = ((rootName, lastStage) :: stages).filter { case (_, stage) => stageNonEmpty(stage) } //TODO: стейджи, не содержащие write action попадают в граф, что, возможно, не верно.
     val createdIn = mutable.Map[String, String]()
 
+    val writesAnalyzer = new TableWrites[immutable.Set[WriteTableAction]](immutable.Set(_)).analyzer
+
     allStages.foreach { case (stageName, stage) =>
-      stageWrites(stage, immutable.Set(_)).foreach { w =>
+      stage.analyzeIn(writesAnalyzer).foreach { w =>
         val qualifiedName = s"${w.schemaName}.${w.tableName}"
         createdIn.get(qualifiedName) match {
           case None => createdIn += qualifiedName -> stageName
@@ -40,10 +44,12 @@ trait ActionGraphBuilder {
       }
     }
 
+    val readsAnalyzer = new TableReads[immutable.Set[ReadTableAction]](immutable.Set(_)).analyzer
+
     allStages
       .foldMap { case (name, stage) =>
         //TODO: разрешение зависимостей будет встроено в API графа.
-        val dependencies = stageReads(stage, immutable.Set(_)).flatMap { r => createdIn.get(s"${r.schemaName}.${r.tableName}") }
+        val dependencies = stage.analyzeIn(readsAnalyzer).flatMap { r => createdIn.get(s"${r.schemaName}.${r.tableName}") }
         if (dependencies.isEmpty)
           ActionGraph(name, stage)
         else {

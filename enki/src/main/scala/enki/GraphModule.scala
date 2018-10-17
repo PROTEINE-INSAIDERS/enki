@@ -1,16 +1,15 @@
 package enki
 
 import cats._
-import cats.data._
 import cats.implicits._
-import freestyle.free._
+import enki.internal._
 import org.apache.spark.sql._
 import scalax.collection.Graph
 import scalax.collection.GraphEdge._
-import enki.internal._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+import enki.internal._
 
 //TODO: Try cata to build dependency graph in form of annotations.
 
@@ -18,6 +17,9 @@ final case class ActionFailedException(action: String, cause: Throwable) extends
 
 trait GraphModule {
   self: Enki =>
+
+  implicit val stageApplicative: Applicative[StageMonad]
+  implicit val sparkInjection: SparkAlg.Op :<: StageOp
 
   //TODO: перенести в более подходящий модуль
   def createEmptySources(graph: ActionGraph, session: SparkSession): Unit = {
@@ -30,11 +32,13 @@ trait GraphModule {
     }
   }
 
-  //TODO: разные ReadTableAction для одной и той же таблицы могут различаться, т.к. могут использовать разные
-  // экземпляры энкодеров.
+  //TODO: разные ReadTableAction для одной и той же таблицы могут различаться, т.к. могут использовать разные экземпляры энкодеров.
   def sources: ActionGraph => Set[ReadTableAction] = graph => {
-    val readers = graph.analyze(action => stageReads(action, action => Set((action.toString, action))))
-    val writers = graph.analyze(action => stageWrites(action, action => Set(action.toString)))
+    val gn = GraphNode(graph)
+    val readsAnalyzer = new TableReads[Set[(String, ReadTableAction)]](a => Set((s"${a.schemaName}.${a.tableName}", a))).analyzer
+    val readers = gn.analyzeIn(readsAnalyzer)
+    val writesAnalyzer = new TableWrites[Set[String]](a => Set(s"${a.schemaName}.${a.tableName}")).analyzer
+    val writers = gn.analyzeIn(writesAnalyzer)
     readers.filter { case (name, _) => !writers.contains(name) }.map { case (_, action) => action }
   }
 
@@ -43,9 +47,15 @@ trait GraphModule {
 
     def analyzeIn[G[_], M: Monoid](f: G ~> λ[α => M])(implicit in: InjectK[G, StageOp]): M
 
-    def reads[M: Monoid](f: ReadTableAction => M): M = analyze(stageReads(_, f))
+    def reads[M: Monoid](f: ReadTableAction => M): M = {
+      val readsAnalyzer = new TableReads[M](f).analyzer
+      analyzeIn(readsAnalyzer)
+    }
 
-    def writes[M: Monoid](f: WriteTableAction => M): M = analyze(stageWrites(_, f))
+    def writes[M: Monoid](f: WriteTableAction => M): M = {
+      val writesAnalyzer = new TableWrites[M](f).analyzer
+      analyzeIn(writesAnalyzer)
+    }
 
     def mapStages(f: Stage ~> Stage): ActionNode
 
@@ -134,8 +144,8 @@ trait GraphModule {
         this (name) match {
           case GraphNode(g) => g.runAll(compiler, environment)
           case StageNode(a) =>
-            a.foldMap(compiler).run(environment)
-            ()
+            val action = a.foldMap(compiler)
+            run(action, environment)
         }
       } catch {
         case NonFatal(e) => throw ActionFailedException(name, e)
