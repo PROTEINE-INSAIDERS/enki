@@ -3,11 +3,13 @@ scalaVersion := "2.11.12"
 val sparkVersion = "2.2.0"
 val scalaTestVersion = "3.0.5"
 val catsVersion = "1.1.0"
+val catsEffectVersion = "1.0.0"
 val scalaGraphVersion = "1.12.5"
 val declineVersion = "0.4.2"
 val kindProjectorVersion = "0.9.6"
 val shapelessVersion = "2.3.3"
 val contextualVersion = "1.1.0"
+val freestyleVersion = "0.8.2"
 
 resolvers += Resolver.url("scoverage-bintray", url("https://dl.bintray.com/sksamuel/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
@@ -72,11 +74,11 @@ lazy val enki = (project in file("enki"))
       "com.chuusai" %% "shapeless" % shapelessVersion, // HLIST для генерации дефолтных данных (в enki.test)
       "com.propensive" %% "contextual" % contextualVersion, // интерполятор для enki.test
       "org.scalatest" %% "scalatest" % scalaTestVersion % Test, // тестирование
-      "io.frees" %% "frees-core" % "0.8.2",
+      "io.frees" %% "frees-core" % freestyleVersion,
       //  "io.frees" %% "frees-effects"            % "0.8.2",
       compilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full), // скаламета для фристайла
       compilerPlugin("org.spire-math" % "kind-projector" % kindProjectorVersion cross CrossVersion.binary), // красная лямбда
-      compilerPlugin("com.github.mpilquist" %% "local-implicits" % "0.3.0") // локальные имплициты
+      compilerPlugin("com.github.mpilquist" %% "local-implicits" % "0.3.0") // локальные имплициты (они не используются, можно удалить)
     )
   )
 
@@ -93,8 +95,25 @@ lazy val tutorial = (project in file("demos/tutorial")).dependsOn(enki)
     )
   )
 
+lazy val `enki-pm` = (project in file("enki-pm")).dependsOn(enki)
+  .settings(
+    scalaVersion := "2.11.12",
+    scalacOptions ++= commonScalacOptions,
+    publishArtifact := false,
+    libraryDependencies ++= Seq(
+      "org.apache.spark" %% "spark-core" % sparkVersion, // % Provided,
+      "org.apache.spark" %% "spark-sql" % sparkVersion, // % Provided,
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectVersion,
+      "com.monovore" %% "decline" % declineVersion,
+      "io.frees" %% "frees-core" % freestyleVersion,
+      compilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full), // required to expand freestyle's macros
+      compilerPlugin("org.spire-math" % "kind-projector" % "0.9.6" cross CrossVersion.binary)
+    )
+  )
+
 lazy val root = (project in file("."))
-  .aggregate(enki, tutorial)
+  .aggregate(enki, `enki-pm`, tutorial)
 
 licenses += ("BSD-3-Clause", url("http://opensource.org/licenses/BSD-3-Clause"))
 
