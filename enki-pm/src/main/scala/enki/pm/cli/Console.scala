@@ -1,18 +1,17 @@
 package enki.pm.cli
 
-import freestyle.tagless._
+import cats.effect.Bracket
 
-import scala.io.AnsiColor
+// системная консоль - ввод вывод + стили.
+trait Console[F[_]] {
+  def print(str: String): F[Unit]
 
-object Color extends Enumeration {
-  type Color = ColorValue
-  case class ColorValue(ansi: String) extends Val(nextId)
+  def printLn(str: String): F[Unit]
 
-  val CYAN = ColorValue(AnsiColor.CYAN)
-}
+  def readLine: F[String]
 
-@tagless(true) trait Console {
-  def print(str: String, color: Option[Color.Color] = None): FS[Unit]
-  def printLn(str: String, color: Option[Color.Color] = None): FS[Unit]
-  def readLine(): FS[String]
+  def setStyle(style: Style.Style): F[Unit]
+
+  def withStyle[B, E](style: Style.Style)(f: F[B])(implicit bracket: Bracket[F, E]): F[B] =
+    bracket.bracket(setStyle(style))(_ => f)(_ => setStyle(Style.RESET))
 }
