@@ -8,5 +8,7 @@ object Style extends Enumeration {
 
   val CYAN = StyleValue(AnsiColor.CYAN)
 
+  val MAGENTA = StyleValue(AnsiColor.MAGENTA)
+
   val RESET = StyleValue(AnsiColor.RESET)
 }

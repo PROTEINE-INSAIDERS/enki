@@ -19,16 +19,17 @@ object MainMain extends IOApp {
     implicit val console = new SystemConsole[PMM]()
     implicit val formatter = new DefaultFormatter[PMM, Throwable]()
     implicit val q = new PromptQuestions()
+    implicit val p = new PromptParsers()
     implicit val prompt = new BootstrapPrompt[PMM]()
+    /*
+        def test2[F[_]]= for {
+          a <- prompt.whereDoYouWantToGoToday
+        } yield a
 
-    def test2[F[_]]= for {
-      a <- prompt.whereDoYouWantToGoToday
-    } yield a
-
-    test2[PMM].as(ExitCode.Success)
-
- //   val project = Project.cliProject()
-
+        test2[PMM].as(ExitCode.Success)
+    */
+    val projectF = Project.cliProject[PMM]
+    Project.build(projectF).flatMap(f => console.printLn(f.toString) ).as(ExitCode.Success)
   }
 
   override def run(args: List[String]): IO[ExitCode] = {

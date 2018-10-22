@@ -9,7 +9,7 @@ class SparkHandlerTest extends EnkiTestSuite {
   "plan" should {
     "handle select statemen" in {
       val handler = new SparkHandler()
-      val plan = planAnalyzer.parsePlan("select 1 as a, '2' as b")
+      val plan = sparkSession.sessionState.sqlParser.parsePlan("select 1 as a, '2' as b")
       val res = handler(SparkAlg.PlanOp(plan))  (Environment(sparkSession))(identity _)
       res.collect() shouldBe Array(Row(1, "2"))
     }

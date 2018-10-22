@@ -14,12 +14,6 @@ import org.apache.spark.sql.internal._
 //TODO: нам в любом случае потребуется анализировать запросы, содержащие переменные, как вариант в процессе анализа
 // можно заменять переменные некоторыми специальными значениями.
 trait PlanAnalyzer {
-  def parser: AbstractSqlParser = new SparkSqlParser(new SQLConf())
-
-  def parsePlan(sqlText: String): LogicalPlan = {
-    parser.parsePlan(sqlText)
-  }
-
   def tableReads(plan: LogicalPlan ): Seq[TableIdentifier] = {
     plan.collect { case (a : UnresolvedRelation) => a.tableIdentifier  }
   }
