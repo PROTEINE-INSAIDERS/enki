@@ -137,6 +137,11 @@ trait GraphModule {
       }
     }
 
+    def resumeStages(action: String): Seq[ActionNode] = {
+      checkActionExists(action)
+      linearized.dropWhile(_ != action).map(actions(_))
+    }
+
     def runAction(name: String, compiler: StageHandler, environment: Environment): Unit = {
       try {
         //TODO: stack descriptions

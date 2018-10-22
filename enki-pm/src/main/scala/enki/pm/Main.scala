@@ -5,6 +5,7 @@ import cats.effect._
 import cats.implicits._
 import com.monovore.decline._
 import enki.pm.cli._
+import enki.pm.project.Project
 
 object MainMain extends IOApp {
   private val name = "enki-pm"
@@ -17,13 +18,17 @@ object MainMain extends IOApp {
 
     implicit val console = new SystemConsole[PMM]()
     implicit val formatter = new DefaultFormatter[PMM, Throwable]()
+    implicit val q = new PromptQuestions()
     implicit val prompt = new BootstrapPrompt[PMM]()
 
     def test2[F[_]]= for {
-      a <- prompt.ask(WhereDoYouWantToGoToday())
+      a <- prompt.whereDoYouWantToGoToday
     } yield a
 
     test2[PMM].as(ExitCode.Success)
+
+ //   val project = Project.cliProject()
+
   }
 
   override def run(args: List[String]): IO[ExitCode] = {

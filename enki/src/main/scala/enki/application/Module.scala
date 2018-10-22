@@ -17,9 +17,9 @@ trait Module {
   implicit val sparkInjection: SparkAlg.Op :<: StageOp
 
   trait EnkiMain {
-    protected def actionParams(node: ActionNode): Opts[Map[String, ParameterValue]] = {
-      val oldArgs = node.analyzeIn(ArgToOpts.analyzer).opts
-      val sparkArgs = node.analyzeIn(enki.spark.ArgToOpts.analyzer).opts
+    protected def actionParams(nodes: ActionNode*): Opts[Map[String, ParameterValue]] = {
+      val oldArgs = Monoid.combineAll(nodes.map(_.analyzeIn(ArgToOpts.analyzer))).opts
+      val sparkArgs = Monoid.combineAll(nodes.map(_.analyzeIn(enki.spark.ArgToOpts.analyzer))).opts
       // merge spark arguments with enki arguments.
       (oldArgs, sparkArgs)  mapN { (a, sa) => a ++ sa.filter{ p => !a.contains(p._1) }.mapValues(StringValue) }
     }
@@ -36,7 +36,7 @@ trait Module {
           (compiler: StageHandler) =>
             params.foreach { p => session.sessionState.conf.setConfString(p._1, p._2.toString) }
             actionGraph.resume(action, compiler, Environment(session, params))
-    } <*> actionParams(actionGraph(action))
+    } <*> actionParams(actionGraph.resumeStages(action):_*) //TODO: нужно собрать параметры из всех последующих нод.
 
     protected def run(action: String): Opts[SparkSession => StageHandler => Unit] = Opts {
       (params: Map[String, ParameterValue]) =>

@@ -1,15 +1,16 @@
 scalaVersion := "2.11.12"
 
-val sparkVersion = "2.2.0"
-val scalaTestVersion = "3.0.5"
+val attoVersion = "0.6.3"
 val catsVersion = "1.1.0"
 val catsEffectVersion = "1.0.0"
-val scalaGraphVersion = "1.12.5"
-val declineVersion = "0.4.2"
-val kindProjectorVersion = "0.9.6"
-val shapelessVersion = "2.3.3"
 val contextualVersion = "1.1.0"
+val declineVersion = "0.4.2"
 val freestyleVersion = "0.8.2"
+val kindProjectorVersion = "0.9.6"
+val scalaGraphVersion = "1.12.5"
+val scalaTestVersion = "3.0.5"
+val sparkVersion = "2.2.0"
+val shapelessVersion = "2.3.3"
 
 resolvers += Resolver.url("scoverage-bintray", url("https://dl.bintray.com/sksamuel/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
@@ -101,7 +102,8 @@ lazy val `enki-pm` = (project in file("enki-pm")).dependsOn(enki)
     scalacOptions ++= commonScalacOptions,
     publishArtifact := false,
     libraryDependencies ++= Seq(
-      "org.apache.spark" %% "spark-core" % sparkVersion, // % Provided,
+      "org.tpolecat" %% "atto-core"  % "0.6.3",
+      "org.apache.spark" %% "spark-core" % sparkVersion, // % Provided, // TODO: подумать, что можно сделать, чтобы не вкомпиливать спарк в сборку.
       "org.apache.spark" %% "spark-sql" % sparkVersion, // % Provided,
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
