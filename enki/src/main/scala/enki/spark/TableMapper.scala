@@ -20,16 +20,16 @@ case class TableMapper(f: TableIdentifier => TableIdentifier)
 
   override def apply[A](fa: Op[A]): Op[A] = fa match {
     case a: ReadDataFrameOp =>
-      val id = TableIdentifier(a.tableName, Some(a.schemaName))
+      val id = f(TableIdentifier(a.tableName, Some(a.schemaName)))
       a.copy(schemaName = id.database.getOrElse(""), tableName = id.table)
     case a: ReadDatasetOp[t] =>
-      val id = TableIdentifier(a.tableName, Some(a.schemaName))
+      val id = f(TableIdentifier(a.tableName, Some(a.schemaName)))
       a.copy(schemaName = id.database.getOrElse(""), tableName = id.table)
     case a: WriteDataFrameOp =>
-      val id = TableIdentifier(a.tableName, Some(a.schemaName))
+      val id = f(TableIdentifier(a.tableName, Some(a.schemaName)))
       a.copy(schemaName = id.database.getOrElse(""), tableName = id.table)
     case a: WriteDatasetOp[t] =>
-      val id = TableIdentifier(a.tableName, Some(a.schemaName))
+      val id = f(TableIdentifier(a.tableName, Some(a.schemaName)))
       a.copy(schemaName = id.database.getOrElse(""), tableName = id.table)
     case PlanOp(plan) => PlanOp(mapPlan(plan))
     case SqlOp(sql) => PlanOp(mapPlan(planAnalyzer.parsePlan(sql)))
