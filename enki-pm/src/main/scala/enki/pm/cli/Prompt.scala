@@ -1,7 +1,9 @@
 package enki.pm.cli
 
-import freestyle.tagless._
+trait Prompt[F[_]] {
+  def projectName: F[String]
 
-@tagless(true) trait Prompt {
-  def ask[A](question: Question[A]): FS[A]
+  def sqlRoot: F[String]
+
+  def whereDoYouWantToGoToday: F[String]
 }

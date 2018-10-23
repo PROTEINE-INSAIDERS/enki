@@ -16,6 +16,9 @@ trait Module {
   type ArgToOpts = enki.arg.ArgToOpts
   val ArgToOpts: enki.arg.ArgToOpts.type = enki.arg.ArgToOpts
 
+  type ArgOptsBuilder = enki.arg.ArgOptsBuilder
+  val ArgOptsBuilder: enki.arg.ArgOptsBuilder.type = enki.arg.ArgOptsBuilder
+
   type ArgHandler[M[_]] = enki.arg.ArgHandler[M]
 
   type ParameterValue = enki.arg.ParameterValue

@@ -4,10 +4,14 @@ import cats._
 import cats.data._
 import enki.spark.plan.PlanAnalyzer
 import freestyle.free._
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical._
+import org.apache.spark.sql.execution._
+import org.apache.spark.sql.internal._
 
 case class TableReads[M: Monoid](f: ReadTableAction => M)
                                 (implicit planAnalyzer: PlanAnalyzer) extends FSHandler[SparkAlg.Op, Const[M, ?]] {
+  private val parser = new SparkSqlParser(new SQLConf())
+
   private def planReads[A](plan: LogicalPlan): M = {
     Monoid.combineAll(
       planAnalyzer.tableReads(plan)
@@ -22,7 +26,7 @@ case class TableReads[M: Monoid](f: ReadTableAction => M)
     case SparkAlg.ReadDatasetOp(schemaName, tableName, encoder, strict) =>
       f(ReadDatasetAction(schemaName, tableName, encoder, strict))
 
-    case SparkAlg.SqlOp(sqlText) => planReads(planAnalyzer.parsePlan(sqlText))
+    case SparkAlg.SqlOp(sqlText) => planReads(parser.parsePlan(sqlText))
 
     case _ => Monoid.empty[M]
   })

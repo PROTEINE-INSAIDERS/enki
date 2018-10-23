@@ -3,10 +3,10 @@ package testsuite
 
 import java.nio.file.Files
 
-import enki.spark.plan.PlanAnalyzer
+import org.apache.spark.sql._
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
-
+import org.apache.spark.sql.internal._
 
 trait EnkiSuite extends Defaults with ImplicitConversions {
 
@@ -23,8 +23,8 @@ trait EnkiSuite extends Defaults with ImplicitConversions {
   protected implicit lazy val sparkSession: SparkSession = createSparkSession()
 
   def createEmptyTable(createStatement: String)(implicit session: SparkSession): Unit = {
-    val analyzer = new PlanAnalyzer {}
-    analyzer.parsePlan(createStatement) match {
+    val parser = new SparkSqlParser(new SQLConf())
+    parser.parsePlan(createStatement) match {
       case CreateTable(desc, _, _) =>
         desc.identifier.database.foreach(db => session.sql(s"create database if not exists $db"))
         sparkSession

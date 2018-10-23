@@ -27,7 +27,7 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnal
           .createTempView(s"tmp_$tableName")
         try {
           val partitionStr = partition.map(a => s"${a._1} = '${a._2}'").mkString(", ")
-          session.sql(s"insert ${if (writerSettings.overwrite) "overwrite" else ""} table $schemaName.$tableName partition($partitionStr) select * from tmp_$tableName")
+          session.sql(s"insert ${if (writerSettings.overwrite) "overwrite" else "into"} table $schemaName.$tableName partition($partitionStr) select * from tmp_$tableName")
           ()
         } finally {
           session.catalog.dropTempView(s"tmp_$tableName")

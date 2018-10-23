@@ -137,6 +137,11 @@ trait GraphModule {
       }
     }
 
+    def resumeStages(action: String): Seq[ActionNode] = {
+      checkActionExists(action)
+      linearized.dropWhile(_ != action).map(actions(_))
+    }
+
     def runAction(name: String, compiler: StageHandler, environment: Environment): Unit = {
       try {
         //TODO: stack descriptions
@@ -144,6 +149,16 @@ trait GraphModule {
         this (name) match {
           case GraphNode(g) => g.runAll(compiler, environment)
           case StageNode(a) =>
+            //TODO: need to set environment parameters before call to compilers because compilers mind use it.
+            //TODO: refactor it!
+            environment.parameters.foreach { p =>
+              environment.session.sessionState.conf.setConfString(p._1, p._2 match {
+                case StringValue(str) => str
+                case IntegerValue(int) => int.toString
+                case BooleanValue(b) => if (b) "1" else "0"
+              })
+            }
+
             val action = a.foldMap(compiler)
             run(action, environment)
         }
