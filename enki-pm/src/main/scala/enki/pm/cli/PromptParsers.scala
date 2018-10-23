@@ -9,5 +9,5 @@ class PromptParsers extends Prompt[Lambda[a => Const[Parser[a], a]]] {
 
   override def projectName: Const[Parser[String], String] = Const(takeText)
 
-  override def whereDoYouWantToGoToday: Const[Parser[String], String] = Const(string("Microsoft®"))
+  override def projectDir: Const[Parser[String], String] = Const(string("Microsoft®"))
 }

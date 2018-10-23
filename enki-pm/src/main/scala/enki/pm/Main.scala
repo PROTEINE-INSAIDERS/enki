@@ -17,10 +17,11 @@ object MainMain extends IOApp {
     type PMM[A] = IO[A]
 
     implicit val console = new SystemConsole[PMM]()
-    implicit val formatter = new DefaultFormatter[PMM, Throwable]()
+    implicit val formatter = new CliFormatter[PMM, Throwable]()
     implicit val q = new PromptQuestions()
     implicit val p = new PromptParsers()
     implicit val prompt = new BootstrapPrompt[PMM]()
+    implicit val logger = new CliLogger[PMM, Throwable]()
     /*
         def test2[F[_]]= for {
           a <- prompt.whereDoYouWantToGoToday

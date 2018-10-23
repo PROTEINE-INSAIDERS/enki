@@ -11,6 +11,7 @@ val scalaGraphVersion = "1.12.5"
 val scalaTestVersion = "3.0.5"
 val sparkVersion = "2.2.0"
 val shapelessVersion = "2.3.3"
+val log4catsVersion = "0.2.0-RC2"
 
 resolvers += Resolver.url("scoverage-bintray", url("https://dl.bintray.com/sksamuel/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
@@ -109,7 +110,9 @@ lazy val `enki-pm` = (project in file("enki-pm")).dependsOn(enki)
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
       "com.monovore" %% "decline" % declineVersion,
       "io.frees" %% "frees-core" % freestyleVersion,
-      compilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full), // required to expand freestyle's macros
+      "io.chrisdavenport" %% "log4cats-core" % log4catsVersion,
+      "io.chrisdavenport" %% "log4cats-slf4j"   % log4catsVersion, // temporary
+        compilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full), // required to expand freestyle's macros
       compilerPlugin("org.spire-math" % "kind-projector" % "0.9.6" cross CrossVersion.binary)
     )
   )
