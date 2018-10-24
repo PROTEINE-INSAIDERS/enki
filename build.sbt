@@ -12,6 +12,7 @@ val scalaTestVersion = "3.0.5"
 val sparkVersion = "2.2.0"
 val shapelessVersion = "2.3.3"
 val log4catsVersion = "0.2.0-RC2"
+val drosteVersion = "0.5.0"
 
 resolvers += Resolver.url("scoverage-bintray", url("https://dl.bintray.com/sksamuel/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
@@ -70,7 +71,7 @@ lazy val enki = (project in file("enki"))
       "org.typelevel" %% "cats-core" % catsVersion, // коты
       "org.typelevel" %% "cats-free" % catsVersion, // свободные монадки и апликативные функторы для Stage
       "org.typelevel" %% "cats-mtl-core" % "0.4.0", // ApplicativeAsk (а он нужен вообще?)
-      "io.higherkindness" %% "droste-core" % "0.5.0", // рекурсивные схемы
+      "io.higherkindness" %% "droste-core" % drosteVersion, // рекурсивные схемы
       "org.scala-graph" %% "graph-core" % scalaGraphVersion, // граф для представления зависимостей
       "com.monovore" %% "decline" % declineVersion, // парсер командной строки для EnkiApp
       "com.chuusai" %% "shapeless" % shapelessVersion, // HLIST для генерации дефолтных данных (в enki.test)
@@ -97,22 +98,20 @@ lazy val tutorial = (project in file("demos/tutorial")).dependsOn(enki)
     )
   )
 
-lazy val `enki-pm` = (project in file("enki-pm")).dependsOn(enki)
+lazy val `enki-pm` = (project in file("enki-pm"))
   .settings(
     scalaVersion := "2.11.12",
     scalacOptions ++= commonScalacOptions,
     publishArtifact := false,
     libraryDependencies ++= Seq(
-      "org.tpolecat" %% "atto-core"  % "0.6.3",
+      "org.tpolecat" %% "atto-core" % "0.6.3",
       "org.apache.spark" %% "spark-core" % sparkVersion, // % Provided, // TODO: подумать, что можно сделать, чтобы не вкомпиливать спарк в сборку.
       "org.apache.spark" %% "spark-sql" % sparkVersion, // % Provided,
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
       "com.monovore" %% "decline" % declineVersion,
-      "io.frees" %% "frees-core" % freestyleVersion,
+      "io.higherkindness" %% "droste-core" % drosteVersion,
       "io.chrisdavenport" %% "log4cats-core" % log4catsVersion,
-      "io.chrisdavenport" %% "log4cats-slf4j"   % log4catsVersion, // temporary
-        compilerPlugin("org.scalameta" % "paradise" % "3.0.0-M10" cross CrossVersion.full), // required to expand freestyle's macros
       compilerPlugin("org.spire-math" % "kind-projector" % "0.9.6" cross CrossVersion.binary)
     )
   )
