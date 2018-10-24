@@ -1,29 +1,31 @@
 package enki.pm.project
 
 import cats._
+import cats.effect._
 import cats.implicits._
 import enki.pm.cli._
+import enki.pm.fs.IODir
+import io.chrisdavenport.log4cats.Logger
 
+//TODO: Здесь не стоит использовать F-алгебру, дерево модулей строить с помощью monadic unfold (или Monadic anamorphism).
 case class Project[F[_]](
                           name: F[String],
-                          whereToGo: F[String], //Just for testing.
-                          sqlRoot: F[SqlModule]
+                          root: F[ModuleTree[F]]
                         )
 
-//TODO: собрать информацию об испльзуюемых sql модулях.
-
 object Project {
-  def cliProject[F[_]: Monad](implicit p: Prompt[F]): Project[F] = Project[F](
-    name = p.projectName,
-    whereToGo = p.whereDoYouWantToGoToday,
-    sqlRoot = p.sqlRoot >>= { sqlRoot =>
-      //TODO: нужен класс для чтения sql файлов + класс для доступа к файловой системе (собственно, класс для чтения
-      // sql файлов инкапсулирует класс для доступа к файловой системе).
-      ???
-    }
+  cats.free.Free
+
+  def cliProject[F[_] : Monad](implicit prompt: Prompt[F], io: LiftIO[F], logger: Logger[F]): Project[F] = Project[F](
+    name = prompt.projectName,
+    root = for {
+      projectDir <- prompt.projectDir
+      sqlRoot <- prompt.sqlRoot map { s => new IODir[F](new java.io.File(projectDir, s)) }
+    } yield ModuleTree.fromDir(sqlRoot)
   )
 
-  def build[F[_] : Applicative](project: Project[F]): F[Project[Id]] = {
-    (project.name, project.whereToGo, project.sqlRoot) mapN Project[Id]
-  }
+  def build[F[_] : Monad](project: Project[F]): F[Project[Id]] = for {
+    name <- project.name
+    root <- project.root >>= (_.build)
+  } yield Project[Id](name, root)
 }

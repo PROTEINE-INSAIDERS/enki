@@ -1,12 +1,12 @@
 package enki.spark.sql
 
 import enki._
-import org.apache.spark.sql.functions._
 import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
 
 import scala.language.experimental.macros
 
-trait Module extends OptionTypeMapping {
+trait Module extends OptionTypeMapping with DataTypeMappings {
 
   implicit class DatasetExtensions[T](val dataset: Dataset[T]) {
     def $[A, R](selector: T => A)

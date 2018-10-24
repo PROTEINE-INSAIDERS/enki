@@ -5,5 +5,5 @@ trait Prompt[F[_]] {
 
   def sqlRoot: F[String]
 
-  def whereDoYouWantToGoToday: F[String]
+  def projectDir: F[String]
 }
