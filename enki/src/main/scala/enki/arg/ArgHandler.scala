@@ -1,6 +1,8 @@
 package enki
 package arg
 
+import java.sql.Timestamp
+
 import cats.mtl._
 
 import scala.reflect.runtime.universe._
@@ -30,6 +32,10 @@ class ArgHandler[M[_]](implicit env: ApplicativeAsk[M, Parameters]) extends ArgA
       })
   }
 
+  override def bigint(name: String, description: String, defaultValue: Option[BigInt]): M[BigInt] = {
+    fromParameterMap(name, defaultValue, { case BigIntValue(bigInt) => bigInt })
+  }
+
   override protected[this] def bool(
                                      name: String,
                                      description: String,
@@ -50,5 +56,9 @@ class ArgHandler[M[_]](implicit env: ApplicativeAsk[M, Parameters]) extends ArgA
                                        description: String,
                                        defaultValue: Option[String]): M[String] = {
     fromParameterMap(name, defaultValue, { case StringValue(str) => str })
+  }
+
+  override def timestamp(name: String, description: String, defaultValue: Option[Timestamp]): M[Timestamp] = {
+    fromParameterMap(name, defaultValue, { case TimestampValue(timestamp) => timestamp })
   }
 }

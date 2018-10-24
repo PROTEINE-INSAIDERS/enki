@@ -1,6 +1,5 @@
 package enki.pm.project
 
-import cats.free.Free
 import cats._
 import cats.implicits._
 import enki.pm.fs._
@@ -17,7 +16,7 @@ trait Submodules[F[_]] extends ModuleTree[F] {
     _.toList.traverse(_.build).map { m =>
       new Submodules[Id] {
         override def modules: List[ModuleTree[Id]] = m
-      }.asInstanceOf[ModuleTree[Id]]
+      }: ModuleTree[Id]
     }
   }
 }

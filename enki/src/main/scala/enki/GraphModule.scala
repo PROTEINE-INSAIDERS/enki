@@ -25,9 +25,9 @@ trait GraphModule {
   def createEmptySources(graph: ActionGraph, session: SparkSession): Unit = {
     sources(graph).foreach {
       case action: ReadDatasetAction[t] =>
+        //TODO: добавить поддержку пустых схем.
         session.sql(s"create database if not exists ${action.schemaName}")
-        session.emptyDataset[t](action.encoder).write.mode(SaveMode.Ignore).saveAsTable(action.toString)
-
+        session.emptyDataset[t](action.encoder).write.mode(SaveMode.Ignore).saveAsTable(s"${action.schemaName}.${action.tableName}")
       case _ => throw new UnsupportedOperationException("Can not create empty table from DataFrame.")
     }
   }
@@ -153,9 +153,11 @@ trait GraphModule {
             //TODO: refactor it!
             environment.parameters.foreach { p =>
               environment.session.sessionState.conf.setConfString(p._1, p._2 match {
-                case StringValue(str) => str
-                case IntegerValue(int) => int.toString
+                case BigIntValue(b) => b.toString
                 case BooleanValue(b) => if (b) "1" else "0"
+                case IntegerValue(int) => int.toString
+                case StringValue(str) => str
+                case TimestampValue(t) => t.toString
               })
             }
 
@@ -166,6 +168,7 @@ trait GraphModule {
         case NonFatal(e) => throw ActionFailedException(name, e)
       } finally {
         environment.session.sparkContext.setJobDescription(null)
+
       }
     }
 

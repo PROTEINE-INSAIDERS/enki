@@ -7,7 +7,7 @@ import cats._
 import cats.data._
 import cats.implicits._
 
-class BootstrapPrompt[F[_] : Monad](
+class CliPrompt[F[_] : Monad](
                                      implicit questions: Prompt[Const[String, ?]],
                                      parsers: Prompt[Lambda[a => Const[Parser[a], a]]],
                                      formatter: Formatter[F],

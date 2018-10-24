@@ -20,7 +20,7 @@ object MainMain extends IOApp {
     implicit val formatter = new CliFormatter[PMM, Throwable]()
     implicit val q = new PromptQuestions()
     implicit val p = new PromptParsers()
-    implicit val prompt = new BootstrapPrompt[PMM]()
+    implicit val prompt = new CliPrompt[PMM]()
     implicit val logger = new CliLogger[PMM, Throwable]()
     /*
         def test2[F[_]]= for {

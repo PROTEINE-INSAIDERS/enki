@@ -1,11 +1,17 @@
 package enki.arg
 
+import java.sql.Timestamp
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 import cats._
 import cats.data._
 import cats.implicits._
 import com.monovore.decline._
-import enki._
 import freestyle.free._
+
+import scala.util.Try
+import scala.util.control.NonFatal
 
 trait ArgToOpts extends FSHandler[ArgAlg.Op, Const[ArgOptsBuilder, ?]] {
 
@@ -25,6 +31,8 @@ trait ArgToOpts extends FSHandler[ArgAlg.Op, Const[ArgOptsBuilder, ?]] {
   }
 
   override def apply[A](fa: ArgAlg.Op[A]): Const[ArgOptsBuilder, A] = fa match {
+    case op@ArgAlg.BigintOp(name, description, defaultValue) =>
+      option(name, op, description, defaultValue, BigIntValue)
     case op@ArgAlg.BoolOp(name, description, defaultValue) =>
       val res = defaultValue match {
         case None | Some(false) => Opts.flag(name, description).orFalse
@@ -43,6 +51,24 @@ trait ArgToOpts extends FSHandler[ArgAlg.Op, Const[ArgOptsBuilder, ?]] {
       option(name, op, description, defaultValue, IntegerValue)
     case op@ArgAlg.StringOp(name, description, defaultValue) =>
       option(name, op, description, defaultValue, StringValue)
+    case op@ArgAlg.TimestampOp(name, description, defaultValue) =>
+      val opt = Opts
+        .option[String](name, description, metavar = "timestamp")
+        .mapValidated { str =>
+          Try[ValidatedNel[String, Timestamp]] {
+            Validated.valid[NonEmptyList[String], Timestamp](
+              Timestamp.valueOf(
+                LocalDateTime.parse(
+                  str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))))
+          }.recover {
+            case NonFatal(e) => Validated.invalidNel(e.toString)
+          }.get
+        }
+      val res = defaultValue match {
+        case Some(value) => opt.withDefault(value)
+        case None => opt
+      }
+      Const(ArgOptsBuilder(name, op, res.map { a => (name, TimestampValue(a)) }))
   }
 }
 

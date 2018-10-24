@@ -7,6 +7,7 @@ import enki.pm.cli._
 import enki.pm.fs.IODir
 import io.chrisdavenport.log4cats.Logger
 
+//TODO: Здесь не стоит использовать F-алгебру, дерево модулей строить с помощью monadic unfold (или Monadic anamorphism).
 case class Project[F[_]](
                           name: F[String],
                           root: F[ModuleTree[F]]
