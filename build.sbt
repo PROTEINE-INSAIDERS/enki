@@ -113,7 +113,7 @@ lazy val `enki-pm` = (project in file("enki-pm"))
       "com.monovore" %% "decline" % declineVersion,
       "io.higherkindness" %% "droste-core" % drosteVersion,
       "io.chrisdavenport" %% "log4cats-core" % log4catsVersion,
-      libraryDependencies += "io.frees" %% "iota-core"  % "0.3.10",
+      "io.frees" %% "iota-core"  % iotaVersion,
       compilerPlugin("org.spire-math" % "kind-projector" % "0.9.6" cross CrossVersion.binary)
     )
   )

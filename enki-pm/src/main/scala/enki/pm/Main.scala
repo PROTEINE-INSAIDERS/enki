@@ -37,7 +37,6 @@ object MainMain extends IOApp {
     ???
   }
 
-
   def main(): Opts[IO[ExitCode]] = Opts {
     type PMM[A] = IO[A]
 
@@ -57,6 +56,12 @@ object MainMain extends IOApp {
     // функци проекции и инъекции.
 
     // во время развёртывания могут появиться "пустые" ветки, их надо будет убрать во время свёртывания.
+
+    // Развёртывание идёт двумя путями  pure и roll. pure генерирует модуль, roll - список наследуемых атрибутов.
+    // При свёртывании будут видны только модули, но не наследуемые атрибуты (возможно, это плохо).
+
+    // можно попробовать CoattrF[List, InheritedAttributes, ?], InheritedAttributes
+
 
     def coa = CoalgebraM[IO, CoattrF[List, Module, ?], InheritedAttributes] {
       case InheritedAttributes(file, parentModuleName) =>
@@ -83,6 +88,8 @@ object MainMain extends IOApp {
 
     ExitCode.Success.pure[IO]
   }
+
+
 
   override def run(args: List[String]): IO[ExitCode] = {
     val command: Command[IO[ExitCode]] = {
