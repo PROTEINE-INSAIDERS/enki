@@ -5,6 +5,7 @@ import java.nio.file.Path
 import cats._
 import cats.implicits._
 import enki.pm.fs._
+import qq.droste
 import qq.droste._
 import qq.droste.data._
 
@@ -35,7 +36,33 @@ object SimpleTreeF {
   }
 }
 
+sealed trait FixedTree
+case class FixedTreeLeaf(data: String) extends FixedTree
+case class FixedTreeNode(l: FixedTree, r: FixedTree) extends FixedTree
+
+object FixedTree {
+  implicit val treeBasis = Basis.Default(
+    Algebra[SimpleTreeF, FixedTree] {
+      case TreeLeaf(name) => FixedTreeLeaf(name)
+      case TreeNode(l, r) => FixedTreeNode(l, r)
+    },
+    Coalgebra[SimpleTreeF, FixedTree] {
+      case FixedTreeLeaf(name) => TreeLeaf(name)
+      case FixedTreeNode(l, r) => TreeNode(l, r)
+    }
+  )
+}
+
 object DrosteTest {
+  def testCata(): Unit = {
+    import FixedTree._
+
+    val a = Algebra[SimpleTreeF, String] {
+      case TreeLeaf(name) => name
+      case TreeNode(l, r) => l + " " + r
+    }
+    scheme.cata[SimpleTreeF, FixedTree, String](a).apply(FixedTreeNode(FixedTreeLeaf("a"), FixedTreeLeaf("b")))
+  }
 
   def testAnaCata(): Unit = {
     val coAlg = Coalgebra[SimpleTreeF, Int] {
@@ -57,7 +84,7 @@ object DrosteTest {
       case 0 => TreeLeaf("stop")
       case i => TreeNode(Right(i - 1), Left(Fix[SimpleTreeF](TreeLeaf("earlyTerm"))))
     }
-    val a = scheme.zoo.apo(coAlg).apply(2)
+    val a: Fix[SimpleTreeF] = scheme.zoo.apo(coAlg).apply(2)
     println(a)
     val alg = RAlgebra[Fix[SimpleTreeF], SimpleTreeF, String] {
       case TreeLeaf(str) => str
