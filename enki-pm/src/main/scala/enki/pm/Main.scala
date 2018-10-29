@@ -1,23 +1,88 @@
 package enki.pm
 
 import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Path, Paths}
 
+import cats._
 import cats.effect._
 import cats.implicits._
 import com.monovore.decline._
-import enki.pm.cli._
+import enki.pm.fs.NioFileSystem
+import enki.pm.project._
 import qq.droste._
 import qq.droste.data._
 import qq.droste.data.prelude._
-import org.apache.commons.io.FilenameUtils
-
-case class Module(qualifiedName: String)
 
 case class InheritedAttributes(
                                 file: File,
                                 parentModuleName: Option[String]
                               )
+
+object O {
+
+  /**
+    * Package module to be deployed.
+    */
+  case class DerivedAttributes(
+                                qualifiedName: String
+                              )
+
+  /**
+    * Module tree abstracted over fixpoint type A.
+    *
+    * Module tree is a Rose Tree with modules in leaf nodes where each node associated with derived attributes.
+    */
+  type ModuleTreeF[A] = AttrF[RoseTree[Module, ?], DerivedAttributes, A]
+
+  /**
+    * Carrier type of module coalgebra (product of optional derived attributes and underlying coalgebra carrier A).
+    */
+  type ModuleCoalgebraCarrier[A] = (A, Option[DerivedAttributes])
+
+  /**
+    * Module coalgebra.
+    *
+    * CoalgebraM on ModuleTreeF with ModuleCoalgebraCarrier abstracted over functor F monad and carrier type A.
+    */
+  type ModuleCoalgebra[F[_], A] = CoalgebraM[F, ModuleTreeF, ModuleCoalgebraCarrier[A]]
+
+  /**
+    * Annotate module coalgebra with inherited attributes.
+    *
+    * @param moduleName Extract module name from carrier
+    * @tparam F Functor type
+    * @tparam A Module coalgebra carrier type.
+    * @return Module coalgebra.
+    */
+  def inheritAttributes[F[_] : Applicative, A](
+                                                underlyingCoalgebra: Module.Coalgebra[F, A],
+                                                moduleName: A => String
+                                              ): ModuleCoalgebra[F, A] = CoalgebraM[F, ModuleTreeF, ModuleCoalgebraCarrier[A]] {
+    a: ModuleCoalgebraCarrier[A] =>
+      val carrier = a._1
+      val derivedAttributes = a._2
+
+      def getQualifiedName(moduleName: String, parentModuleNameOpt: Option[String]): String = parentModuleNameOpt match {
+        case Some(parentModuleName) => s"$parentModuleName.$moduleName"
+        case None => moduleName
+      }
+
+      val attributes = DerivedAttributes(
+        qualifiedName = getQualifiedName(moduleName(carrier), derivedAttributes.map(_.qualifiedName))
+      )
+
+      underlyingCoalgebra.run(carrier).map {
+        case Left(module: Module) =>
+          AttrF[CoattrF[List, Module, ?], DerivedAttributes, ModuleCoalgebraCarrier[A]](
+            attributes,
+            CoattrF.pure[List, Module, ModuleCoalgebraCarrier[A]](module))
+        case Right(xs: List[A]) =>
+          AttrF[CoattrF[List, Module, ?], DerivedAttributes, ModuleCoalgebraCarrier[A]](
+            attributes,
+            CoattrF.roll[List, Module, ModuleCoalgebraCarrier[A]](xs.map(c => (c, Some(attributes)))))
+      }
+  }
+}
 
 object MainMain extends IOApp {
   private val name = "enki-pm"
@@ -25,19 +90,23 @@ object MainMain extends IOApp {
   private val version = ""
   private val helpFlag = true
 
-  def mkQualifiedName(file: File, parentModuleName: Option[String]) = {
-    val name = FilenameUtils.removeExtension(file.getName)
-    parentModuleName match {
-      case Some(p) => s"$p.$name"
-      case None => name
-    }
-  }
-
-  def moduleFromFile[F[_]](file: File): F[Option[Module]] = {
-    ???
-  }
-
   def main(): Opts[IO[ExitCode]] = Opts {
+    implicit val fileSystem = NioFileSystem[IO]()
+
+    val co = O.inheritAttributes[IO, Path](
+      Module.fromFilesystem[IO],
+      Module.moduleNameFromPath)
+
+    val path = Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")
+    val res = scheme.anaM(co).apply((path, None)).unsafeRunSync()
+    println("=================================")
+    println(res)
+
+
+    //   val co = new ModuleCoalgebra[IO, Path]()
+    //
+    //  val ana = scheme.anaM(co.coalgebra).apply((path, None))
+    /*
     type PMM[A] = IO[A]
 
     implicit val console = new SystemConsole[PMM]()
@@ -85,10 +154,9 @@ object MainMain extends IOApp {
     )).unsafeRunSync()
 
     println(test1)
-
+*/
     ExitCode.Success.pure[IO]
   }
-
 
 
   override def run(args: List[String]): IO[ExitCode] = {

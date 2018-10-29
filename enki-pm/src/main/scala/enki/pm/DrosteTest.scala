@@ -9,18 +9,6 @@ import qq.droste
 import qq.droste._
 import qq.droste.data._
 
-object COA {
-  // возможно тут можно испльзовать апоморфизм, чтобы возращать fix или следующий уровень.
-  def files[M[_] : Monad](implicit fileSystem: FileSystem[M]): CoalgebraM[M, CoattrF[List, Path, ?], Path] =
-    CoalgebraM[M, CoattrF[List, Path, ?], Path] { path =>
-      (fileSystem.isRegularFile(path), fileSystem.isDirectory(path)).tupled >>= {
-        case (true, _) => CoattrF.pure[List, Path, Path](path).pure[M]
-        case (_, true) => fileSystem.list(path) map CoattrF.roll[List, Path, Path]
-        case _ => CoattrF.roll[List, Path, Path](List.empty).pure[M]
-      }
-    }
-}
-
 sealed trait SimpleTreeF[A]
 
 case class TreeLeaf[A](data: String) extends SimpleTreeF[A]

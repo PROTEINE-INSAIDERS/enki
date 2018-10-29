@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 /**
   * Java NIO - based file system implementation.
   */
-class NioFileSystem[F[_]](implicit liftIO: LiftIO[F]) extends FileSystem[F] {
+case class NioFileSystem[F[_]](implicit liftIO: LiftIO[F]) extends FileSystem[F] {
   private def io[A](body: => A): F[A] = liftIO.liftIO(IO(body))
 
   override def isDirectory(path: Path, options: LinkOption*): F[Boolean] = io {
