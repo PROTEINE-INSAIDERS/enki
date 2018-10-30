@@ -114,6 +114,7 @@ lazy val `enki-pm` = (project in file("enki-pm"))
       "io.higherkindness" %% "droste-core" % drosteVersion,
       "io.chrisdavenport" %% "log4cats-core" % log4catsVersion,
       "io.frees" %% "iota-core"  % iotaVersion,
+      "org.scala-graph" %% "graph-core" % scalaGraphVersion,
       compilerPlugin("org.spire-math" % "kind-projector" % "0.9.6" cross CrossVersion.binary)
     )
   )

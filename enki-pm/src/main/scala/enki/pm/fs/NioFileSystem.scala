@@ -1,8 +1,10 @@
 package enki.pm.fs
 
-import java.nio.file.{LinkOption, Path, _}
+import java.nio.charset._
+import java.nio.file._
 
 import cats.effect._
+
 import scala.collection.JavaConverters._
 
 /**
@@ -15,11 +17,15 @@ case class NioFileSystem[F[_]](implicit liftIO: LiftIO[F]) extends FileSystem[F]
     Files.isDirectory(path, options: _*)
   }
 
+  override def isRegularFile(path: Path, options: LinkOption*): F[Boolean] = io {
+    Files.isRegularFile(path, options: _*)
+  }
+
   override def list(path: Path): F[List[Path]] = io {
     Files.list(path).iterator().asScala.toList
   }
 
-  override def isRegularFile(path: Path, options: LinkOption*): F[Boolean] = io {
-    Files.isRegularFile(path, options: _*)
+  override def readAllText(path: Path, charset: Charset): F[String] = io {
+    new String(Files.readAllBytes(path), charset)
   }
 }

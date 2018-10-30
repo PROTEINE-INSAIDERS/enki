@@ -1,6 +1,7 @@
 package enki.pm.fs
 
-import java.nio.file.{LinkOption, Path}
+import java.nio.charset._
+import java.nio.file._
 
 /**
   * File system algebra.
@@ -8,7 +9,9 @@ import java.nio.file.{LinkOption, Path}
 trait FileSystem[F[_]] {
   def isDirectory(path: Path, options: LinkOption*): F[Boolean]
 
+  def isRegularFile(path: Path, options: LinkOption*): F[Boolean]
+
   def list(path: Path): F[List[Path]]
 
-  def isRegularFile(path: Path, options: LinkOption*): F[Boolean]
+  def readAllText(path: Path, charset: Charset): F[String]
 }
