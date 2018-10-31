@@ -1,6 +1,6 @@
-package enki.pm
-package project
+package enki.pm.project
 
+import enki.pm.internal._
 import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 

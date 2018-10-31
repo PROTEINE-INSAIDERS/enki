@@ -33,9 +33,12 @@ object Main extends IOApp {
       Module.moduleNameFromPath)
 
     val path = Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")
-    val res = scheme.anaM(co).apply((path, None)).unsafeRunSync()
+    val tree = scheme.anaM(co).apply((path, None)).unsafeRunSync()
+  //  val attr = scheme.cataM(SynthesizedAttributes.algebra[IO]).apply(tree).unsafeRunSync()
 
+  //  println(attr)
 
+/*
     val moduleReads = Algebra[AbstractModuleTreeF[LogicalPlan, ?], List[String]] {
       case (a: InheritedAttributes, Left(b: Module)) =>
         println(b)
@@ -52,7 +55,7 @@ object Main extends IOApp {
           // case (a: InheritedAttributes, Right(b: List[A])) => ???
         }
       }
-
+*/
     // val reads = scheme.hyloM(moduleReads.lift[IO], co).apply((path, None)).unsafeRunSync()
 
     // println(reads )

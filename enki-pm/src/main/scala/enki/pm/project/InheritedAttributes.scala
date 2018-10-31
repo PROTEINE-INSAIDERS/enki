@@ -1,6 +1,6 @@
-package enki.pm
-package project
+package enki.pm.project
 
+import enki.pm.internal._
 import cats._
 import cats.implicits._
 import qq.droste._
@@ -11,14 +11,12 @@ case class InheritedAttributes(
                               )
 
 object InheritedAttributes {
-  type AbstractModuleTreeF[Module, A] = AttrRoseTreeF[Module, InheritedAttributes, A]
-
   /**
     * Module tree abstracted over fixpoint type A.
     *
     * Module tree is a Rose Tree with modules in leaf nodes where each node associated with derived attributes.
     */
-  type ModuleTreeF[A] = AbstractModuleTreeF[Module, A]
+  type ModuleTreeF[A] = AttrRoseTreeF[InheritedAttributes, Module, A]
 
   /**
     * Carrier type of module coalgebra (product of optional derived attributes and underlying coalgebra carrier A).
