@@ -1,6 +1,9 @@
 package enki.pm
 
 import cats._
+import cats.data.NonEmptyChain
+import cats.implicits._
+import enki.pm.internal.Validated._
 import qq.droste.data._
 
 package object internal {
@@ -15,20 +18,24 @@ package object internal {
   /**
     * Rose tree with attribute attached to each node.
     *
-    * @tparam Leaf leaf type
-    * @tparam Attr attribute type
-    * @tparam A    fixpoint type
+    * @tparam A attribute type
+    * @tparam B leaf type
+    * @tparam C fixpoint type
     */
-  type AttrRoseTreeF[Attr, Leaf, A] = AttrF[RoseTreeF[Leaf, ?], Attr, A]
+  type AttrRoseTreeF[A, B, C] = AttrF[RoseTreeF[B, ?], A, C]
+
+  type ValidationError = String
+
+  type ValidationErrorContainer[A] = NonEmptyChain[A]
 
   /**
     * Unified Validated type for enki package manager.
     *
     * @tparam A Validated value.
     */
-  type Validated[A] = cats.data.ValidatedNel[String, A]
+  type Validated[A] = cats.data.Validated[ValidationErrorContainer[ValidationError], A]
 
-  def all = new Monoid[Boolean] {
+  def all: Monoid[Boolean] = new Monoid[Boolean] {
     override def empty: Boolean = true
 
     override def combine(x: Boolean, y: Boolean): Boolean = x && y

@@ -2,7 +2,7 @@ package enki.pm.cli
 
 import cats.effect.Bracket
 
-// системная консоль - ввод вывод + стили.
+//TODO: use console4cats
 trait Console[F[_]] {
   def print(str: String): F[Unit]
 

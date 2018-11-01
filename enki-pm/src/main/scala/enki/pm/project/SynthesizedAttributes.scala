@@ -6,7 +6,7 @@ import cats.implicits._
 import org.apache.spark.sql.catalyst._
 import qq.droste._
 import qq.droste.data._
-
+/*
 case class SynthesizedAttributes2[F[_]](
                                          isEmpty: F[Boolean],
                                          reads: F[Set[TableIdentifier]]
@@ -27,9 +27,14 @@ class SynthesizedAttributesAlg[F[_] : Applicative] {
   protected def isEmpty(attr: InheritedAttributes, module: Module): F[Boolean] = false.pure[F]
 
   def alg: Algebra[ModuleTreeF, SynthesizedAttributes2[F]] = Algebra[ModuleTreeF, SynthesizedAttributes2[F]] {
-    case AttrF(attr, RoseTreeF.Left(module: Module)) =>
-      val a = isEmpty(attr, module)
-      ???
+    case AttrRoseTreeF(attr, tree) => tree match {
+      case RoseTreeF.Left(module: Module) =>
+        val a = isEmpty(attr, module)
+        ???
+      case RoseTreeF.Right(submodules) =>
+        val a = isEmpty(attr, submodules)
+        ???
+    }
 
       /*
       val unded = CoattrF.un[List, Module, SynthesizedAttributes2[F]](lower)
@@ -57,3 +62,4 @@ class SynthesizedAttributesAlg[F[_] : Applicative] {
       submodules.map(_.isEmpty).combineAll
     }
 }
+*/

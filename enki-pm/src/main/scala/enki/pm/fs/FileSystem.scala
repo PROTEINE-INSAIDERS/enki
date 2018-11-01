@@ -15,3 +15,7 @@ trait FileSystem[F[_]] {
 
   def readAllText(path: Path, charset: Charset): F[String]
 }
+
+object FileSystem {
+  def apply[F[_]](implicit ev: FileSystem[F]): FileSystem[F] = ev
+}

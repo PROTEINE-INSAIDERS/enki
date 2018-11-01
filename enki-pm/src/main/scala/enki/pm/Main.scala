@@ -1,16 +1,14 @@
 package enki.pm
 
 
-import java.nio.file._
+import java.nio.file.Paths
 
 import cats._
 import cats.effect._
 import cats.implicits._
 import com.monovore.decline._
 import enki.pm.fs.NioFileSystem
-import enki.pm.project.InheritedAttributes._
 import enki.pm.project._
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import qq.droste._
 import qq.droste.data._
 import qq.droste.data.prelude._
@@ -26,36 +24,46 @@ object Main extends IOApp {
   }
 
   def main(): Opts[IO[ExitCode]] = Opts {
+
     implicit val fileSystem = NioFileSystem[IO]()
 
-    val co = inheritAttributes[IO, Path](
-      Module.fromFilesystem[IO],
-      Module.moduleNameFromPath)
+    val fromFiles = new FileSystemModuleTreeBuilder[IO, Throwable]
 
     val path = Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")
-    val tree = scheme.anaM(co).apply((path, None)).unsafeRunSync()
-  //  val attr = scheme.cataM(SynthesizedAttributes.algebra[IO]).apply(tree).unsafeRunSync()
 
-  //  println(attr)
+    val moduleTree = scheme.anaM(fromFiles.coalgebra).apply(path).unsafeRunSync()
 
-/*
-    val moduleReads = Algebra[AbstractModuleTreeF[LogicalPlan, ?], List[String]] {
-      case (a: InheritedAttributes, Left(b: Module)) =>
-        println(b)
-        List.empty[String]
-      case (a: InheritedAttributes, Right(b: List[String])) =>
-        println(b)
-        List.empty[String]
-    }
+    // 1. выкинуть не валидные модули.
+    // 2. выкинуть пустые модули.
 
-    val compilePlan: AbstractModuleTreeF[Module, ?] ~> AbstractModuleTreeF[LogicalPlan, ?] =
-      new (AbstractModuleTreeF[Module, ?] ~> AbstractModuleTreeF[LogicalPlan, ?]) {
-        override def apply[A](fa: AbstractModuleTreeF[Module, A]): AbstractModuleTreeF[LogicalPlan, A] = fa match {
-          case (a: InheritedAttributes, Left(b: Module)) => AttrF.apply[RoseTreeF[LogicalPlan, ?], InheritedAttributes, A](???, ???)
-          // case (a: InheritedAttributes, Right(b: List[A])) => ???
+    //  val co = inheritAttributes[IO, Path](
+    //     ???, ///Module.fromFilesystem[IO],
+    //   Module.moduleNameFromPath)
+
+    //
+    //   val tree = scheme.anaM(co).apply((path, None)).unsafeRunSync()
+    //  val attr = scheme.cataM(SynthesizedAttributes.algebra[IO]).apply(tree).unsafeRunSync()
+
+    //  println(attr)
+
+    /*
+        val moduleReads = Algebra[AbstractModuleTreeF[LogicalPlan, ?], List[String]] {
+          case (a: InheritedAttributes, Left(b: Module)) =>
+            println(b)
+            List.empty[String]
+          case (a: InheritedAttributes, Right(b: List[String])) =>
+            println(b)
+            List.empty[String]
         }
-      }
-*/
+
+        val compilePlan: AbstractModuleTreeF[Module, ?] ~> AbstractModuleTreeF[LogicalPlan, ?] =
+          new (AbstractModuleTreeF[Module, ?] ~> AbstractModuleTreeF[LogicalPlan, ?]) {
+            override def apply[A](fa: AbstractModuleTreeF[Module, A]): AbstractModuleTreeF[LogicalPlan, A] = fa match {
+              case (a: InheritedAttributes, Left(b: Module)) => AttrF.apply[RoseTreeF[LogicalPlan, ?], InheritedAttributes, A](???, ???)
+              // case (a: InheritedAttributes, Right(b: List[A])) => ???
+            }
+          }
+    */
     // val reads = scheme.hyloM(moduleReads.lift[IO], co).apply((path, None)).unsafeRunSync()
 
     // println(reads )
