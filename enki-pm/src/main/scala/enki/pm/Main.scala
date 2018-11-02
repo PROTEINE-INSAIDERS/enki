@@ -1,7 +1,7 @@
 package enki.pm
 
 
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 import cats._
 import cats.effect._
@@ -9,6 +9,7 @@ import cats.implicits._
 import com.monovore.decline._
 import enki.pm.fs.NioFileSystem
 import enki.pm.project._
+import org.apache.commons.io.FilenameUtils
 import qq.droste._
 import qq.droste.data._
 import qq.droste.data.prelude._
@@ -32,6 +33,17 @@ object Main extends IOApp {
     val path = Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")
 
     val moduleTree = scheme.anaM(fromFiles.coalgebra).apply(path).unsafeRunSync()
+
+    println("Module tree =================================")
+    println(moduleTree)
+
+    val qGen = QualifiedNameGenerator(fromFiles.coalgebra, (path: Path) => FilenameUtils.removeExtension(path.getFileName.toString))
+
+    val moduleTreeWithQNames = scheme.anaM(qGen.coalgebra).apply((None, path)).unsafeRunSync()
+
+    println("Module tree with q-names =================================")
+    println(moduleTreeWithQNames)
+
 
     // 1. выкинуть не валидные модули.
     // 2. выкинуть пустые модули.
@@ -74,11 +86,6 @@ object Main extends IOApp {
     // )
     //TODO: сделать плоский граф зависимостей.
     //
-    val test = Algebra
-
-    println("=================================")
-    //println(res)
-
 
     ExitCode.Success.pure[IO]
   }

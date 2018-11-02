@@ -37,7 +37,9 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnal
         writerSettings.configure(dataset.write) //TODO: filter records by partition.
           .partitionBy(partition.map(_._1): _*)
           .saveAsTable(s"$schemaName.$tableName")
-      case _ => writerSettings.configure(dataset.write).saveAsTable(s"$schemaName.$tableName")
+      case _ =>
+        val writer = writerSettings.configure(dataset.write)
+        writer.saveAsTable(s"$schemaName.$tableName")
     }
   }
 
