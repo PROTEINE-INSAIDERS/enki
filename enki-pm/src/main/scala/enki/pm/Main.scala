@@ -8,6 +8,7 @@ import cats.effect._
 import cats.implicits._
 import com.monovore.decline._
 import enki.pm.fs.NioFileSystem
+import enki.pm.internal._
 import enki.pm.project._
 import org.apache.commons.io.FilenameUtils
 import qq.droste._
@@ -32,60 +33,37 @@ object Main extends IOApp {
 
     val path = Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")
 
-    val moduleTree = scheme.anaM(fromFiles.coalgebra).apply(path).unsafeRunSync()
+    val qGen = ModuleTreeBuilder.withQualifiedNames(
+      fromFiles.coalgebra,
+      (path: Path) => FilenameUtils.removeExtension(path.getFileName.toString)
+    )
+    val moduleTreeWithQNames: AttrRoseTree[String, Validated[Module]] = scheme.anaM(qGen).apply((path, "root")).unsafeRunSync()
 
-    println("Module tree =================================")
-    println(moduleTree)
+  //  println("==== attr")
+  //  println(Annotating.attr(moduleTreeWithQNames))
 
-    val qGen = QualifiedNameGenerator(fromFiles.coalgebra, (path: Path) => FilenameUtils.removeExtension(path.getFileName.toString))
+  //  println("==== strip")
+  //  println(Annotating.strip(moduleTreeWithQNames))
 
-    val moduleTreeWithQNames = scheme.anaM(qGen.coalgebra).apply((None, path)).unsafeRunSync()
+    println("==== strip all")
+    // a: Coattr[List, Validated[Module]]  - но это не выводится.
+    val a = Annotating.stripAll[CoattrF[List, Validated[Module], ?], String](moduleTreeWithQNames)
+    println(a.getClass)
+    println(a.isInstanceOf[CoattrF[List, Validated[Module], Fix[CoattrF[List, Validated[Module], ?]]]])
 
-    println("Module tree with q-names =================================")
-    println(moduleTreeWithQNames)
+    println("=== syntethise")
+    val ttt = Annotating.synthesize[CoattrF[List, Validated[Module], ?], Int](
+      { a => // a: CoattrF[List, Validated[Module], Int]
+        println(a)
+        0 },
+      a
+    )
 
+    //  val test = scheme.cata(ModuleTreeBuilder.test).apply(moduleTreeWithQNames)
 
-    // 1. выкинуть не валидные модули.
-    // 2. выкинуть пустые модули.
+  //  println("Test =================================")
+  //  println(test)
 
-    //  val co = inheritAttributes[IO, Path](
-    //     ???, ///Module.fromFilesystem[IO],
-    //   Module.moduleNameFromPath)
-
-    //
-    //   val tree = scheme.anaM(co).apply((path, None)).unsafeRunSync()
-    //  val attr = scheme.cataM(SynthesizedAttributes.algebra[IO]).apply(tree).unsafeRunSync()
-
-    //  println(attr)
-
-    /*
-        val moduleReads = Algebra[AbstractModuleTreeF[LogicalPlan, ?], List[String]] {
-          case (a: InheritedAttributes, Left(b: Module)) =>
-            println(b)
-            List.empty[String]
-          case (a: InheritedAttributes, Right(b: List[String])) =>
-            println(b)
-            List.empty[String]
-        }
-
-        val compilePlan: AbstractModuleTreeF[Module, ?] ~> AbstractModuleTreeF[LogicalPlan, ?] =
-          new (AbstractModuleTreeF[Module, ?] ~> AbstractModuleTreeF[LogicalPlan, ?]) {
-            override def apply[A](fa: AbstractModuleTreeF[Module, A]): AbstractModuleTreeF[LogicalPlan, A] = fa match {
-              case (a: InheritedAttributes, Left(b: Module)) => AttrF.apply[RoseTreeF[LogicalPlan, ?], InheritedAttributes, A](???, ???)
-              // case (a: InheritedAttributes, Right(b: List[A])) => ???
-            }
-          }
-    */
-    // val reads = scheme.hyloM(moduleReads.lift[IO], co).apply((path, None)).unsafeRunSync()
-
-    // println(reads )
-
-    // val kk = scheme.ghyloM(
-    //   moduleAlg.gather(Gather.cata),
-    //   co.scatter(Scatter.ana)
-    // )
-    //TODO: сделать плоский граф зависимостей.
-    //
 
     ExitCode.Success.pure[IO]
   }

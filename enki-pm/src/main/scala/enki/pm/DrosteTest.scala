@@ -15,6 +15,8 @@ case class TreeLeaf[A](data: String) extends SimpleTreeF[A]
 
 case class TreeNode[A](l: A, r: A) extends SimpleTreeF[A]
 
+
+
 object SimpleTreeF {
   implicit val simpleTreeFunctor: Functor[SimpleTreeF] = new Functor[SimpleTreeF] {
     override def map[A, B](fa: SimpleTreeF[A])(f: A => B): SimpleTreeF[B] = fa match {

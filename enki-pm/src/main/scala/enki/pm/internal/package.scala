@@ -1,7 +1,7 @@
 package enki.pm
 
 import cats._
-import cats.data.{Kleisli, NonEmptyChain}
+import cats.data._
 import cats.implicits._
 import enki.pm.internal.Validated._
 import qq.droste.CoalgebraM
@@ -15,6 +15,8 @@ package object internal {
     * @tparam A fix type
     */
   type RoseTreeF[A, B] = CoattrF[List, A, B]
+
+  type AttrRoseTree[A, B] = Attr[RoseTreeF[B, ?], A]
 
   /**
     * Rose tree with attribute attached to each node.
