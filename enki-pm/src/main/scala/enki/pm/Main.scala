@@ -1,18 +1,13 @@
 package enki.pm
 
 
-import java.nio.file.{Path, Paths}
-
-import cats._
 import cats.effect._
 import cats.implicits._
 import com.monovore.decline._
+import enki.pm.cli._
 import enki.pm.fs.NioFileSystem
-import enki.pm.internal._
 import enki.pm.project._
-import org.apache.commons.io.FilenameUtils
 import qq.droste._
-import qq.droste.data._
 import qq.droste.data.prelude._
 
 object Main extends IOApp {
@@ -21,51 +16,42 @@ object Main extends IOApp {
   private val version = ""
   private val helpFlag = true
 
-  def algPre[F[_], G[_], A](alg: Algebra[G, A], f: F ~> G) = {
-    Algebra[F, A] { a => alg(f(a)) }
-  }
-
   def main(): Opts[IO[ExitCode]] = Opts {
+    implicit val questions = new PromptQuestions()
+    implicit val parsers = new PromptParsers()
+    implicit val console = new SystemConsole[IO]()
+    implicit val prompt = new CliPrompt[IO, Throwable]()
+    implicit val fileSystem = new NioFileSystem[IO]()
 
-    implicit val fileSystem = NioFileSystem[IO]()
+    val moduleTreeBuilder = new FileSystemModuleTreeBuilder[IO, Throwable]()
 
-    val fromFiles = new FileSystemModuleTreeBuilder[IO, Throwable]
+    // 1. Построить дерево, вычислить наследуемые атрибуты.
+    // 2. "Почистить" дерево.
+    // 3. Вычислить синтезируемые атрибуты.
 
-    val path = Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")
+    // Атрибуты 3-х типов:
+    // 1. наследуемые атрибуты.
+    // 2. атрибуты модуля.
+    // 3. синтезируемые атрибуты.
 
-    val qGen = ModuleTreeBuilder.withQualifiedNames(
-      fromFiles.coalgebra,
-      (path: Path) => FilenameUtils.removeExtension(path.getFileName.toString)
-    )
-    val moduleTreeWithQNames: AttrRoseTree[String, Validated[Module]] = scheme.anaM(qGen).apply((path, "root")).unsafeRunSync()
+    // К наследуемым атрибутам относятся все не синтезируемые атрибуты.
 
-  //  println("==== attr")
-  //  println(Annotating.attr(moduleTreeWithQNames))
+    // Наследуемые атрибуты нужны только на этапе построения дерева, чтобы добавить их к модулю.
+    // Некоторые модули имеют общий набор наследуемых атрибутов (например, название модуля), также есть
+    // уникальные, зависящие от типа модуля.
 
-  //  println("==== strip")
-  //  println(Annotating.strip(moduleTreeWithQNames))
+    // Процедура очистки.
+    // 1. Так как мы не знаем, какие именно свойства модуля и наследуемые аттрибуты будут использоваться,
+    // единственным адекватным вариантом очистки будет удаление всех модулей и наследуемых атрибутов, при
+    // вычислении которых произошли ошибки.
 
-    println("==== strip all")
-    // a: Coattr[List, Validated[Module]]  - но это не выводится.
-    val a = Annotating.stripAll[CoattrF[List, Validated[Module], ?], String](moduleTreeWithQNames)
-    println(a.getClass)
-    println(a.isInstanceOf[CoattrF[List, Validated[Module], Fix[CoattrF[List, Validated[Module], ?]]]])
-
-    println("=== syntethise")
-    val ttt = Annotating.synthesize[CoattrF[List, Validated[Module], ?], Int](
-      { a => // a: CoattrF[List, Validated[Module], Int]
-        println(a)
-        0 },
-      a
-    )
-
-    //  val test = scheme.cata(ModuleTreeBuilder.test).apply(moduleTreeWithQNames)
-
-  //  println("Test =================================")
-  //  println(test)
-
-
-    ExitCode.Success.pure[IO]
+    for {
+      projectDir <- prompt.projectDir
+      projectTree <- scheme.anaM(moduleTreeBuilder.coalgebra).apply((projectDir, InheritedAttributes()))
+    } yield {
+      println(projectTree)
+      ExitCode.Success
+    }
   }
 
 

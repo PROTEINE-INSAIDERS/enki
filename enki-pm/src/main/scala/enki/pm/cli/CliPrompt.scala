@@ -1,5 +1,7 @@
 package enki.pm.cli
 
+import java.nio.file.{Path, Paths}
+
 import atto.Atto._
 import atto.ParseResult._
 import atto._
@@ -10,7 +12,7 @@ import cats.implicits._
 
 class CliPrompt[F[_] : Monad, E](
                                   implicit questions: Prompt[Const[String, ?]],
-                                  parsers: Prompt[Lambda[a => Const[Parser[a], a]]],
+                                  parsers: Prompt[Parser],
                                   console: Console[F],
                                   bracket: Bracket[F, E]
                                 ) extends Prompt[F] with CliTag {
@@ -46,9 +48,9 @@ class CliPrompt[F[_] : Monad, E](
     }
   }
 
-  override def projectName: F[String] = ask(questions.projectName.getConst, Left(parsers.projectName.getConst))
+  override def projectName: F[String] = ask(questions.projectName.getConst, Left(parsers.projectName))
 
   override def sqlRoot: F[String] = ask(questions.sqlRoot.getConst, Right("sql"))
 
-  override def projectDir: F[String] = ask(questions.projectDir.getConst, Right("~/Projects/test-enki-project"))
+  override def projectDir: F[Path] = ask(questions.projectDir.getConst, Right(Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")))
 }

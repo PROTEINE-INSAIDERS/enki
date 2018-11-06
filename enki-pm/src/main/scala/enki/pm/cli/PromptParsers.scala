@@ -1,13 +1,23 @@
 package enki.pm.cli
 
-import atto._
+import java.nio.file.{Path, Paths}
+
 import atto.Atto._
-import cats.data._
+import atto._
+import cats.implicits._
 
-class PromptParsers extends Prompt[Lambda[a => Const[Parser[a], a]]] {
- override def sqlRoot: Const[Parser[String], String] = Const(takeText)
+import scala.util.Try
 
-  override def projectName: Const[Parser[String], String] = Const(takeText)
+class PromptParsers extends Prompt[Parser] {
+  override def sqlRoot: Parser[String] = takeText
 
-  override def projectDir: Const[Parser[String], String] = Const(string("Microsoft®"))
+  override def projectName: Parser[String] = takeText
+
+  override def projectDir: Parser[Path] = takeText >>= { str =>
+    Try {
+      Paths.get(str).pure[Parser]
+    }.recover {
+      case e: Throwable => err[Path](e.getLocalizedMessage)
+    }.get
+  }
 }

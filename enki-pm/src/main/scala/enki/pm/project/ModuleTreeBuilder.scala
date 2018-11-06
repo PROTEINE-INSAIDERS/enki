@@ -1,21 +1,69 @@
 package enki.pm.project
 
-import java.nio.charset._
-import java.nio.file.Path
-
-import enki.pm.fs._
 import cats._
-import cats.data.Validated._
+import cats.data.Chain
 import cats.implicits._
 import enki.pm.internal._
+import org.apache.log4j.Level
+import org.apache.spark.sql.execution.SparkSqlParser
+import org.apache.spark.sql.internal.SQLConf
 import qq.droste._
-import qq.droste.data._
 import qq.droste.data.prelude._
+
+import scala.util.Try
 
 case class SynthesizedAttributes(
                                   arguments: Validated[Set[String]]
                                 )
 
+case class InheritedAttributes(
+                                qualifiedName: Chain[String]
+                              )
+
+object InheritedAttributes {
+  def apply(): InheritedAttributes = InheritedAttributes(qualifiedName = Chain.empty)
+}
+
+abstract class ModuleTreeBuilder[M[_] : Monad, A] {
+  private val nonsubstitutingParser: SparkSqlParser = new SparkSqlParser(new SQLConf()) {
+    // shut the fuck up fucking logger.
+    org.apache.log4j.Logger.getLogger(this.logName).setLevel(Level.OFF)
+  }
+
+  private def newAttributes(moduleName: String, inheritedAttributes: InheritedAttributes): InheritedAttributes = {
+    InheritedAttributes(
+      qualifiedName = inheritedAttributes.qualifiedName :+ moduleName
+    )
+  }
+
+  protected def sqlModule(sql: String, attr: InheritedAttributes): Validated[SqlModule] = {
+    Validated.catchNonFatal(nonsubstitutingParser.parsePlan(sql)) map { logicalPlan =>
+      SqlModule(
+        qualifiedName = attr.qualifiedName,
+        sql = sql,
+        logicalPlan = logicalPlan
+      )
+    }
+  }
+
+  protected def step(carrier: A, attributes: InheritedAttributes): M[RoseTreeF[Validated[Module], A]]
+
+  protected def getModuleName(carrier: A): M[String]
+
+  def coalgebra: CoalgebraM[M, RoseTreeF[Validated[Module], ?], (A, InheritedAttributes)] =
+    CoalgebraM[M, RoseTreeF[Validated[Module], ?], (A, InheritedAttributes)] { case (carrier, inheritedAttributes) =>
+      for {
+        moduleName <- getModuleName(carrier)
+        attributes = newAttributes(moduleName, inheritedAttributes)
+        layer <- step(carrier, attributes)
+      } yield layer fmap {
+        (_, attributes)
+      }
+    }
+}
+
+
+/*
 object ModuleTreeBuilder {
   type ModuleTreeWithQNamesF[A] = AttrRoseTreeF[String, Validated[Module], A]
 
@@ -51,38 +99,14 @@ object ModuleTreeBuilder {
   val test = Algebra[ModuleTreeWithQNamesF, AttrRoseTree[String, Validated[Module]]] {
     case Attr(qualifiedName: String, tree: AttrRoseTree[String, Validated[Module]]) =>
       println("====== cata alg")
-   //   tree match {
-    //    case Attr(a, b) =>
-    //      println(a)
-    //      println(b)
-    //  }
+      //   tree match {
+      //    case Attr(a, b) =>
+      //      println(a)
+      //      println(b)
+      //  }
       println(tree.getClass)
       println(tree)
       tree
   }
-
-  val withSynthesizedAttributes = Algebra[ModuleTreeWithQNamesF, AttrRoseTree[SynthesizedAttributes, Validated[Module]]] {
-    case Attr(qualifiedName: String, tree) => tree match {
-      case RoseTreeF.Left(module) =>
-        println(module)
-        val attributes = SynthesizedAttributes(
-          arguments = Set.empty[String].valid
-        )
-        Attr(
-          attributes,
-          ???
-        )
-
-        /*
-        AttrF(
-          SynthesizedAttributes(
-            arguments = Set.empty[String].valid
-        ), ???)
-        */
-      case RoseTreeF.Right(r) =>
-        ???
-    }
-  }
-
-  // def cleanUp = Algebra[ModuleTreeWithQNamesF, ]
 }
+*/

@@ -1,5 +1,7 @@
 package enki.pm.cli
 
+import java.nio.file.Path
+
 import cats.data._
 
 class PromptQuestions extends Prompt[Const[String, ?]] {
@@ -7,5 +9,5 @@ class PromptQuestions extends Prompt[Const[String, ?]] {
 
   override def sqlRoot: Const[String, String] = Const("Where sql files located?")
 
-  override def projectDir: Const[String, String] = Const("Project folder:")
+  override def projectDir: Const[String, Path] = Const("Project folder:")
 }

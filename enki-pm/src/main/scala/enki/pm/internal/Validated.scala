@@ -1,8 +1,11 @@
 package enki.pm.internal
 
 import cats._
+
 import cats.data.NonEmptyChain
 import cats.implicits._
+
+import scala.util.Try
 
 object Validated {
   object Valid {
@@ -16,6 +19,10 @@ object Validated {
 
     def unapply[A](arg: Validated[A]): Option[ValidationErrorContainer[ValidationError]] = arg.toEither.left.toOption
   }
+
+  def catchNonFatal[A](f: => A): Validated[A] = cats.data.Validated.catchNonFatal(f).leftMap(err => NonEmptyChain.one(err.getLocalizedMessage))
+
+  def fromTry[A](t: Try[A]): Validated[A] = cats.data.Validated.fromTry(t).leftMap(err => NonEmptyChain.one(err.getLocalizedMessage))
 
   def wrapError[F[_], E <: Throwable, A](fa: F[A])(implicit F: ApplicativeError[F, E]): F[Validated[A]] = {
     fa.map(Validated.Valid(_)).handleError(e => Validated.Invalid(e.getLocalizedMessage))
