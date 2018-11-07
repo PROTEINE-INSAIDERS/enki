@@ -4,12 +4,12 @@ import cats._
 import cats.implicits._
 import enki.internal._
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.TableIdentifier
 import scalax.collection.Graph
 import scalax.collection.GraphEdge._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
-import enki.internal._
 
 //TODO: Try cata to build dependency graph in form of annotations.
 
@@ -22,12 +22,17 @@ trait GraphModule {
   implicit val sparkInjection: SparkAlg.Op :<: StageOp
 
   //TODO: перенести в более подходящий модуль
-  def createEmptySources(graph: ActionGraph, session: SparkSession): Unit = {
+  def createEmptySources(
+                          graph: ActionGraph,
+                          session: SparkSession,
+                          tableMapper: TableIdentifier => TableIdentifier = identity[TableIdentifier]
+                        ): Unit = {
     sources(graph).foreach {
       case action: ReadDatasetAction[t] =>
         //TODO: добавить поддержку пустых схем.
         session.sql(s"create database if not exists ${action.schemaName}")
-        session.emptyDataset[t](action.encoder).write.mode(SaveMode.Ignore).saveAsTable(s"${action.schemaName}.${action.tableName}")
+        val ti = tableMapper(TableIdentifier(action.tableName, Some(action.schemaName)))
+        session.emptyDataset[t](action.encoder).write.mode(SaveMode.Ignore).saveAsTable(ti.quotedString)
       case _ => throw new UnsupportedOperationException("Can not create empty table from DataFrame.")
     }
   }
@@ -81,7 +86,6 @@ trait GraphModule {
 
   final case class GraphNode(graph: ActionGraph) extends ActionNode {
     def analyzeIn[G[_], M: Monoid](f: G ~> λ[α => M])(implicit in: InjectK[G, StageOp]): M = {
-      //TODO: alleycats??
       graph.actions.values.toList.foldMap(_.analyzeIn(f))
     }
 
@@ -95,8 +99,9 @@ trait GraphModule {
     private def splitPath(pathStr: String): List[String] = pathStr.split("->").toList
 
     private def checkActionExists(name: String): Unit = {
-      this (name)
-      ()
+      if (!actions.contains(name)) {
+        throw new Exception(s"Action $name not found.")
+      }
     }
 
     @tailrec private def getOpt(path: List[String]): Option[ActionNode] = path match {

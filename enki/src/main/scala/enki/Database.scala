@@ -1,18 +1,17 @@
 package enki
 
-import cats._
 import cats.implicits._
 import enki.spark.ReaderSettings
 import freestyle.free.FreeS._
 import freestyle.free.implicits._
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.encoders._
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.types._
 
 import scala.reflect.runtime.universe._
 
-//TODO: реализовать партиционирование.
 trait Database {
   val enki: Enki
 
@@ -31,11 +30,21 @@ trait Database {
     override def encoderStyle: EncoderStyle = Database.this.encoderStyle
   }
 
-  protected def readerSettings: Par[StageOp, ReaderSettings] = ReaderSettings().pure[Par[StageOp, ?]]
+  protected def readerSettings(tableName: String): Par[StageOp, ReaderSettings] =
+    tableMapper map { f => ReaderSettings(f(TableIdentifier(tableName, Some(schema)))) }
 
-  protected def writerSettings: Par[StageOp, WriterSettings] = WriterSettings().pure[Par[StageOp, ?]]
+  protected def writerSettings(tableName: String): Par[StageOp, WriterSettings] =
+    tableMapper map { f => WriterSettings(f(TableIdentifier(tableName, Some(schema)))) }
 
-  protected def planTransformer: Par[StageOp, PlanTransformer] = (identity[LogicalPlan] _).pure[Par[StageOp, ?]]
+  protected def planTransformer: Par[StageOp, PlanTransformer] =
+    tableMapper map { f =>
+      plan =>
+        plan.transform {
+          case UnresolvedRelation(identifier) => UnresolvedRelation(f(identifier))
+        }
+    }
+
+  protected def tableMapper: Par[StageOp, TableIdentifier => TableIdentifier] = (identity[TableIdentifier] _).pure[Par[StageOp, ?]]
 
   /* syntactic sugar */
 
@@ -62,16 +71,16 @@ trait Database {
     alg.dataset(data, implicitly)
 
   final def read(tableName: String)(implicit alg: SparkAlg[StageOp]): alg.FS[DataFrame] =
-    alg.readDataFrame(schema, tableName) <*> readerSettings
+    alg.readDataFrame(schema, tableName) <*> readerSettings(tableName)
 
   final def read[T: Encoder](tableName: String, strict: Boolean = false)(implicit alg: SparkAlg[StageOp]): alg.FS[Dataset[T]] =
-    alg.readDataset(schema, tableName, implicitly[Encoder[T]], strict) <*> readerSettings
+    alg.readDataset(schema, tableName, implicitly[Encoder[T]], strict) <*> readerSettings(tableName)
 
   final def gread[T: TypeTag](tableName: String)(implicit alg: SparkAlg[StageOp]): alg.FS[Dataset[T]] =
     if (typeOf[T] == typeOf[Row]) {
-      (alg.readDataFrame(schema, tableName) <*> readerSettings).asInstanceOf[alg.FS[Dataset[T]]]
+      (alg.readDataFrame(schema, tableName) <*> readerSettings(tableName)).asInstanceOf[alg.FS[Dataset[T]]]
     } else {
-      alg.readDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false) <*> readerSettings
+      alg.readDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false) <*> readerSettings(tableName)
     }
 
   //TODO: тут можно использовать planTransformer для добавления параметров партиционирования.
@@ -83,7 +92,7 @@ trait Database {
                  )
                  (
                    implicit alg: SparkAlg[StageOp]
-                 ): alg.FS[DataFrame => Unit] = write(tableName, writerSettings)
+                 ): alg.FS[DataFrame => Unit] = write(tableName, writerSettings(tableName))
 
   //TODO: нужны ли нам перегрузки с возможностью задания writerSettings?
   final def write(
@@ -98,14 +107,14 @@ trait Database {
 
 
   final def write[T: Encoder](tableName: String, strict: Boolean = false)(implicit alg: SparkAlg[StageOp]): alg.FS[Dataset[T] => Unit] = {
-    alg.writeDataset[T](schema, tableName, implicitly, strict) <*> writerSettings
+    alg.writeDataset[T](schema, tableName, implicitly, strict) <*> writerSettings(tableName)
   }
 
   final def gwrite[T: TypeTag](tableName: String)(implicit alg: SparkAlg[StageOp]): alg.FS[Dataset[T] => Unit] =
     if (typeOf[T] == typeOf[Row]) {
-      (alg.writeDataFrame(schema, tableName) <*> writerSettings).asInstanceOf[alg.FS[Dataset[T] => Unit]]
+      (alg.writeDataFrame(schema, tableName) <*> writerSettings(tableName)).asInstanceOf[alg.FS[Dataset[T] => Unit]]
     } else {
-      alg.writeDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false) <*> writerSettings
+      alg.writeDataset[T](schema, tableName, implicits.selectEncoder(ExpressionEncoder()), strict = false) <*> writerSettings(tableName)
     }
 
   /* program builder */
@@ -115,7 +124,7 @@ trait Database {
                                  dataset: Par[StageOp, Dataset[T]],
                                  strict: Boolean = false
                                )(implicit alg: StageOpProvider[StageOp]#ProgramAlg[ProgramOp]): alg.FS[Par[StageOp, Dataset[T]]] =
-    alg.persistDataset(schema, tableName, dataset, implicitly, strict, readerSettings, writerSettings)
+    alg.persistDataset(schema, tableName, dataset, implicitly, strict, readerSettings(tableName), writerSettings(tableName))
 
   final def persist(
                      tableName: String,
@@ -126,14 +135,14 @@ trait Database {
                    ): alg.FS[Par[StageOp, DataFrame]] = persistPart(tableName, dataframe, Seq.empty[(String, String)].pure[Par[StageOp, ?]])
 
   final def persistPart(
-                              tableName: String,
-                              dataframe: Par[StageOp, DataFrame],
-                              partition: Par[StageOp, Seq[(String, String)]]
-                            )
-                            (
-                              implicit alg: StageOpProvider[StageOp]#ProgramAlg[ProgramOp]
-                            ): alg.FS[Par[StageOp, DataFrame]] = {
-    val rws = (partition, readerSettings, writerSettings) mapN { (p: Seq[(String, String)], rs: ReaderSettings, ws: WriterSettings) =>
+                         tableName: String,
+                         dataframe: Par[StageOp, DataFrame],
+                         partition: Par[StageOp, Seq[(String, String)]]
+                       )
+                       (
+                         implicit alg: StageOpProvider[StageOp]#ProgramAlg[ProgramOp]
+                       ): alg.FS[Par[StageOp, DataFrame]] = {
+    val rws = (partition, readerSettings(tableName), writerSettings(tableName)) mapN { (p: Seq[(String, String)], rs: ReaderSettings, ws: WriterSettings) =>
       if (p.isEmpty) {
         (rs, ws)
       } else {
@@ -150,9 +159,9 @@ trait Database {
                                 )(implicit alg: StageOpProvider[StageOp]#ProgramAlg[ProgramOp]): alg.FS[Par[StageOp, Dataset[T]]] =
     if (typeOf[T] == typeOf[Row])
       alg
-        .persistDataFrame(schema, tableName, dataset.asInstanceOf[Par[StageOp, DataFrame]], readerSettings, writerSettings)
+        .persistDataFrame(schema, tableName, dataset.asInstanceOf[Par[StageOp, DataFrame]], readerSettings(tableName), writerSettings(tableName))
         .asInstanceOf[Par[ProgramOp, Par[StageOp, Dataset[T]]]]
     else {
-      alg.persistDataset[T](schema, tableName, dataset, implicits.selectEncoder(ExpressionEncoder()), strict = false, readerSettings, writerSettings)
+      alg.persistDataset[T](schema, tableName, dataset, implicits.selectEncoder(ExpressionEncoder()), strict = false, readerSettings(tableName), writerSettings(tableName))
     }
 }

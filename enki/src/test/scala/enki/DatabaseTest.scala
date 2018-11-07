@@ -65,7 +65,7 @@ class DatabaseTest extends EnkiTestSuite {
 
         import implicits._
 
-        override def writerSettings: Stage[enki.WriterSettings] = super.writerSettings map (_.setMode(SaveMode.Overwrite))
+        override def writerSettings(table: String): Stage[enki.WriterSettings] = super.writerSettings(table) map (_.setMode(SaveMode.Overwrite))
 
         override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
@@ -86,7 +86,7 @@ class DatabaseTest extends EnkiTestSuite {
 
         import implicits._
 
-        override def writerSettings: Stage[enki.WriterSettings] = super.writerSettings map (_.setMode(SaveMode.Overwrite))
+        override def writerSettings(table: String): Stage[enki.WriterSettings] = super.writerSettings(table) map (_.setMode(SaveMode.Overwrite))
 
         override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 

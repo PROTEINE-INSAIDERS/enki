@@ -16,7 +16,7 @@ class ProgramTest extends EnkiTestSuite with enki.default.Database {
 
   override def schema: String = "default"
 
-  override def writerSettings: Stage[enki.WriterSettings] = WriterSettings().setMode(SaveMode.Overwrite).pure[Stage]
+  override def writerSettings(tableName: String): Stage[enki.WriterSettings] = super.writerSettings(tableName) map (_.setMode(SaveMode.Overwrite))
 
   "buildActionGraph" should {
     "detect dependencies" in {
