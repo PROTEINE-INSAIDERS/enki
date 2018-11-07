@@ -11,6 +11,13 @@ package object internal {
   /**
     * Rose tree
     *
+    * @tparam A leaf type.
+    */
+  type RoseTree[A] = Coattr[List, A]
+
+  /**
+    * The pattern functor for [[RoseTree]]
+    *
     * @tparam A leaf type
     * @tparam A fix type
     */
@@ -27,16 +34,18 @@ package object internal {
     */
   type AttrRoseTreeF[A, B, C] = AttrF[RoseTreeF[B, ?], A, C]
 
-  type ValidationError = String
+  type ValidationErrorItem = String
 
   type ValidationErrorContainer[A] = NonEmptyChain[A]
+
+  type ValidationError = ValidationErrorContainer[ValidationErrorItem]
 
   /**
     * Unified Validated type for enki package manager.
     *
     * @tparam A Validated value.
     */
-  type Validated[A] = cats.data.Validated[ValidationErrorContainer[ValidationError], A]
+  type Validated[A] = cats.data.Validated[ValidationError, A]
 
   def all: Monoid[Boolean] = new Monoid[Boolean] {
     override def empty: Boolean = true

@@ -52,6 +52,7 @@ object DrosteTest {
       case TreeNode(l, r) => l + " " + r
     }
     scheme.cata[SimpleTreeF, FixedTree, String](a).apply(FixedTreeNode(FixedTreeLeaf("a"), FixedTreeLeaf("b")))
+    ()
   }
 
   def testAnaCata(): Unit = {

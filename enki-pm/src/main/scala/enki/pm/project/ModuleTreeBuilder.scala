@@ -1,27 +1,29 @@
 package enki.pm.project
 
 import cats._
-import cats.data.Chain
+import cats.data.{Validated => _}
 import cats.implicits._
 import enki.pm.internal._
+import enki.pm.plan.LogicalPlanAnalyser
 import org.apache.log4j.Level
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkSqlParser
 import org.apache.spark.sql.internal.SQLConf
 import qq.droste._
 import qq.droste.data.prelude._
-
-import scala.util.Try
 
 case class SynthesizedAttributes(
                                   arguments: Validated[Set[String]]
                                 )
 
 case class InheritedAttributes(
-                                qualifiedName: Chain[String]
+                                qualifiedName: ModuleQName
                               )
 
 object InheritedAttributes {
-  def apply(): InheritedAttributes = InheritedAttributes(qualifiedName = Chain.empty)
+  def apply(): InheritedAttributes = InheritedAttributes(qualifiedName = ModuleQName.empty)
 }
 
 abstract class ModuleTreeBuilder[M[_] : Monad, A] {
@@ -30,6 +32,23 @@ abstract class ModuleTreeBuilder[M[_] : Monad, A] {
     org.apache.log4j.Logger.getLogger(this.logName).setLevel(Level.OFF)
   }
 
+  private val REF_RE = "\\$\\{(?:(\\w+?):)?(\\S+?)\\}".r
+
+  private def findArguments(sql: String): Set[String] = {
+    REF_RE.findAllMatchIn(sql).map { m =>
+      val prefix = m.group(1)
+      val name = m.group(2)
+      if (prefix == null) name else s"$prefix:$name"
+    }.toSet
+  }
+
+  private def findWrites(logicalPlan: LogicalPlan): Set[TableIdentifier] = {
+    Set.empty
+  }
+
+  private def addModuleNameToErrorMessage[A](a: Validated[A], moduleName: ModuleQName): Validated[A] =
+    a.leftMap(_.prepend(s"Error validating module ${moduleName.show}"))
+
   private def newAttributes(moduleName: String, inheritedAttributes: InheritedAttributes): InheritedAttributes = {
     InheritedAttributes(
       qualifiedName = inheritedAttributes.qualifiedName :+ moduleName
@@ -37,13 +56,18 @@ abstract class ModuleTreeBuilder[M[_] : Monad, A] {
   }
 
   protected def sqlModule(sql: String, attr: InheritedAttributes): Validated[SqlModule] = {
-    Validated.catchNonFatal(nonsubstitutingParser.parsePlan(sql)) map { logicalPlan =>
-      SqlModule(
-        qualifiedName = attr.qualifiedName,
-        sql = sql,
-        logicalPlan = logicalPlan
-      )
-    }
+    addModuleNameToErrorMessage(
+      Validated.catchNonFatal(nonsubstitutingParser.parsePlan(sql)) map { plan =>
+        SqlModule(
+          qualifiedName = attr.qualifiedName,
+          sql = sql,
+          plan = plan,
+          arguments = findArguments(sql),
+          reads = LogicalPlanAnalyser.reads(plan),
+          writes = Set.empty
+        )
+      }, attr.qualifiedName
+    )
   }
 
   protected def step(carrier: A, attributes: InheritedAttributes): M[RoseTreeF[Validated[Module], A]]
@@ -61,52 +85,3 @@ abstract class ModuleTreeBuilder[M[_] : Monad, A] {
       }
     }
 }
-
-
-/*
-object ModuleTreeBuilder {
-  type ModuleTreeWithQNamesF[A] = AttrRoseTreeF[String, Validated[Module], A]
-
-  def fromFileSystem[M[_], E <: Throwable](
-                                            implicit fileSystem: FileSystem[M],
-                                            error: MonadError[M, E]
-                                          ): CoalgebraM[M, RoseTreeF[Validated[Module], ?], Path] =
-    CoalgebraM[M, RoseTreeF[Validated[Module], ?], Path] { path =>
-      Validated.wrapError {
-        (fileSystem.isRegularFile(path), fileSystem.isDirectory(path)).tupled >>= {
-          case (true, _) => fileSystem.readAllText(path, StandardCharsets.UTF_8) map { sql =>
-            RoseTreeF.leaf[Validated[Module], Path](SqlModule(sql).valid)
-          }
-          case (_, true) => fileSystem.list(path) map RoseTreeF.node[Validated[Module], Path]
-          case _ => RoseTreeF.leaf[Validated[Module], Path](s"$path neither file nor dirrectory.".invalidNec).pure[M]
-        }
-      }.map {
-        case Validated.Valid(res) => res
-        case Validated.Invalid(err) => RoseTreeF.leaf[Validated[Module], Path](err.invalid)
-      }
-    }
-
-  // при синтезе q-names доп. носитель должен быть типа (Option[String], String)
-  def withQualifiedNames[M[_] : Applicative, A](
-                                                 moduleTreeBuilder: CoalgebraM[M, RoseTreeF[Validated[Module], ?], A],
-                                                 moduleName: A => String
-                                               ): CoalgebraM[M, ModuleTreeWithQNamesF, (A, String)] =
-    Attributes.inheritedAttributes(
-      moduleTreeBuilder,
-      (a, parentName) => s"$parentName.${moduleName(a)}".pure[M]
-    )
-
-  val test = Algebra[ModuleTreeWithQNamesF, AttrRoseTree[String, Validated[Module]]] {
-    case Attr(qualifiedName: String, tree: AttrRoseTree[String, Validated[Module]]) =>
-      println("====== cata alg")
-      //   tree match {
-      //    case Attr(a, b) =>
-      //      println(a)
-      //      println(b)
-      //  }
-      println(tree.getClass)
-      println(tree)
-      tree
-  }
-}
-*/

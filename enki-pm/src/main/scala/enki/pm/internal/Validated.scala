@@ -17,8 +17,10 @@ object Validated {
   object Invalid {
     def apply[A](message: String): Validated[A] = cats.data.Validated.invalidNec(message)
 
-    def unapply[A](arg: Validated[A]): Option[ValidationErrorContainer[ValidationError]] = arg.toEither.left.toOption
+    def unapply[A](arg: Validated[A]): Option[ValidationError] = arg.toEither.left.toOption
   }
+
+  type Invalid = cats.data.Validated.Invalid[ValidationError]
 
   def catchNonFatal[A](f: => A): Validated[A] = cats.data.Validated.catchNonFatal(f).leftMap(err => NonEmptyChain.one(err.getLocalizedMessage))
 

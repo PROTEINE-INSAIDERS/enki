@@ -85,5 +85,6 @@ trait UserDatabase extends Database {
 
   def createDatabase(session: SparkSession): Unit = {
     session.sql(s"create database $schema")
+    ()
   }
 }

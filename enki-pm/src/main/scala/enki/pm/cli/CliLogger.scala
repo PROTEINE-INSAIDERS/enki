@@ -5,12 +5,12 @@ import cats.effect._
 import cats.implicits._
 import io.chrisdavenport.log4cats._
 
-class CliLogger[F[_] : Applicative, E](implicit c: Console[F], b: Bracket[F, E]) extends Logger[F] with CliTag {
+case class CliLogger[F[_] : Applicative, E](implicit c: Console[F], b: Bracket[F, E]) extends Logger[F] with CliTag {
   private val debudTag = Tag("DEBUG", None)
   private val errorTag = Tag("ERROR", Some(Style.RED))
   private val infoTag = Tag("INFO", Some(Style.GREEN))
   private val traceTag = Tag("TRACE", None)
-  private val warnTag = Tag("TRACE", Some(Style.YELLOW))
+  private val warnTag = Tag("WARN", Some(Style.YELLOW))
 
   private def formatMessage(t: Throwable, message: String): F[Unit] =
     c.printLn(message) *> c.withStyle(Style.BOLD)(c.printLn(" CAUSED BY ")) *> c.printLn(t.toString)

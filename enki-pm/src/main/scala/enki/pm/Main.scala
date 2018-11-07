@@ -1,11 +1,13 @@
 package enki.pm
 
-
+import cats._
 import cats.effect._
 import cats.implicits._
+import cats.mtl.{DefaultFunctorTell, FunctorTell}
 import com.monovore.decline._
 import enki.pm.cli._
 import enki.pm.fs.NioFileSystem
+import enki.pm.internal._
 import enki.pm.project._
 import qq.droste._
 import qq.droste.data.prelude._
@@ -22,8 +24,17 @@ object Main extends IOApp {
     implicit val console = new SystemConsole[IO]()
     implicit val prompt = new CliPrompt[IO, Throwable]()
     implicit val fileSystem = new NioFileSystem[IO]()
+    implicit val logger = CliLogger[IO, Throwable]()
+    implicit val vLogger = ValidationErrorLogger[IO]()
+
+    implicit val validationLogger = new DefaultFunctorTell[IO, ValidationError] {
+      override val functor: Functor[IO] = implicitly
+
+      override def tell(l: ValidationError): IO[Unit] = ???
+    }
 
     val moduleTreeBuilder = new FileSystemModuleTreeBuilder[IO, Throwable]()
+    val invalidModuleFilter = InvalidModuleFilter[IO]()
 
     // 1. Построить дерево, вычислить наследуемые атрибуты.
     // 2. "Почистить" дерево.
@@ -48,8 +59,9 @@ object Main extends IOApp {
     for {
       projectDir <- prompt.projectDir
       projectTree <- scheme.anaM(moduleTreeBuilder.coalgebra).apply((projectDir, InheritedAttributes()))
+      validatedTree <- scheme.cataM(invalidModuleFilter.algebra).apply(projectTree)
     } yield {
-      println(projectTree)
+      println(validatedTree)
       ExitCode.Success
     }
   }
