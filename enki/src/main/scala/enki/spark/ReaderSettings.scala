@@ -1,9 +1,14 @@
 package enki.spark
 
-case class ReaderSettings(partition: Seq[(String, String)]) {
+import org.apache.spark.sql.catalyst.TableIdentifier
+
+case class ReaderSettings(
+                           tableIdentifier: TableIdentifier,
+                           partition: Seq[(String, String)]
+                         ) {
   def setPartition(partition: (String, String)*): ReaderSettings = copy(partition = partition)
 }
 
 object ReaderSettings {
-  def apply(): ReaderSettings = new ReaderSettings(Seq.empty)
+  def apply(tableIdentifier: TableIdentifier): ReaderSettings = ReaderSettings(tableIdentifier, Seq.empty)
 }

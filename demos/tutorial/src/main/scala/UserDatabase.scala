@@ -10,7 +10,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import scala.reflect.runtime.universe._
 
-
 case class PurchasesReport(
                             purchase_id: Long,
                             client_id: Long,
@@ -39,9 +38,9 @@ trait UserDatabase extends Database {
   // Changing encoder style to Enki to enable annotation processing.
   override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 
-  override def writerSettings: Stage[WriterSettings] =
+  override def writerSettings(tableName: String): Stage[WriterSettings] =
     (
-      super.writerSettings,
+      super.writerSettings(tableName),
       arg("overwrite", "Overwrite existent data.", defaultValue = Some(true))
     ) mapN { (settings, overwrite) =>
       settings

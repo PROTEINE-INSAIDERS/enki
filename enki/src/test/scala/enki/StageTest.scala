@@ -1,5 +1,6 @@
 package enki
 
+import cats._
 import cats.implicits._
 import enki.default._
 import freestyle.free._
@@ -18,7 +19,7 @@ class StageTest extends EnkiTestSuite with enki.default.Database {
 
   override def schema: String = "default"
 
-  override def writerSettings: Stage[enki.WriterSettings] = WriterSettings().setMode(SaveMode.Overwrite).pure[Stage]
+  override def writerSettings(tableName: String): Stage[enki.WriterSettings] = super.writerSettings(tableName) map (_.setMode(SaveMode.Overwrite))
 
   override def encoderStyle: EncoderStyle = EncoderStyle.Enki
 

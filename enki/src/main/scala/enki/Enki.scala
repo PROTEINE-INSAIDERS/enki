@@ -128,5 +128,6 @@ object default extends Enki {
   //TODO: remove
   override def run(stage: StageMonad[_], env: Environment) = {
     stage.run(env)
+    ()
   }
 }

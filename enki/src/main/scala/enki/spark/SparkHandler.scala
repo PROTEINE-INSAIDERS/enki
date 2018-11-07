@@ -14,11 +14,11 @@ import scala.collection.JavaConversions._
 class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnalyzer: PlanAnalyzer) extends SparkAlg.Handler[M] {
   private[enki] def write[T](
                               session: SparkSession,
-                              schemaName: String,
-                              tableName: String,
                               writerSettings: WriterSettings,
                               dataset: Dataset[T]
                             ): Unit = {
+    val tableName = writerSettings.tableIdentifier.table
+    val schemaName = writerSettings.tableIdentifier.database.getOrElse("default")
     (session.catalog.tableExists(schemaName, tableName), writerSettings.partition) match {
       case (true, partition) if partition.nonEmpty =>
         dataset
@@ -64,7 +64,7 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnal
                                               schemaName: String,
                                               tableName: String
                                             ): M[ReaderSettings => DataFrame] = env.reader { session =>
-    readerSettings => session.table(s"$schemaName.$tableName")
+    readerSettings => session.table(s"${readerSettings.tableIdentifier.database.getOrElse("default")}.${readerSettings.tableIdentifier.table}")
   }
 
   override protected[this] def readDataset[T](
@@ -74,7 +74,7 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnal
                                                strict: Boolean
                                              ): M[ReaderSettings => Dataset[T]] = env.reader { session =>
     readerSettings =>
-      val dataframe = session.table(s"$schemaName.$tableName")
+      val dataframe = session.table(s"${readerSettings.tableIdentifier.database.getOrElse("default")}.${readerSettings.tableIdentifier.table}")
       val restricted = if (strict) {
         dataframe.select(encoder.schema.map(f => dataframe(f.name)): _*)
       } else {
@@ -90,18 +90,19 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnal
       new Dataset[Row](session, qe.logical, RowEncoder(qe.analyzed.schema))
   }
 
-  override protected[this] def sql(sqlText: String): M[PlanTransformer => DataFrame] = env.reader { session =>  transformer =>
-    val logicalPlan = session.sessionState.sqlParser.parsePlan(sqlText)
-    val qe = session.sessionState.executePlan(transformer(logicalPlan))
-    qe.assertAnalyzed()
-    new Dataset[Row](session, qe.logical, RowEncoder(qe.analyzed.schema))
+  override protected[this] def sql(sqlText: String): M[PlanTransformer => DataFrame] = env.reader { session =>
+    transformer =>
+      val logicalPlan = session.sessionState.sqlParser.parsePlan(sqlText)
+      val qe = session.sessionState.executePlan(transformer(logicalPlan))
+      qe.assertAnalyzed()
+      new Dataset[Row](session, qe.logical, RowEncoder(qe.analyzed.schema))
   }
 
   override protected[this] def writeDataFrame(
                                                schemaName: String,
                                                tableName: String
                                              ): M[WriterSettings => DataFrame => Unit] = env.reader { session =>
-    writerSettings => dataFrame => write[Row](session, schemaName, tableName, writerSettings, dataFrame)
+    writerSettings => dataFrame => write[Row](session, writerSettings, dataFrame)
   }
 
   override protected[this] def writeDataset[T](
@@ -115,12 +116,10 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnal
         if (strict) {
           write(
             session,
-            schemaName,
-            tableName,
             writerSettings,
             dataset.select(encoder.schema.map(f => dataset(f.name)): _*).as[T](encoder))
         } else {
-          write(session, schemaName, tableName, writerSettings, dataset)
+          write(session, writerSettings, dataset)
         }
   }
 }
