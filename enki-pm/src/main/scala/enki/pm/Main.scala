@@ -11,6 +11,7 @@ import enki.pm.internal._
 import enki.pm.project._
 import qq.droste._
 import qq.droste.data.prelude._
+import io.chrisdavenport.log4cats._
 
 object Main extends IOApp {
   private val name = "enki-pm"
@@ -18,7 +19,15 @@ object Main extends IOApp {
   private val version = ""
   private val helpFlag = true
 
+  implicit val logger: Logger[IO] = CliLogger[IO, Throwable]
+  implicit val console: Console[IO] = new SystemConsole[IO]()
+
+
   def main(): Opts[IO[ExitCode]] = Opts {
+    for {
+      project <- Workflow.bootstrap[IO]
+    } yield ExitCode.Success
+    /*
     implicit val questions = new PromptQuestions()
     implicit val parsers = new PromptParsers()
     implicit val console = new SystemConsole[IO]()
@@ -64,6 +73,7 @@ object Main extends IOApp {
       println(validatedTree)
       ExitCode.Success
     }
+    */
   }
 
 

@@ -15,8 +15,6 @@ import org.apache.spark.sql.internal._
 // можно заменять переменные некоторыми специальными значениями.
 trait PlanAnalyzer {
   def tableReads(plan: LogicalPlan ): Seq[TableIdentifier] = {
-    plan.find()
-
     plan.collect { case (a : UnresolvedRelation) => a.tableIdentifier  }
   }
 }
