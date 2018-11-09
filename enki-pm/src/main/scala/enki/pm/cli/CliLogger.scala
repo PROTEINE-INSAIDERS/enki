@@ -5,7 +5,7 @@ import cats.effect._
 import cats.implicits._
 import io.chrisdavenport.log4cats._
 
-case class CliLogger[F[_] : Applicative, E](implicit c: Console[F], b: Bracket[F, E]) extends Logger[F] with CliTag {
+case class CliLogger[F[_] : Applicative, E](implicit c: Console[F], b: Bracket[F, E]) extends Logger[F] with ConsoleTagFunctions {
   private val debudTag = Tag("DEBUG", None)
   private val errorTag = Tag("ERROR", Some(Style.RED))
   private val infoTag = Tag("INFO", Some(Style.GREEN))

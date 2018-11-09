@@ -9,7 +9,7 @@ class VariableSubstitution  extends EnkiTestSuite {
     val conf = new SQLConf()
     conf.setConfString("xxx", "\"yoba\"")
    def parser: AbstractSqlParser = new SparkSqlParser(conf)
-   val res = parser.parsePlan("select * from testTable where a = ${xxx}")
+   val res = parser.parsePlan(f"select * from testTable where a = $${xxx}")
 
   }
 

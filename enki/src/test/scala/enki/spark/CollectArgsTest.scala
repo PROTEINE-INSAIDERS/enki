@@ -13,7 +13,7 @@ class CollectArgsTest extends EnkiTestSuite {
     }
 
     "collect arguments from plain sql" in {
-      def a[F[_]](implicit alg: SparkAlg[F]) = alg.sql("select * from a where a.a = ${a1} and a.b = ${env:b1}")
+      def a[F[_]](implicit alg: SparkAlg[F]) = alg.sql(f"select * from a where a.a = $${a1} and a.b = $${env:b1}")
 
       a.analyze(CollectArgs(Set(_)).analyzer) shouldBe  Set(Argument("a1"), Argument("env:b1"))
     }

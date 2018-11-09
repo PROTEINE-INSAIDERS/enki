@@ -3,9 +3,6 @@ package enki.pm.fs
 import java.nio.charset._
 import java.nio.file._
 
-/**
-  * File system algebra.
-  */
 trait FileSystem[F[_]] {
   def isDirectory(path: Path, options: LinkOption*): F[Boolean]
 

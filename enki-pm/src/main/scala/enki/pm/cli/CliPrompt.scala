@@ -15,11 +15,7 @@ class CliPrompt[F[_] : Monad, E](
                                   parsers: Prompt[Parser],
                                   console: Console[F],
                                   bracket: Bracket[F, E]
-                                ) extends Prompt[F] with CliTag {
-  private val input = Tag("INPUT", Some(Style.CYAN))
-  private val invalidInput = Tag("INVALID", Some(Style.MAGENTA))
-  private val auto = Tag("AUTO", Some(Style.GREEN))
-
+                                ) extends Prompt[F] with ConsolePromptFunctions {
   private def ask[A](
                       question: Const[String, _],
                       answer: Either[Parser[A], A]
@@ -53,7 +49,7 @@ class CliPrompt[F[_] : Monad, E](
 
   override def sqlRoot: F[String] = ask(questions.sqlRoot, Right("sql"))
 
-  override def projectDir: F[Path] = ask(questions.projectDir, Right(Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")))
+//  override def projectDir: F[Path] = ask(questions.projectDir, Right(Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")))
 
-  override def createNewProject(path: Path): F[Boolean] = ask(questions.createNewProject(path), Left(parsers.createNewProject(path)))
+//  override def createNewProject(path: Path): F[Boolean] = ask(questions.createNewProject(path), Left(parsers.createNewProject(path)))
 }
