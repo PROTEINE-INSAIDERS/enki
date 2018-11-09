@@ -14,6 +14,8 @@ trait FileSystem[F[_]] {
   def list(path: Path): F[List[Path]]
 
   def readAllText(path: Path, charset: Charset): F[String]
+
+  def createDirectories(path: Path): F[Path]
 }
 
 object FileSystem {

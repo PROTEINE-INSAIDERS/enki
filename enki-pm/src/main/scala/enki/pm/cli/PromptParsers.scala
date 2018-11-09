@@ -9,6 +9,10 @@ import cats.implicits._
 import scala.util.Try
 
 class PromptParsers extends Prompt[Parser] {
+  private def bool: Parser[Boolean] = orElse(oneOf("Yy") *> true.pure[Parser], oneOf("Nn") *> false.pure[Parser])
+
+  override def createNewProject(path: Path): Parser[Boolean] = bool
+
   override def sqlRoot: Parser[String] = takeText
 
   override def projectName: Parser[String] = takeText

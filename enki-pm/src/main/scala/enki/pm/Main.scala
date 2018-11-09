@@ -19,11 +19,10 @@ object Main extends IOApp {
   private val version = ""
   private val helpFlag = true
 
-  implicit val logger: Logger[IO] = CliLogger[IO, Throwable]
-  implicit val console: Console[IO] = new SystemConsole[IO]()
-
-
   def main(): Opts[IO[ExitCode]] = Opts {
+    implicit val console: Console[IO] = new SystemConsole[IO]()
+    implicit val logger: Logger[IO] = CliLogger[IO, Throwable]
+
     for {
       project <- Workflow.bootstrap[IO]
     } yield ExitCode.Success

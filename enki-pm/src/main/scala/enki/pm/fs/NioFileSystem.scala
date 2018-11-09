@@ -28,4 +28,8 @@ case class NioFileSystem[F[_]](implicit liftIO: LiftIO[F]) extends FileSystem[F]
   override def readAllText(path: Path, charset: Charset): F[String] = io {
     new String(Files.readAllBytes(path), charset)
   }
+
+  override def createDirectories(path: Path): F[Path] = io {
+    Files.createDirectories(path)
+  }
 }
