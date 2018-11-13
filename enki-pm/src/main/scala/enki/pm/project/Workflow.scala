@@ -11,6 +11,7 @@ import io.chrisdavenport.log4cats._
 
 case class Project()
 
+
 object Workflow {
   def bootstrap[M[_] : Monad : LiftIO](
                                         implicit bracket: Bracket[M, Throwable],
@@ -19,9 +20,7 @@ object Workflow {
                                       ): M[Project] = {
     val enkiDir = ".enki"
 
-    implicit val questions: PromptQuestions = new PromptQuestions()
-    implicit val parsers: PromptParsers = new PromptParsers()
-    implicit val prompt: BootstrapPrompt[M] = ??? // new CliPrompt[M, Throwable]()
+    implicit val prompt: BootstrapPrompt[M] = BootstrapPromptCli[M, Throwable]()
     implicit val fileSystem: FileSystem[M] = new NioFileSystem[M]()
 
     logger.trace("Bootstrap phase") *> Paths.get(System.getProperty("user.dir")).tailRecM[M, Project] { path =>

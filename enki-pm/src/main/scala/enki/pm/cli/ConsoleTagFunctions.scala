@@ -12,6 +12,6 @@ trait ConsoleTagFunctions {
                                                  (implicit console: Console[F], bracket: Bracket[F, E]): F[A] =
     console.print("[") *>
       tag.style.map(console.withStyle(_)(console.print(tag.tag))).getOrElse(console.print(tag.tag)) *>
-      console.print("]\t") *>
+      console.print("] ") *>
       f
 }

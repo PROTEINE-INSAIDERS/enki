@@ -48,8 +48,4 @@ class CliPrompt[F[_] : Monad, E](
   override def projectName: F[String] = ask(questions.projectName, Left(parsers.projectName))
 
   override def sqlRoot: F[String] = ask(questions.sqlRoot, Right("sql"))
-
-//  override def projectDir: F[Path] = ask(questions.projectDir, Right(Paths.get(System.getProperty("user.home"), "Projects/test-enki-project")))
-
-//  override def createNewProject(path: Path): F[Boolean] = ask(questions.createNewProject(path), Left(parsers.createNewProject(path)))
 }
