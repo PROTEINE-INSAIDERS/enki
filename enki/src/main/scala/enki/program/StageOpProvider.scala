@@ -1,7 +1,6 @@
 package enki
 package program
 
-import cats._
 import cats.data._
 import cats.implicits._
 import enki.spark.ReaderSettings
@@ -29,6 +28,11 @@ final class StageOpProvider[StageOp[_]] {
                            readerSettings: Par[StageOp, ReaderSettings],
                            writerSettings: Par[StageOp, WriterSettings]
                          ): FS[Par[StageOp, Dataset[T]]]
+
+    def run(
+             stageName: String,
+             stage: Par[StageOp, Unit]
+           ): FS[Par[StageOp, Unit]]
   }
 
   //TODO: для реализации партиционирования можно анализировать WriterSettings и добавлять дополнительные фильтры в ридер.
@@ -68,5 +72,17 @@ final class StageOpProvider[StageOp[_]] {
         stager.readDataset[T](schemaName, tableName, encoder, strict) <*> readerSettings
       }
     }
+
+    override protected[this] def run(
+                                      stageName: String,
+                                      stage: Par[StageOp, Unit]
+                                    ): StageWriter[StageOp, Par[StageOp, Unit]] = {
+      for {
+        _ <- Writer.tell[List[(String, Par[StageOp, _])]](List((stageName, stage)))
+      } yield {
+        ().pure[Par[StageOp, ?]]
+      }
+    }
   }
+
 }

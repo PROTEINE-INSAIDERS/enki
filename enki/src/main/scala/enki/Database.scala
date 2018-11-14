@@ -164,4 +164,13 @@ trait Database {
     else {
       alg.persistDataset[T](schema, tableName, dataset, implicits.selectEncoder(ExpressionEncoder()), strict = false, readerSettings(tableName), writerSettings(tableName))
     }
+
+  final def run(
+                 stageName: String,
+                 stage: Par[StageOp, Unit]
+               )
+               (
+                 implicit alg: StageOpProvider[StageOp]#ProgramAlg[ProgramOp]
+               ): alg.FS[Par[StageOp, Unit]] =
+    alg.run(stageName, stage)
 }

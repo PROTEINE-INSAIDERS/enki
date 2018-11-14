@@ -51,7 +51,7 @@ trait Enki extends EnkiTypes
   def analyzeStages[M: Monoid](s: Stage[_], f: SparkAlg.Op ~> λ[α => M]): M
 
   //TODO: remove
-  def run(stage: StageMonad[_], env: Environment): Unit
+  def run_(stage: StageMonad[_], env: Environment): Unit
 }
 
 /**
@@ -126,7 +126,7 @@ object default extends Enki {
   }
 
   //TODO: remove
-  override def run(stage: StageMonad[_], env: Environment) = {
+  override def run_(stage: StageMonad[_], env: Environment) = {
     stage.run(env)
     ()
   }

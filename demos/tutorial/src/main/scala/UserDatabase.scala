@@ -76,11 +76,18 @@ trait UserDatabase extends Database {
   def persistPurchasesReport: Program[Stage[Dataset[PurchasesReport]]] =
     persist[PurchasesReport]("purchases_report", (clients, products, purchases) mapN this.purchasesReport)
 
+  def customAction(purchasesReport: Dataset[PurchasesReport], productsByClientReport: Dataset[ProductsByClientReport]) = {
+    val a = purchasesReport.count()
+    val b = productsByClientReport.count()
+    println(s"Total count: ${a + b}")
+  }
+
   def createReports: ProgramS[Stage[Unit]] = for {
     purchasesReport <- persistPurchasesReport
-    _ <- persist(
+    productsByClientReport <- persist(
       "products_by_client_report",
       purchasesReport map this.productByClientReport)
+    _ <- run("custom action",  (purchasesReport, productsByClientReport) mapN customAction)
   } yield ().pure[Stage]
 
   def createDatabase(session: SparkSession): Unit = {
