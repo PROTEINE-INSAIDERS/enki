@@ -111,6 +111,7 @@ lazy val `enki-pm` = (project in file("enki-pm"))
       "org.apache.spark" %% "spark-sql" % sparkVersion, // % Provided,
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectVersion,
+      "org.typelevel" %% "cats-free" % catsVersion,
       "org.typelevel" %% "cats-mtl-core" % catsMtlVersion,
       "com.monovore" %% "decline" % declineVersion,
       "io.higherkindness" %% "droste-core" % drosteVersion,

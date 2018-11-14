@@ -46,7 +46,7 @@ abstract class ModuleTreeBuilder[M[_] : Monad, A] {
     Set.empty
   }
 
-  private def addModuleNameToErrorMessage[A](a: Validated[A], moduleName: ModuleQName): Validated[A] =
+  private def addModuleNameToErrorMessage[B](a: Validated[B], moduleName: ModuleQName): Validated[B] =
     a.leftMap(_.prepend(s"Error validating module ${moduleName.show}"))
 
   private def newAttributes(moduleName: String, inheritedAttributes: InheritedAttributes): InheritedAttributes = {

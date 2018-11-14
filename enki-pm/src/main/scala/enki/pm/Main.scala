@@ -2,6 +2,7 @@ package enki.pm
 
 import cats._
 import cats.effect._
+import cats.free.Trampoline
 import cats.implicits._
 import cats.mtl.{DefaultFunctorTell, FunctorTell}
 import com.monovore.decline._

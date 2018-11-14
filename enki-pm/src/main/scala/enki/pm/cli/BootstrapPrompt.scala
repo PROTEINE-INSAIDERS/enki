@@ -25,23 +25,21 @@ case class BootstrapPromptCli[F[_] : Monad, E](
 
   private val questions: BootstrapPrompt[Const[String, ?]] = BootstrapPromptQuestions()
 
-  implicit private val recorder: AnswerRecorder[F] = new AnswerRecorder[F] {
+  implicit private val recorder: PromptRecorder[F] = new NullRecorder[F]() {
     override def get(key: String): F[Option[String]] = {
       val projectDir = questions.projectDir.getConst
       val doNotCreateInEnki2 = questions.createNewProject(Paths.get("/home/schernichkin/Projects/enki2")).getConst
       val createInEnkiTest = questions.createNewProject(Paths.get("/home/schernichkin/Projects/test-enki-project")).getConst
-      (key match {
-        case `projectDir` => Some("/home/schernichkin/Projects/test-enki-project")
-        case `doNotCreateInEnki2` => Some("n")
-        case `createInEnkiTest` => Some("y")
-        case _ => Option.empty[String]
-      }).pure[F]
+      key match {
+        case `projectDir` => "/home/schernichkin/Projects/test-enki-project".some.pure[F]
+        case `doNotCreateInEnki2` => "n".some.pure[F]
+        case `createInEnkiTest` => "y".some.pure[F]
+        case _ => super.get(key)
+      }
     }
-
-    override def store(key: String, value: String): F[Unit] = ().pure[F]
   }
 
-  private def ask[A](question: Const[String, A], parser: Parser[A]) = ask[F, A, E](question.getConst, parser)
+  private def ask[A](question: Const[String, A], parser: Parser[A]): F[A] = ask[F, A, E](question.getConst, parser)
 
   override def projectDir: F[Path] = ask(questions.projectDir, parsers.projectDir)
 

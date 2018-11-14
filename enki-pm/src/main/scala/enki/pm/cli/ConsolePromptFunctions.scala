@@ -4,6 +4,7 @@ import atto.Atto._
 import atto.ParseResult._
 import atto._
 import cats._
+import cats.data._
 import cats.effect._
 import cats.implicits._
 
@@ -19,7 +20,7 @@ trait ConsolePromptFunctions extends ConsoleTagFunctions {
                                        (
                                          implicit console: Console[F],
                                          bracket: Bracket[F, E],
-                                         recorder: AnswerRecorder[F]
+                                         recorder: PromptRecorder[F]
                                        ): F[A] = for {
     _ <- withTag(input)(console.print(question)) *> console.print(" ")
     recorded <- recorder.get(question)
