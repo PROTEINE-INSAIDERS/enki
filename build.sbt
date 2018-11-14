@@ -15,6 +15,8 @@ val log4catsVersion = "0.2.0-RC2"
 val drosteVersion = "0.5.0"
 val iotaVersion = "0.3.10"
 val catsMtlVersion = "0.4.0"
+val circeVersion = "0.10.0"
+val catsRetryVersion = "0.2.0"
 
 resolvers += Resolver.url("scoverage-bintray", url("https://dl.bintray.com/sksamuel/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
@@ -118,6 +120,9 @@ lazy val `enki-pm` = (project in file("enki-pm"))
       "io.chrisdavenport" %% "log4cats-core" % log4catsVersion,
       "io.frees" %% "iota-core" % iotaVersion,
       "org.scala-graph" %% "graph-core" % scalaGraphVersion,
+      "io.circe" %% "circe-core" % circeVersion,
+      "io.circe" %% "circe-generic" % circeVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
       compilerPlugin("org.spire-math" % "kind-projector" % "0.9.6" cross CrossVersion.binary),
       compilerPlugin("com.github.mpilquist" %% "local-implicits" % "0.3.0")
     )

@@ -9,10 +9,11 @@ import enki.pm.fs._
 import enki.pm.internal._
 import org.apache.commons.io.FilenameUtils
 
-class FileSystemModuleTreeBuilder[M[_] : Monad, E <: Throwable](
-                                                                 implicit fileSystem: FileSystem[M],
-                                                                 monadError: MonadError[M, E]
-                                                               ) extends ModuleTreeBuilder[M, Path] {
+//TODO: put ana here?
+case class FileSystemModuleTreeBuilder[M[_], E <: Throwable](
+                                                              implicit fileSystem: FileSystem[M],
+                                                              monadError: MonadError[M, E]
+                                                            ) extends ModuleTreeBuilder[M, Path] {
 
   override protected def step(path: Path, attributes: InheritedAttributes): M[RoseTreeF[Validated[Module], Path]] = {
     Validated.wrapError(

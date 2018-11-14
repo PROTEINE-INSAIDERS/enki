@@ -32,4 +32,9 @@ case class NioFileSystem[F[_]](implicit liftIO: LiftIO[F]) extends FileSystem[F]
   override def createDirectories(path: Path): F[Path] = io {
     Files.createDirectories(path)
   }
+
+  override def writeAllText(path: Path, text: String, charset: Charset): F[Unit] = io {
+    Files.write(path, text.getBytes(charset))
+    ()
+  }
 }

@@ -11,7 +11,7 @@ import cats.implicits._
 trait ConsolePromptFunctions extends ConsoleTagFunctions {
   protected val input = Tag("INPUT", Some(Style.CYAN))
   protected val invalidInput = Tag("INVALID", Some(Style.MAGENTA))
-  protected val auto = Tag("AUTO", Some(Style.GREEN))
+  protected val answer = Tag("ANSWER", Some(Style.GREEN))
 
   protected def ask[F[_] : Monad, A, E](
                                          question: String,
@@ -20,12 +20,12 @@ trait ConsolePromptFunctions extends ConsoleTagFunctions {
                                        (
                                          implicit console: Console[F],
                                          bracket: Bracket[F, E],
-                                         recorder: PromptRecorder[F]
+                                         recorder: AnswerRecorder[F]
                                        ): F[A] = for {
     _ <- withTag(input)(console.print(question)) *> console.print(" ")
     recorded <- recorder.get(question)
     in <- recorded match {
-      case Some(a) => withTag(auto)(console.printLn(a)) *> a.pure[F]
+      case Some(a) => withTag(answer)(console.printLn(a)) *> a.pure[F]
       case None => console.readLine
     }
     result <- in.tailRecM { in =>
