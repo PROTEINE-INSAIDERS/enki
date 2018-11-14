@@ -20,6 +20,8 @@ import org.apache.spark.sql.types._
   //TODO: убрать трансформацию плана.
   def plan(plan: LogicalPlan): FS[PlanTransformer => DataFrame]
 
+  def session: FS[SparkSession]
+
   def sql(sqlText: String): FS[PlanTransformer => DataFrame]
 
   def writeDataFrame(schemaName: String, tableName: String): FS[WriterSettings => DataFrame => Unit]

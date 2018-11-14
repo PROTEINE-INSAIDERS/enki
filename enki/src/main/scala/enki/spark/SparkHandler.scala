@@ -90,6 +90,8 @@ class SparkHandler[M[_]](implicit env: ApplicativeAsk[M, SparkSession], planAnal
       new Dataset[Row](session, qe.logical, RowEncoder(qe.analyzed.schema))
   }
 
+  override protected[this] def session: M[SparkSession] = env.ask
+
   override protected[this] def sql(sqlText: String): M[PlanTransformer => DataFrame] = env.reader { session =>
     transformer =>
       val logicalPlan = session.sessionState.sqlParser.parsePlan(sqlText)

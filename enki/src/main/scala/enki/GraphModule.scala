@@ -167,7 +167,7 @@ trait GraphModule {
             }
 
             val action = a.foldMap(compiler)
-            run(action, environment)
+            run_(action, environment)
         }
       } catch {
         case NonFatal(e) => throw ActionFailedException(name, e)
