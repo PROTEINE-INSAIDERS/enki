@@ -39,9 +39,7 @@ trait Database {
   protected def planTransformer: Par[StageOp, PlanTransformer] =
     tableMapper map { f =>
       plan =>
-        plan.transform {
-          case UnresolvedRelation(identifier) => UnresolvedRelation(f(identifier))
-        }
+        enki.planAnalyzer.mapTableNames(plan, f)
     }
 
   protected def tableMapper: Par[StageOp, TableIdentifier => TableIdentifier] = (identity[TableIdentifier] _).pure[Par[StageOp, ?]]
