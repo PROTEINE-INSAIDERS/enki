@@ -12,6 +12,9 @@ class DatasetTest extends EnkiTestSuite {
   "typedCol" should {
     "resolve column by field accessor" in {
       val ds = sparkSession.emptyDataset[(Int, String)]
+
+      import ds.sparkSession.implicits._
+
       val col: TypedColumn[(Int, String), Int] = ds.typedCol(_._1)
       col.expr match {
         case named: NamedExpression => named.name shouldBe "_1"
