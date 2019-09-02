@@ -11,4 +11,4 @@ Sumerian god of water, knowledge, mischief, crafts, and creation.
 [![Download](https://api.bintray.com/packages/proteine-insaiders/enki/enki/images/download.svg) ](https://bintray.com/proteine-insaiders/enki/enki/_latestVersion)
 
 ## Discontinued
-Enki-2 (this project) been discontinued in favor of Enki-1. Enki-1 is a private project of Sberbank of Russia and does not meant to be publicly available. No future development planned under Enki-2 project.
+Enki-2 (this project) has been discontinued in favor of Enki-1. Enki-1 is a private project of Sberbank of Russia and does not meant to be publicly available. No future development planned under Enki-2 project.
