@@ -9,3 +9,6 @@ Sumerian god of water, knowledge, mischief, crafts, and creation.
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6d18e6fecf324824b9af350cf0a1f448)](https://www.codacy.com/app/schernichkin/enki?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PROTEINE-INSAIDERS/enki&amp;utm_campaign=Badge_Grade)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Download](https://api.bintray.com/packages/proteine-insaiders/enki/enki/images/download.svg) ](https://bintray.com/proteine-insaiders/enki/enki/_latestVersion)
+
+## Discontinued
+Enki-2 (this project) been discontinued in favor of Enki-1. Enki-1 is a private project of Sberbank of Russia and does not meant to be publicly available. No future development planned under Enki-2 project.
